@@ -25,6 +25,8 @@ class DocumentType(str, Enum):
     PAN_CARD = "PAN_CARD"
     BALANCE_SHEET = "BALANCE_SHEET"
     AUTHORIZATION_LETTER = "AUTHORIZATION_LETTER"
+    ISO_27001_CERTIFICATE = "ISO_27001_CERTIFICATE"
+    PAST_PERFORMANCE_CREDENTIAL = "PAST_PERFORMANCE_CREDENTIAL"
 
 class ExtractionStatus(str, Enum):
     PENDING = "PENDING"
@@ -36,6 +38,91 @@ class OfficerActionType(str, Enum):
     REJECT = "REJECT"
     REQUEST_INFO = "REQUEST_INFO"
     OVERRIDE = "OVERRIDE"
+
+# Feature 1: Unified Document Vault Schemas
+class VaultDocument(BaseModel):
+    doc_id: str
+    doc_type: DocumentType
+    document_name: str
+    issuer: str
+    issue_date: str
+    expiry_date: str
+    days_to_expiry: int
+    is_valid: bool
+    verification_badge: str = "DIGILOCKER_VERIFIED" # "DIGILOCKER_VERIFIED", "API_SETU_AUTHENTICATED", "PENDING_RECHECK"
+    reuse_count: int = 1
+    participated_tenders: List[str] = []
+    file_size_kb: int = 420
+    extracted_metadata: Dict[str, Any] = {}
+
+class VendorVault(BaseModel):
+    vendor_id: str
+    company_name: str
+    documents: List[VaultDocument] = []
+    total_reused_tenders: int = 1
+    last_synced: datetime = Field(default_factory=datetime.utcnow)
+    vault_status: str = "SYNCHRONIZED"
+
+# Feature 2: Longitudinal Trust Score (CIBIL-style 300-900)
+class TrustScoreDimension(BaseModel):
+    name: str
+    score: int # 0 to 100
+    weight_percent: int
+    grade: str # AAA, AA, A, BBB, C, D
+    details: str
+
+class LongitudinalTrustScore(BaseModel):
+    score: int # 300 to 900 scale (CIBIL-style)
+    rating_band: str # "PRIME_AAA (850-900)", "HIGH_RELIABILITY_AA (750-849)", "MODERATE_BBB (650-749)", "SUBPRIME_D (<650)"
+    delivery_sla_rate: float # e.g. 98.4%
+    tax_compliance_health: float # e.g. 100%
+    gem_rating: float # e.g. 4.8 / 5.0
+    dispute_free_months: int # e.g. 36
+    historical_trend_24m: List[Dict[str, Any]] = [] # [{month: "Jan 25", score: 810}, ...]
+    dimensions: List[TrustScoreDimension] = []
+    summary: str
+
+# Feature 3: Graph-Based Entity Linking & Shell Company Detection
+class EntityNodeType(str, Enum):
+    BIDDER = "BIDDER"
+    DIRECTOR = "DIRECTOR"
+    ADDRESS = "ADDRESS"
+    DEBARRED_ENTITY = "DEBARRED_ENTITY"
+    BANK_BRANCH = "BANK_BRANCH"
+
+class EntityGraphNode(BaseModel):
+    id: str
+    label: str
+    type: EntityNodeType
+    risk_level: RiskLevel = RiskLevel.LOW
+    details: Dict[str, Any] = {}
+
+class EntityGraphEdge(BaseModel):
+    source: str
+    target: str
+    relationship: str # "DIRECTOR_OF", "REGISTERED_AT", "GUARANTOR_BANK", "COLLUSION_LINK", "PAST_DIRECTOR_DEBARRED"
+    is_conflict: bool = False
+    confidence: float = 0.95
+    explanation: Optional[str] = None
+
+class EntityGraph(BaseModel):
+    nodes: List[EntityGraphNode] = []
+    edges: List[EntityGraphEdge] = []
+    cartels_detected: int = 0
+    debarment_links_found: int = 0
+    risk_summary: str = "Clean network topology."
+
+# Feature 5: Natural Language Officer Assistant (Chat)
+class OfficerChatRequest(BaseModel):
+    query: str
+    tender_id: str = "GEM/2026/B/89420"
+    active_bidder_id: Optional[str] = None
+
+class OfficerChatResponse(BaseModel):
+    reply: str
+    context_used: List[str] = []
+    suggested_actions: List[str] = []
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 # Identifiers & Financials
 class BidderIdentifiers(BaseModel):
@@ -51,7 +138,7 @@ class BidderFinancials(BaseModel):
     last_financial_year: str = "2024-25"
     itr_filed_years: List[str] = []
 
-# Step 2: Uploaded Document Schema
+# Uploaded Document Schema
 class UploadedDocument(BaseModel):
     doc_id: str
     bidder_id: str
@@ -63,16 +150,16 @@ class UploadedDocument(BaseModel):
     ocr_raw_text: Optional[str] = None
     confidence: float = 0.98
 
-# Step 3: Process A - Portal Verification Output
+# Portal Verification Output
 class PortalVerificationResult(BaseModel):
-    source: str # e.g. "GST_PORTAL (API Setu)", "PAN_REGISTRY", "CPPP_DEBARMENT"
-    status: str # "ACTIVE", "VALID", "DEBARRED", "INACTIVE"
+    source: str
+    status: str
     key_fields: Dict[str, Any]
     raw_data: Dict[str, Any] = {}
     verified_at: datetime = Field(default_factory=datetime.utcnow)
     response_time_ms: int = 120
 
-# Step 4: Cross-Verification Mismatch
+# Cross-Verification Mismatch
 class CrossCheckMismatch(BaseModel):
     field_name: str
     source_a_name: str
@@ -83,18 +170,18 @@ class CrossCheckMismatch(BaseModel):
     discrepancy_explanation: str
     suggested_investigation: str
 
-# Step 5: Rules Engine Result
+# Rules Engine Result
 class RuleEvaluationResult(BaseModel):
     rule_id: str
     rule_name: str
-    category: str # "STATUTORY", "TECHNICAL", "FINANCIAL", "DEBARMENT"
+    category: str
     passed: bool
-    is_hard_block: bool # If True and passed=False, vendor is disqualified regardless of score
+    is_hard_block: bool
     expected_condition: str
     actual_value: Any
     failure_reason: Optional[str] = None
 
-# Step 6: AI Reasoning & Risk Synthesis
+# AI Reasoning & Risk Synthesis
 class RiskFactor(BaseModel):
     code: str
     title: str
@@ -103,15 +190,15 @@ class RiskFactor(BaseModel):
     explanation: str
 
 class AIRecommendation(BaseModel):
-    recommended_action: str # "RECOMMEND_APPROVAL", "RECOMMEND_REJECTION", "FLAG_FOR_OFFICER_REVIEW", "REQUEST_MORE_INFO"
+    recommended_action: str
     executive_summary: str
     risk_factors: List[RiskFactor] = []
     mitigation_notes: Optional[str] = None
     confidence_score: float = 0.95
 
-# Step 7: Compliance Scoring
+# Compliance Scoring
 class ComplianceScore(BaseModel):
-    score: int # 0 to 100
+    score: int
     risk_level: RiskLevel
     hard_blocks_triggered: int
     mandatory_rules_passed: int
@@ -120,43 +207,58 @@ class ComplianceScore(BaseModel):
     mismatches_penalty: int
     score_breakdown: Dict[str, Any] = {}
 
-# Step 10: Audit Log Entry
+# Audit Log Entry
 class AuditLogEntry(BaseModel):
     log_id: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     bidder_id: str
-    step: str # "STEP_1_SUBMIT", "STEP_2_UPLOAD", "STEP_3_PORTAL", "STEP_4_CROSS_CHECK", etc.
-    actor: str # "SYSTEM", "CELERY_WORKER", "RULES_ENGINE", "AI_ENGINE", "OFFICER"
+    step: str
+    actor: str
     action_type: str
     details: Dict[str, Any] = {}
     notes: Optional[str] = None
+
+# Director & Address Info for Graph Linking
+class DirectorInfo(BaseModel):
+    din: str
+    name: str
+    designation: str
+    is_flagged_debarred: bool = False
 
 # Canonical Bidder Model (Single Source of Truth)
 class Bidder(BaseModel):
     bidder_id: str
     tender_id: str
     company_name: str
-    legal_structure: str # "Private Limited", "Proprietorship", "Partnership", "LLP"
+    legal_structure: str
     registered_state: str
+    registered_address: str = "Plot 45, Andheri East, Mumbai, MH"
+    directors: List[DirectorInfo] = []
+    bank_branch_code: str = "SBIN0004921"
     created_at: datetime = Field(default_factory=datetime.utcnow)
     identifiers: BidderIdentifiers
     financials: BidderFinancials
     
     # Aggregated Pipeline States
     documents: List[UploadedDocument] = []
+    vault_documents: List[VaultDocument] = []
+    longitudinal_trust_score: Optional[LongitudinalTrustScore] = None
     portal_verifications: Dict[str, PortalVerificationResult] = {}
     cross_check_mismatches: List[CrossCheckMismatch] = []
     rule_results: List[RuleEvaluationResult] = []
     ai_recommendation: Optional[AIRecommendation] = None
     compliance_score: Optional[ComplianceScore] = None
     
-    # Final Human Decision (Step 9)
-    officer_status: str = "PENDING_REVIEW" # "APPROVED", "REJECTED", "INFO_REQUESTED", "OVERRIDDEN", "PENDING_REVIEW"
+    # Entity Linkage Risk Counter
+    conflict_links_count: int = 0
+    
+    # Final Human Decision
+    officer_status: str = "PENDING_REVIEW"
     officer_notes: Optional[str] = None
     officer_id: Optional[str] = None
     decided_at: Optional[datetime] = None
 
-# Officer Decision Payload (Step 9)
+# Officer Decision Payload
 class OfficerDecisionPayload(BaseModel):
     bidder_id: str
     action: OfficerActionType

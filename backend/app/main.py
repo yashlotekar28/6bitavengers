@@ -15,7 +15,13 @@ from app.models.schemas import (
     OfficerActionType,
     AuditLogEntry,
     ComplianceScore,
-    RiskLevel
+    RiskLevel,
+    VendorVault,
+    LongitudinalTrustScore,
+    EntityGraph,
+    OfficerChatRequest,
+    OfficerChatResponse,
+    DirectorInfo
 )
 from app.adapters.gst_adapter import GSTAdapter
 from app.adapters.pan_adapter import PANAdapter
@@ -28,12 +34,16 @@ from app.services.rules_engine import DeterministicRulesEngine
 from app.services.ai_recommender import AIReasoningEngine
 from app.services.scoring_engine import ComplianceScoringEngine
 from app.services.audit_service import audit_trail
+from app.services.vault_service import VendorDocumentVaultService
+from app.services.trust_scoring_service import LongitudinalTrustScoringService
+from app.services.entity_graph_service import EntityGraphLinkingService
+from app.services.chat_service import OfficerChatAssistantService
 from app.data.demo_scenarios import DEMO_BIDDERS_SEED
 
 app = FastAPI(
     title="ProcureShield AI - GeM Bidder Verification Engine",
     description="Deterministic Rules & AI-powered Public Procurement Compliance Scoring System",
-    version="1.0.0"
+    version="2.0.0"
 )
 
 app.add_middleware(
@@ -57,16 +67,22 @@ rules_engine = DeterministicRulesEngine()
 
 async def run_full_pipeline_for_bidder(bidder: Bidder, scenario_type: str = "") -> Bidder:
     """
-    Executes the End-to-End 10-Step Verification Workflow.
+    Executes the End-to-End 10-Step Verification Workflow with new capabilities.
     """
-    # Step 1 & 2: Already submitted & documents extracted
-    audit_trail.log_event(
-        bidder_id=bidder.bidder_id,
-        step="STEP_3_PORTAL_INGESTION",
-        actor="CELERY_WORKER",
-        action_type="PARALLEL_PORTAL_FETCH",
-        details={"identifiers": bidder.identifiers.dict(), "adapters": ["GSTN", "PAN", "UDYAM", "EPFO", "CPPP_DEBARMENT"]}
+    # Feature 1: Populate & Sync Document Vault
+    vault = VendorDocumentVaultService.get_vault_for_vendor(
+        vendor_id=bidder.bidder_id,
+        company_name=bidder.company_name,
+        identifiers=bidder.identifiers.dict()
     )
+    bidder.vault_documents = vault.documents
+
+    # Feature 2: Compute Longitudinal Trust Score (CIBIL-style 300-900)
+    trust_score = LongitudinalTrustScoringService.compute_trust_score(
+        company_name=bidder.company_name,
+        scenario_type=scenario_type
+    )
+    bidder.longitudinal_trust_score = trust_score
 
     # Step 3: Concurrent Portal Verification (Process A)
     gst_task = gst_adapter.verify(
@@ -105,33 +121,19 @@ async def run_full_pipeline_for_bidder(bidder: Bidder, scenario_type: str = "") 
         "CPPP_DEBARMENT": results[4]
     }
 
-    # Step 4: Cross-Verification (Where Process A and B Meet)
+    # Step 4: Cross-Verification
     mismatches = CrossVerificationEngine.cross_check(bidder.documents, bidder.portal_verifications)
     bidder.cross_check_mismatches = mismatches
-    audit_trail.log_event(
-        bidder_id=bidder.bidder_id,
-        step="STEP_4_CROSS_VERIFICATION",
-        actor="CROSS_CHECK_ENGINE",
-        action_type="DATA_RECONCILIATION",
-        details={"mismatches_found": len(mismatches), "fields_checked": ["GSTIN", "Legal Name", "Annual Turnover", "Udyam ID"]}
-    )
 
-    # Step 5: Deterministic Rules Engine (Mechanical Pass/Fail)
+    # Step 5: Deterministic Rules Engine
     rule_results = rules_engine.evaluate_rules(
         portal_verifications=bidder.portal_verifications,
         financials=bidder.financials,
         mismatches=bidder.cross_check_mismatches
     )
     bidder.rule_results = rule_results
-    audit_trail.log_event(
-        bidder_id=bidder.bidder_id,
-        step="STEP_5_RULES_EVALUATION",
-        actor="RULES_ENGINE",
-        action_type="DETERMINISTIC_EVALUATION",
-        details={"total_rules": len(rule_results), "passed": sum(1 for r in rule_results if r.passed)}
-    )
 
-    # Step 6: AI Reasoning Layer (Contextualization & Officer Summary)
+    # Step 6: AI Reasoning Layer
     ai_recommendation = AIReasoningEngine.generate_recommendation(
         company_name=bidder.company_name,
         tender_id=bidder.tender_id,
@@ -140,13 +142,6 @@ async def run_full_pipeline_for_bidder(bidder: Bidder, scenario_type: str = "") 
         portal_verifications=bidder.portal_verifications
     )
     bidder.ai_recommendation = ai_recommendation
-    audit_trail.log_event(
-        bidder_id=bidder.bidder_id,
-        step="STEP_6_AI_REASONING",
-        actor="AI_REASONING_ENGINE",
-        action_type="RISK_SYNTHESIS",
-        details={"recommended_action": ai_recommendation.recommended_action, "risk_factors_count": len(ai_recommendation.risk_factors)}
-    )
 
     # Step 7: Compliance Scoring
     compliance_score = ComplianceScoringEngine.calculate_score(
@@ -154,12 +149,19 @@ async def run_full_pipeline_for_bidder(bidder: Bidder, scenario_type: str = "") 
         mismatches=bidder.cross_check_mismatches
     )
     bidder.compliance_score = compliance_score
+
+    # Step 10: Audit Log
     audit_trail.log_event(
         bidder_id=bidder.bidder_id,
-        step="STEP_7_COMPLIANCE_SCORING",
-        actor="SCORING_FUNCTION",
-        action_type="SCORE_CALCULATION",
-        details={"score": compliance_score.score, "risk_level": compliance_score.risk_level}
+        step="STEP_7_COMPLIANCE_EVALUATION",
+        actor="SCORING_ENGINE",
+        action_type="PIPELINE_COMPLETED",
+        details={
+            "compliance_score": compliance_score.score,
+            "trust_score": trust_score.score,
+            "risk_level": compliance_score.risk_level,
+            "vault_docs_count": len(bidder.vault_documents)
+        }
     )
 
     return bidder
@@ -171,8 +173,9 @@ def populate_seed_scenarios():
         bidder_id = seed["bidder_id"]
         identifiers = BidderIdentifiers(**seed["identifiers"])
         financials = BidderFinancials(**seed["financials"])
+        directors = [DirectorInfo(**d) for d in seed.get("directors", [])]
         
-        # Step 2: Seed documents and extract them
+        # Step 2: Seed documents
         docs = []
         for doc_item in seed["documents_to_seed"]:
             doc = DocumentIntelligenceEngine.extract_document(
@@ -195,37 +198,25 @@ def populate_seed_scenarios():
             company_name=seed["company_name"],
             legal_structure=seed["legal_structure"],
             registered_state=seed["registered_state"],
+            registered_address=seed.get("registered_address", "Plot 45, Andheri East, Mumbai"),
+            bank_branch_code=seed.get("bank_branch_code", "SBIN0004921"),
+            conflict_links_count=seed.get("conflict_links_count", 0),
+            directors=directors,
             identifiers=identifiers,
             financials=financials,
             documents=docs,
             officer_status="PENDING_REVIEW"
         )
-        
-        # Log Step 1 & 2
-        audit_trail.log_event(
-            bidder_id=bidder_id,
-            step="STEP_1_SUBMIT",
-            actor="GEM_PORTAL",
-            action_type="BID_SUBMITTED",
-            details={"company_name": bidder.company_name, "tender_id": bidder.tender_id}
-        )
-        audit_trail.log_event(
-            bidder_id=bidder_id,
-            step="STEP_2_UPLOAD",
-            actor="BIDDER",
-            action_type="DOCUMENTS_UPLOADED",
-            details={"document_count": len(docs), "filenames": [d.file_name for d in docs]}
-        )
-
         BIDDERS_DB[bidder_id] = bidder
 
 @app.on_event("startup")
 async def startup_event():
     populate_seed_scenarios()
-    # Pre-run pipeline on all 3 bidders so judges immediately see rich data
     for bidder in list(BIDDERS_DB.values()):
         scenario_hint = next((s["scenario_type"] for s in DEMO_BIDDERS_SEED if s["bidder_id"] == bidder.bidder_id), "")
         await run_full_pipeline_for_bidder(bidder, scenario_type=scenario_hint)
+
+# --- Routes ---
 
 @app.get("/", response_class=FileResponse)
 async def serve_dashboard():
@@ -267,6 +258,43 @@ async def reset_demo():
         await run_full_pipeline_for_bidder(bidder, scenario_type=scenario_hint)
     return {"message": "Demo scenarios successfully reset and re-verified"}
 
+# Feature 1 Endpoint: Vendor Document Vault
+@app.get("/api/vault/{bidder_id}", response_model=VendorVault)
+async def get_vendor_vault(bidder_id: str):
+    if bidder_id not in BIDDERS_DB:
+        raise HTTPException(status_code=404, detail="Bidder not found")
+    bidder = BIDDERS_DB[bidder_id]
+    return VendorDocumentVaultService.get_vault_for_vendor(
+        vendor_id=bidder.bidder_id,
+        company_name=bidder.company_name,
+        identifiers=bidder.identifiers.dict()
+    )
+
+# Feature 2 Endpoint: Longitudinal Trust Score
+@app.get("/api/trust-score/{bidder_id}", response_model=LongitudinalTrustScore)
+async def get_vendor_trust_score(bidder_id: str):
+    if bidder_id not in BIDDERS_DB:
+        raise HTTPException(status_code=404, detail="Bidder not found")
+    bidder = BIDDERS_DB[bidder_id]
+    scenario_hint = next((s["scenario_type"] for s in DEMO_BIDDERS_SEED if s["bidder_id"] == bidder.bidder_id), "")
+    return LongitudinalTrustScoringService.compute_trust_score(
+        company_name=bidder.company_name,
+        scenario_type=scenario_hint
+    )
+
+# Feature 3 Endpoint: Graph-Based Entity Linking
+@app.get("/api/graph/tender/{tender_id}", response_model=EntityGraph)
+async def get_tender_entity_graph(tender_id: str):
+    return EntityGraphLinkingService.build_tender_graph(tender_id)
+
+# Feature 5 Endpoint: Natural Language Officer Assistant (Chat)
+@app.post("/api/chat/officer", response_model=OfficerChatResponse)
+async def chat_with_officer_assistant(request: OfficerChatRequest):
+    return OfficerChatAssistantService.process_officer_query(
+        request=request,
+        bidders_db=BIDDERS_DB
+    )
+
 @app.post("/api/officer/decision")
 async def record_officer_decision(payload: OfficerDecisionPayload):
     if payload.bidder_id not in BIDDERS_DB:
@@ -278,7 +306,6 @@ async def record_officer_decision(payload: OfficerDecisionPayload):
     bidder.officer_id = payload.officer_id
     bidder.decided_at = datetime.utcnow()
 
-    # Step 10: Log Officer Action in Audit Trail
     audit_trail.log_event(
         bidder_id=bidder.bidder_id,
         step="STEP_9_OFFICER_DECISION",

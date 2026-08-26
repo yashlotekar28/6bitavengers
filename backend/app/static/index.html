@@ -3,41 +3,69 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ProcureShield AI — GeM Bidder Verification & Compliance Engine</title>
+  <title>ProcureShield AI — Next-Gen GeM Verification & Intelligence Engine</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <!-- React & Babel CDN -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- React, Babel, and Tailwind plugins -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: #090d16; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+    }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen">
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-blue-600 selection:text-white">
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useMemo } = React;
 
     function App() {
+      // Core Data States
       const [bidders, setBidders] = useState([]);
       const [selectedId, setSelectedId] = useState('BID-2026-0891');
       const [metrics, setMetrics] = useState(null);
       const [auditLogs, setAuditLogs] = useState([]);
+      const [entityGraph, setEntityGraph] = useState(null);
+      
+      // UI View / Drawer States
+      const [activeTab, setActiveTab] = useState('overview'); // overview, vault, graph, rules, diff
       const [isAuditOpen, setIsAuditOpen] = useState(false);
+      const [isChatOpen, setIsChatOpen] = useState(false);
+      const [isFilterOpen, setIsFilterOpen] = useState(false);
       const [loading, setLoading] = useState(true);
       const [verifying, setVerifying] = useState(false);
       const [notification, setNotification] = useState(null);
 
+      // Feature 4: Officer Constraint Filters
+      const [filterMinTrust, setFilterMinTrust] = useState(300);
+      const [filterMsmeOnly, setFilterMsmeOnly] = useState(false);
+      const [filterMinTurnover, setFilterMinTurnover] = useState(0);
+      const [filterExcludeConflicts, setFilterExcludeConflicts] = useState(false);
+
+      // Feature 5: AI Chat State
+      const [chatMessages, setChatMessages] = useState([
+        {
+          sender: 'ai',
+          text: 'Hello Officer! I have analyzed all bidders, document vaults, trust score histories, and entity graph topologies for Tender #GEM/2026/B/89420. How can I assist your Technical Evaluation Committee today?'
+        }
+      ]);
+      const [chatInput, setChatInput] = useState('');
+      const [chatLoading, setChatLoading] = useState(false);
+
+      // Officer Decision State
       const [actionType, setActionType] = useState('APPROVE');
       const [officerNotes, setOfficerNotes] = useState('');
       const [overrideJustification, setOverrideJustification] = useState('');
-      const [activeTab, setActiveTab] = useState('overview');
 
       const showNotice = (msg) => {
         setNotification(msg);
@@ -47,17 +75,19 @@
       const loadData = async () => {
         try {
           setLoading(true);
-          const [bRes, mRes, aRes] = await Promise.all([
+          const [bRes, mRes, aRes, gRes] = await Promise.all([
             fetch('/api/bidders').then(r => r.json()),
             fetch('/api/metrics').then(r => r.json()),
-            fetch('/api/audit').then(r => r.json())
+            fetch('/api/audit').then(r => r.json()),
+            fetch('/api/graph/tender/GEM/2026/B/89420').then(r => r.json())
           ]);
           setBidders(bRes);
           setMetrics(mRes);
           setAuditLogs(aRes);
+          setEntityGraph(gRes);
           if (bRes.length > 0 && !selectedId) setSelectedId(bRes[0].bidder_id);
         } catch (e) {
-          console.error(e);
+          console.error('Data load error:', e);
         } finally {
           setLoading(false);
         }
@@ -73,7 +103,7 @@
         try {
           await fetch(`/api/bidders/verify/${selectedId}`, { method: 'POST' });
           await loadData();
-          showNotice(`Verification successfully re-executed for ${selectedId}!`);
+          showNotice(`10-step verification completed for ${selectedId}!`);
         } catch (e) {
           console.error(e);
         } finally {
@@ -86,7 +116,7 @@
         try {
           await fetch('/api/bidders/reset-demo', { method: 'POST' });
           await loadData();
-          showNotice('Demo scenarios reset & re-verified!');
+          showNotice('Demo scenarios reset & all 5 features synchronized!');
         } catch (e) {
           console.error(e);
         } finally {
@@ -122,31 +152,81 @@
         }
       };
 
+      const handleSendChat = async (e) => {
+        if (e) e.preventDefault();
+        if (!chatInput.trim() || chatLoading) return;
+
+        const userMsg = chatInput;
+        setChatMessages(prev => [...prev, { sender: 'user', text: userMsg }]);
+        setChatInput('');
+        setChatLoading(true);
+
+        try {
+          const res = await fetch('/api/chat/officer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: userMsg,
+              tender_id: 'GEM/2026/B/89420',
+              active_bidder_id: selectedId
+            })
+          });
+          const data = await res.json();
+          setChatMessages(prev => [...prev, {
+            sender: 'ai',
+            text: data.reply,
+            context: data.context_used,
+            suggested: data.suggested_actions
+          }]);
+        } catch (err) {
+          setChatMessages(prev => [...prev, {
+            sender: 'ai',
+            text: 'I encountered an error analyzing the tender query. Please try again.'
+          }]);
+        } finally {
+          setChatLoading(false);
+        }
+      };
+
+      // Filtered Bidders based on Feature 4 Constraint Filter
+      const filteredBidders = useMemo(() => {
+        return bidders.filter(b => {
+          const trust = b.longitudinal_trust_score?.score ?? 0;
+          if (trust < filterMinTrust) return false;
+          if (filterMsmeOnly && !b.identifiers.udyam_registration_number) return false;
+          if (filterMinTurnover > 0 && b.financials.annual_turnover_inr < filterMinTurnover) return false;
+          if (filterExcludeConflicts && b.conflict_links_count > 0) return false;
+          return true;
+        });
+      }, [bidders, filterMinTrust, filterMsmeOnly, filterMinTurnover, filterExcludeConflicts]);
+
       const cur = bidders.find(b => b.bidder_id === selectedId) || bidders[0];
 
       return (
-        <div className="min-h-screen flex flex-col">
-          {/* Header */}
-          <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 px-4 py-3">
+        <div className="min-h-screen flex flex-col bg-slate-950">
+          
+          {/* Top Executive Navbar */}
+          <header className="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 px-4 py-3 backdrop-blur-md">
             <div className="max-w-7xl mx-auto flex items-center justify-between">
+              
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-600/20 border border-blue-500/30 rounded-lg text-blue-400 font-black text-xl">
+                <div className="p-2 bg-blue-600/20 border border-blue-500/40 rounded-xl text-blue-400 font-black text-xl shadow-inner">
                   🛡️
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
                     <span className="font-extrabold text-lg text-white tracking-tight">ProcureShield<span className="text-blue-400">AI</span></span>
-                    <span className="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded">
-                      GeM 10-STEP ENGINE
+                    <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full">
+                      v2.0 ENTERPRISE
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 font-mono">Tender #GEM/2026/B/89420 • Cloud Infrastructure Procurement</p>
+                  <p className="text-xs text-slate-400 font-mono">Tender #GEM/2026/B/89420 • Cloud Infra & Cyber Services</p>
                 </div>
               </div>
 
               {/* 1-Click Scenario Switcher */}
-              <div className="hidden md:flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800 space-x-1">
-                <span className="text-[10px] font-medium text-slate-500 px-2 uppercase">Demo Scenarios:</span>
+              <div className="hidden lg:flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 space-x-1 shadow-inner">
+                <span className="text-[10px] font-bold text-slate-500 px-2 uppercase tracking-wider">Dossiers:</span>
                 {bidders.map(b => {
                   const isSel = b.bidder_id === selectedId;
                   const isLow = b.compliance_score?.risk_level === 'LOW';
@@ -156,8 +236,8 @@
                     <button
                       key={b.bidder_id}
                       onClick={() => setSelectedId(b.bidder_id)}
-                      className={`px-3 py-1 text-xs font-semibold rounded-md transition ${
-                        isSel ? 'bg-blue-600 text-white shadow' : 'text-slate-300 hover:bg-slate-800'
+                      className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                        isSel ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800/80'
                       }`}
                     >
                       {dot} {b.company_name.split(' ')[0]}
@@ -166,99 +246,229 @@
                 })}
               </div>
 
+              {/* Header Action Controls */}
               <div className="flex items-center space-x-2">
+                {/* Feature 5: AI Chat Toggle */}
+                <button
+                  onClick={() => setIsChatOpen(true)}
+                  className="px-3 py-1.5 text-xs font-bold bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 rounded-xl border border-indigo-500/40 transition flex items-center space-x-1.5 shadow-sm"
+                >
+                  <span>💬 AI Assistant</span>
+                  <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+                </button>
+
+                {/* Feature 4: Filter Toggle */}
+                <button
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition flex items-center space-x-1 ${
+                    isFilterOpen ? 'bg-blue-600 text-white border-blue-500' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                  }`}
+                >
+                  <span>🎛️ Filter ({filteredBidders.length}/{bidders.length})</span>
+                </button>
+
+                {/* Audit Trail Modal Toggle */}
                 <button
                   onClick={() => setIsAuditOpen(true)}
-                  className="px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center space-x-1"
+                  className="hidden sm:flex items-center space-x-1 px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl border border-slate-700 transition"
                 >
-                  <span>📜 Audit Trail ({auditLogs.length})</span>
+                  <span>📜 CAG Audit ({auditLogs.length})</span>
                 </button>
+
+                {/* Reset Demo Button */}
                 <button
                   onClick={handleReset}
                   disabled={loading}
-                  className="px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition"
+                  className="px-2.5 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition"
+                  title="Reset Demo Data"
                 >
-                  🔄 Reset Demo
+                  🔄
                 </button>
               </div>
+
             </div>
           </header>
 
           {/* Floating Notice */}
           {notification && (
-            <div className="fixed top-20 right-6 z-50 bg-blue-600 border border-blue-400 text-white px-4 py-3 rounded-xl shadow-2xl text-xs font-bold flex items-center space-x-2">
+            <div className="fixed top-20 right-6 z-50 bg-blue-600 border border-blue-400 text-white px-4 py-3 rounded-2xl shadow-2xl text-xs font-bold flex items-center space-x-2 animate-bounce">
               <span>✅ {notification}</span>
             </div>
           )}
 
-          {/* Main Content */}
+          {/* Main Layout Container */}
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
-            {/* KPI Cards */}
+            
+            {/* KPI Metric Cards */}
             {metrics && (
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-xl">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase">Total Bidders</p>
-                  <p className="text-xl font-black text-white">{metrics.total_bidders}</p>
+                <div className="glass-panel p-3.5 rounded-2xl">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Bidders</p>
+                  <p className="text-2xl font-black text-white">{metrics.total_bidders}</p>
                 </div>
-                <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-xl">
-                  <p className="text-[10px] font-bold text-emerald-400 uppercase">Fully Compliant</p>
-                  <p className="text-xl font-black text-emerald-400">{metrics.compliant_count}</p>
+                <div className="glass-panel p-3.5 rounded-2xl">
+                  <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Fully Compliant</p>
+                  <p className="text-2xl font-black text-emerald-400">{metrics.compliant_count}</p>
                 </div>
-                <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-xl">
-                  <p className="text-[10px] font-bold text-amber-400 uppercase">Discrepancies</p>
-                  <p className="text-xl font-black text-amber-400">{metrics.flagged_count}</p>
+                <div className="glass-panel p-3.5 rounded-2xl">
+                  <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Discrepancy Flags</p>
+                  <p className="text-2xl font-black text-amber-400">{metrics.flagged_count}</p>
                 </div>
-                <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-xl">
-                  <p className="text-[10px] font-bold text-rose-400 uppercase">Debarred / Blocked</p>
-                  <p className="text-xl font-black text-rose-400">{metrics.debarred_count}</p>
+                <div className="glass-panel p-3.5 rounded-2xl">
+                  <p className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Debarred / Blocked</p>
+                  <p className="text-2xl font-black text-rose-400">{metrics.debarred_count}</p>
                 </div>
-                <div className="col-span-2 md:col-span-1 bg-gradient-to-r from-blue-950/40 to-indigo-950/40 border border-blue-800/40 p-3.5 rounded-xl">
-                  <p className="text-[10px] font-bold text-blue-300 uppercase">Verification Time</p>
+                <div className="col-span-2 md:col-span-1 bg-gradient-to-br from-blue-950/60 to-indigo-950/60 border border-blue-700/40 p-3.5 rounded-2xl">
+                  <p className="text-[10px] font-bold text-blue-300 uppercase tracking-wider">Verification Speed</p>
                   <p className="text-base font-black text-white font-mono">{metrics.automated_verification_time_sec}s <span className="text-xs text-slate-400 font-normal">vs 4.5d</span></p>
                 </div>
               </div>
             )}
 
+            {/* Feature 4: Officer Review Checkbox & Constraint Filtering Drawer */}
+            {isFilterOpen && (
+              <div className="glass-panel p-4 rounded-2xl space-y-3 border-blue-500/40 shadow-xl animate-fadeIn">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                  <span className="text-xs font-black text-blue-400 uppercase tracking-wider">
+                    🎛️ Officer Evaluation Constraint Filter Panel
+                  </span>
+                  <button
+                    onClick={() => {
+                      setFilterMinTrust(300);
+                      setFilterMsmeOnly(false);
+                      setFilterMinTurnover(0);
+                      setFilterExcludeConflicts(false);
+                    }}
+                    className="text-[11px] text-slate-400 hover:text-white"
+                  >
+                    Reset Filters
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
+                  {/* Trust Score Slider */}
+                  <div className="space-y-1">
+                    <label className="text-slate-300 font-bold block">
+                      Min CIBIL Trust Score: <span className="text-blue-400 font-mono">{filterMinTrust}</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="300"
+                      max="900"
+                      step="50"
+                      value={filterMinTrust}
+                      onChange={e => setFilterMinTrust(Number(e.target.value))}
+                      className="w-full accent-blue-500 cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Turnover Threshold */}
+                  <div className="space-y-1">
+                    <label className="text-slate-300 font-bold block">Minimum Turnover:</label>
+                    <select
+                      value={filterMinTurnover}
+                      onChange={e => setFilterMinTurnover(Number(e.target.value))}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-xs text-white"
+                    >
+                      <option value="0">All Turnovers</option>
+                      <option value="20000000">₹2.0+ Cr (Tender Min)</option>
+                      <option value="50000000">₹5.0+ Cr</option>
+                    </select>
+                  </div>
+
+                  {/* MSME Quota Checkbox */}
+                  <div className="flex items-center space-x-2 pt-4">
+                    <input
+                      type="checkbox"
+                      id="msmeCheck"
+                      checked={filterMsmeOnly}
+                      onChange={e => setFilterMsmeOnly(e.target.checked)}
+                      className="w-4 h-4 rounded accent-blue-600 cursor-pointer"
+                    />
+                    <label htmlFor="msmeCheck" className="text-slate-300 font-medium cursor-pointer">
+                      MSME Reservation Only
+                    </label>
+                  </div>
+
+                  {/* Exclude Cartel / Conflict Checkbox */}
+                  <div className="flex items-center space-x-2 pt-4">
+                    <input
+                      type="checkbox"
+                      id="conflictCheck"
+                      checked={filterExcludeConflicts}
+                      onChange={e => setFilterExcludeConflicts(e.target.checked)}
+                      className="w-4 h-4 rounded accent-rose-600 cursor-pointer"
+                    />
+                    <label htmlFor="conflictCheck" className="text-rose-300 font-medium cursor-pointer">
+                      Exclude Entity Risk Links
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Bidders Queue Table */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow">
-              <div className="p-3 bg-slate-950 border-b border-slate-800 flex justify-between items-center text-xs font-bold text-slate-300">
-                <span>ACTIVE BIDDERS QUEUE</span>
-                <span className="text-[10px] text-slate-500 font-mono">Select a bidder to inspect full dossier</span>
+            <div className="glass-panel rounded-2xl overflow-hidden shadow">
+              <div className="p-3 bg-slate-950/80 border-b border-slate-800 flex justify-between items-center text-xs font-bold text-slate-300">
+                <span>ACTIVE BIDDERS DOSSIER QUEUE ({filteredBidders.length} Displayed)</span>
+                <span className="text-[10px] text-slate-500 font-mono">Select a vendor below to inspect complete records</span>
               </div>
               <div className="divide-y divide-slate-800">
-                {bidders.map(b => {
+                {filteredBidders.map(b => {
                   const isSel = b.bidder_id === selectedId;
                   const score = b.compliance_score?.score ?? 0;
                   const risk = b.compliance_score?.risk_level ?? 'LOW';
+                  const trust = b.longitudinal_trust_score?.score ?? 0;
+                  const band = b.longitudinal_trust_score?.rating_band?.split(' ')[0] ?? '';
+
                   return (
                     <div
                       key={b.bidder_id}
                       onClick={() => setSelectedId(b.bidder_id)}
                       className={`p-3.5 flex items-center justify-between cursor-pointer transition ${
-                        isSel ? 'bg-blue-950/40 border-l-4 border-blue-500' : 'hover:bg-slate-850 bg-slate-900/60'
+                        isSel ? 'bg-blue-950/40 border-l-4 border-blue-500' : 'hover:bg-slate-900/60 bg-slate-950/40'
                       }`}
                     >
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-bold text-white text-sm">{b.company_name}</span>
-                          <span className="text-[10px] px-1.5 py-0.5 bg-slate-800 text-slate-400 font-mono rounded">{b.bidder_id}</span>
+                      <div className="flex items-start space-x-3">
+                        <div className="p-2.5 bg-slate-800/80 text-slate-300 rounded-xl mt-0.5">
+                          🏢
                         </div>
-                        <div className="text-xs text-slate-400 font-mono mt-1 space-x-3">
-                          <span>GST: <strong className="text-slate-300">{b.identifiers.gstin}</strong></span>
-                          <span>PAN: <strong className="text-slate-300">{b.identifiers.pan}</strong></span>
-                          <span>State: <strong className="text-slate-300">{b.registered_state}</strong></span>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <span className="font-bold text-white text-sm">{b.company_name}</span>
+                            <span className="text-[10px] px-2 py-0.5 bg-slate-800 text-slate-400 font-mono rounded">{b.bidder_id}</span>
+                            {b.conflict_links_count > 0 && (
+                              <span className="text-[9px] px-1.5 py-0.5 bg-rose-500/20 text-rose-300 rounded font-bold uppercase">
+                                ⚠️ {b.conflict_links_count} Entity Links
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-slate-400 font-mono mt-1 space-x-3">
+                            <span>GST: <strong className="text-slate-300">{b.identifiers.gstin}</strong></span>
+                            <span>PAN: <strong className="text-slate-300">{b.identifiers.pan}</strong></span>
+                            <span>Turnover: <strong className="text-emerald-400">₹{(b.financials.annual_turnover_inr/10000000).toFixed(2)} Cr</strong></span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-5">
+                        {/* Longitudinal CIBIL Trust Score Badge */}
                         <div className="text-right">
+                          <span className="text-[10px] text-slate-400 block uppercase">Trust Score</span>
+                          <span className="text-sm font-black font-mono text-blue-400">{trust} <span className="text-[10px] text-slate-400 font-normal">({band})</span></span>
+                        </div>
+
+                        {/* Statutory Compliance Score */}
+                        <div className="text-right">
+                          <span className="text-[10px] text-slate-400 block uppercase">Compliance</span>
                           <span className="text-sm font-black font-mono text-white">{score} <span className="text-[10px] text-slate-400">/ 100</span></span>
-                          <span className={`ml-2 text-[10px] font-bold px-2 py-0.5 rounded ${
+                          <span className={`ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded ${
                             risk === 'LOW' ? 'bg-emerald-500/20 text-emerald-300' :
                             risk === 'CRITICAL' ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'
                           }`}>{risk}</span>
                         </div>
-                        <span className="text-xs font-bold bg-slate-800 text-slate-300 px-2 py-1 rounded">
+
+                        <span className="text-xs font-bold bg-slate-800 text-slate-300 px-2.5 py-1 rounded-lg">
                           {b.officer_status}
                         </span>
                       </div>
@@ -268,35 +478,41 @@
               </div>
             </div>
 
-            {/* Selected Bidder Dossier */}
+            {/* Selected Vendor Cockpit */}
             {cur && (
               <div className="space-y-6">
-                {/* Header Profile */}
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                
+                {/* Vendor Dossier Header */}
+                <div className="glass-panel p-5 rounded-2xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shadow-xl">
                   <div>
-                    <div className="flex items-center space-x-2">
-                      <h2 className="text-xl font-black text-white">{cur.company_name}</h2>
-                      <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded font-semibold">{cur.legal_structure}</span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-extrabold text-white">{cur.company_name}</h2>
+                      <span className="text-xs px-2.5 py-0.5 bg-blue-500/20 text-blue-300 rounded-full font-semibold">{cur.legal_structure}</span>
+                      <span className="text-xs px-2.5 py-0.5 bg-slate-800 text-slate-300 rounded font-mono border border-slate-700">{cur.bidder_id}</span>
                     </div>
                     <p className="text-xs text-slate-400 font-mono mt-1">
-                      Tender ID: {cur.tender_id} • MSME Udyam: {cur.identifiers.udyam_registration_number || 'N/A'} • Turnover: ₹{(cur.financials.annual_turnover_inr/10000000).toFixed(2)} Cr
+                      Registered Address: {cur.registered_address} • Bank Branch: {cur.bank_branch_code}
                     </p>
                   </div>
-                  <button
-                    onClick={handleReverify}
-                    disabled={verifying}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition shadow disabled:opacity-50"
-                  >
-                    {verifying ? 'Running Pipeline...' : '⚡ Re-Run 10-Step Verification'}
-                  </button>
+
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={handleReverify}
+                      disabled={verifying}
+                      className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition shadow-md disabled:opacity-50 flex items-center space-x-1.5"
+                    >
+                      <span>{verifying ? '⚡ Evaluating Pipeline...' : '⚡ Re-Run Verification Engine'}</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* Score & AI Synthesis Grid */}
+                {/* High-Level Score Cards: Dual Gauge (Compliance + CIBIL Trust Score) + AI Officer Card */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Gauge */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col items-center justify-center text-center">
-                    <span className="text-xs font-bold uppercase text-slate-400 mb-2">Compliance Score</span>
-                    <div className="w-28 h-28 rounded-full border-4 border-blue-500/40 flex flex-col items-center justify-center bg-slate-950">
+                  
+                  {/* Gauge 1: Statutory Compliance Index (0-100) */}
+                  <div className="glass-panel rounded-2xl p-5 flex flex-col items-center justify-center text-center">
+                    <span className="text-xs font-bold uppercase text-slate-400 mb-2">Statutory Compliance Index</span>
+                    <div className="w-28 h-28 rounded-full border-4 border-blue-500/40 flex flex-col items-center justify-center bg-slate-950 shadow-inner">
                       <span className="text-3xl font-black text-white font-mono">{cur.compliance_score?.score}</span>
                       <span className="text-[10px] text-slate-400 uppercase">/ 100</span>
                     </div>
@@ -309,85 +525,175 @@
                     </span>
                   </div>
 
-                  {/* AI Officer Assistant */}
-                  <div className="md:col-span-2 bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl p-5 space-y-3">
-                    <div className="flex items-center justify-between pb-2 border-b border-indigo-900/40">
-                      <span className="text-xs font-black text-indigo-300 uppercase tracking-wider flex items-center">
-                        ✨ AI Procurement Officer Assistant
+                  {/* Feature 2: Longitudinal Trust Score (CIBIL-Style 300-900) */}
+                  <div className="glass-panel rounded-2xl p-5 flex flex-col justify-between space-y-3">
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                      <span className="text-xs font-bold uppercase text-blue-400">📈 Longitudinal Trust Index</span>
+                      <span className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-mono font-bold">
+                        CIBIL-STYLE
                       </span>
-                      <span className="text-xs font-bold px-2 py-0.5 bg-indigo-500/20 text-indigo-200 rounded">
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-3xl font-black text-white font-mono">
+                          {cur.longitudinal_trust_score?.score}
+                        </span>
+                        <span className="text-xs text-slate-400 font-mono"> / 900</span>
+                        <p className="text-[11px] font-bold text-blue-300 mt-0.5">
+                          {cur.longitudinal_trust_score?.rating_band}
+                        </p>
+                      </div>
+
+                      <div className="text-right text-[11px] font-mono space-y-1 text-slate-400">
+                        <p>SLA Rate: <strong className="text-emerald-400">{cur.longitudinal_trust_score?.delivery_sla_rate}%</strong></p>
+                        <p>GeM Rating: <strong className="text-amber-400">★ {cur.longitudinal_trust_score?.gem_rating}</strong></p>
+                        <p>Dispute Free: <strong className="text-slate-200">{cur.longitudinal_trust_score?.dispute_free_months} mo</strong></p>
+                      </div>
+                    </div>
+
+                    {/* Historical 24-Month Trendline Bars */}
+                    <div className="pt-2 border-t border-slate-800/80">
+                      <span className="text-[10px] text-slate-500 uppercase font-bold block mb-1">24-Month Historical Trajectory</span>
+                      <div className="flex items-end space-x-1.5 h-10">
+                        {cur.longitudinal_trust_score?.historical_trend_24m?.map((t, idx) => {
+                          const heightPct = Math.max(20, ((t.score - 300) / 600) * 100);
+                          const isHigh = t.score >= 750;
+                          const isLow = t.score < 500;
+                          return (
+                            <div key={idx} className="flex-1 flex flex-col items-center group relative cursor-pointer">
+                              <div
+                                className={`w-full rounded-t transition-all ${
+                                  isHigh ? 'bg-emerald-500' : isLow ? 'bg-rose-500' : 'bg-amber-500'
+                                }`}
+                                style={{ height: `${heightPct}%` }}
+                              />
+                              <span className="text-[8px] text-slate-500 mt-1 font-mono">{t.month.split(' ')[0]}</span>
+                              <div className="hidden group-hover:block absolute -top-7 bg-slate-900 text-white text-[9px] px-1.5 py-0.5 rounded shadow border border-slate-700 whitespace-nowrap z-20 font-mono">
+                                {t.month}: {t.score}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* AI Officer Assistant Briefing */}
+                  <div className="bg-gradient-to-br from-indigo-950/50 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl p-5 flex flex-col justify-between space-y-2">
+                    <div className="flex items-center justify-between pb-2 border-b border-indigo-900/40">
+                      <span className="text-xs font-black text-indigo-300 uppercase tracking-wider flex items-center space-x-1">
+                        <span>✨ AI Officer Advisor</span>
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-indigo-500/20 text-indigo-200 rounded">
                         {cur.ai_recommendation?.recommended_action}
                       </span>
                     </div>
+
                     <p className="text-xs text-slate-200 leading-relaxed bg-slate-950/70 p-3 rounded-xl border border-slate-800">
                       {cur.ai_recommendation?.executive_summary}
                     </p>
-                    {cur.ai_recommendation?.risk_factors?.length > 0 && (
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Observations:</span>
-                        {cur.ai_recommendation.risk_factors.map((rf, i) => (
-                          <div key={i} className="text-xs p-2 rounded-lg bg-slate-950/80 border border-slate-800 flex justify-between items-center">
-                            <span className="text-slate-300 font-medium">{rf.title}</span>
-                            <span className="text-[9px] px-1.5 py-0.5 bg-black/40 rounded uppercase font-bold text-amber-300">{rf.severity}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+
+                    <button
+                      onClick={() => setIsChatOpen(true)}
+                      className="w-full py-1.5 text-xs font-bold bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 rounded-xl border border-indigo-500/30 transition text-center"
+                    >
+                      💬 Ask AI Assistant About This Bidder →
+                    </button>
                   </div>
+
                 </div>
 
-                {/* Tabs for Deep Dive */}
+                {/* Primary Deep-Dive Navigation Tabs */}
                 <div className="space-y-4">
-                  <div className="flex space-x-2 border-b border-slate-800 pb-2">
+                  <div className="flex flex-wrap gap-2 border-b border-slate-800 pb-2">
                     <button
                       onClick={() => setActiveTab('overview')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-lg ${activeTab === 'overview' ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400'}`}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition ${
+                        activeTab === 'overview' ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'
+                      }`}
                     >
-                      Cross-Verification Diff ({cur.cross_check_mismatches?.length} Mismatches)
+                      🔍 Cross-Verification Diff ({cur.cross_check_mismatches?.length} Flags)
                     </button>
+
+                    <button
+                      onClick={() => setActiveTab('vault')}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition ${
+                        activeTab === 'vault' ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      🗄️ Document Vault ({cur.vault_documents?.length} Credentials)
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTab('graph')}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition ${
+                        activeTab === 'graph' ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      🕸️ Entity Network & Cartel Graph ({entityGraph?.cartels_detected || 0} Risk Links)
+                    </button>
+
                     <button
                       onClick={() => setActiveTab('rules')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-lg ${activeTab === 'rules' ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400'}`}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition ${
+                        activeTab === 'rules' ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'
+                      }`}
                     >
-                      Deterministic Rules Checklist ({cur.rule_results?.length})
+                      ⚙️ Deterministic Rules ({cur.rule_results?.length})
                     </button>
                   </div>
 
+                  {/* Tab 1: Cross-Verification Inspector */}
                   {activeTab === 'overview' && (
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                    <div className="glass-panel rounded-2xl p-5 space-y-4">
                       {cur.cross_check_mismatches?.length > 0 ? (
                         <div className="space-y-2">
+                          <span className="text-xs font-bold text-amber-300 uppercase tracking-wider block">
+                            ⚠️ Cross-Verification Discrepancies Detected:
+                          </span>
                           {cur.cross_check_mismatches.map((m, i) => (
-                            <div key={i} className="p-3 bg-amber-950/30 border border-amber-500/40 rounded-xl text-xs space-y-1">
+                            <div key={i} className="p-3.5 bg-amber-950/30 border border-amber-500/40 rounded-xl text-xs space-y-1.5">
                               <div className="flex justify-between font-bold text-amber-300">
                                 <span>⚠️ {m.field_name}</span>
-                                <span className="uppercase text-[10px]">{m.severity} RISK</span>
+                                <span className="uppercase text-[10px] px-2 py-0.5 rounded bg-amber-500/20">{m.severity} RISK</span>
                               </div>
                               <p className="text-slate-300">{m.discrepancy_explanation}</p>
-                              <div className="flex space-x-4 text-[11px] font-mono mt-1">
-                                <span className="bg-slate-950 px-2 py-1 rounded">Doc: <strong className="text-rose-300">{String(m.source_a_value)}</strong></span>
-                                <span className="bg-slate-950 px-2 py-1 rounded">Portal: <strong className="text-emerald-300">{String(m.source_b_value)}</strong></span>
+                              <div className="flex flex-wrap gap-3 text-[11px] font-mono mt-1">
+                                <span className="bg-slate-950 px-2.5 py-1 rounded border border-slate-800">
+                                  Doc Extraction: <strong className="text-rose-300">{String(m.source_a_value)}</strong>
+                                </span>
+                                <span className="bg-slate-950 px-2.5 py-1 rounded border border-slate-800">
+                                  Portal Master: <strong className="text-emerald-300">{String(m.source_b_value)}</strong>
+                                </span>
                               </div>
+                              <p className="text-[11px] text-indigo-300 pt-1">
+                                💡 <strong>Investigation Note:</strong> {m.suggested_investigation}
+                              </p>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="p-3 bg-emerald-950/20 border border-emerald-500/30 rounded-xl text-xs text-emerald-300">
-                          ✅ Zero discrepancies! All uploaded certificate fields match live government records.
+                        <div className="p-3.5 bg-emerald-950/20 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 flex items-center space-x-2">
+                          <span>✅ Zero discrepancies detected. All uploaded documents reconcile 100% with live government registry databases.</span>
                         </div>
                       )}
 
-                      {/* Side by Side Raw Data */}
+                      {/* Side-by-Side Raw Extraction vs Portal Diffs */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                        <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
-                          <span className="text-[10px] font-bold text-blue-400 uppercase">Uploaded Document Extraction (OCR)</span>
-                          <pre className="text-[11px] font-mono text-slate-300 mt-2 whitespace-pre-wrap overflow-x-auto">
+                        <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+                          <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block mb-2">
+                            Uploaded Document Extraction (OCR)
+                          </span>
+                          <pre className="text-[11px] font-mono text-slate-300 whitespace-pre-wrap overflow-x-auto">
                             {JSON.stringify(cur.documents[0]?.extracted_fields || {}, null, 2)}
                           </pre>
                         </div>
-                        <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
-                          <span className="text-[10px] font-bold text-emerald-400 uppercase">Live Registry Telemetry (API Setu)</span>
-                          <pre className="text-[11px] font-mono text-slate-300 mt-2 whitespace-pre-wrap overflow-x-auto">
+                        <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+                          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-2">
+                            Live Government Registry Record (API Setu)
+                          </span>
+                          <pre className="text-[11px] font-mono text-slate-300 whitespace-pre-wrap overflow-x-auto">
                             {JSON.stringify(cur.portal_verifications['GST_PORTAL']?.key_fields || {}, null, 2)}
                           </pre>
                         </div>
@@ -395,10 +701,143 @@
                     </div>
                   )}
 
+                  {/* Feature 1: Unified Document Vault View */}
+                  {activeTab === 'vault' && (
+                    <div className="glass-panel rounded-2xl p-5 space-y-4">
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                        <div>
+                          <h3 className="text-sm font-bold text-white uppercase">Unified Vendor Document Vault</h3>
+                          <p className="text-xs text-slate-400">Verified credentials reusable across all public procurement tenders</p>
+                        </div>
+                        <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-0.5 rounded-full font-mono">
+                          DigiLocker Synced
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {cur.vault_documents?.map(doc => (
+                          <div key={doc.doc_id} className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2">
+                            <div className="flex justify-between items-start">
+                              <span className="text-xs font-bold text-white">{doc.document_name}</span>
+                              <span className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-mono font-bold">
+                                {doc.verification_badge}
+                              </span>
+                            </div>
+
+                            <div className="text-xs text-slate-400 font-mono space-y-0.5">
+                              <p>Issuer: <strong className="text-slate-200">{doc.issuer}</strong></p>
+                              <p>Issued: <strong className="text-slate-300">{doc.issue_date}</strong> | Expiry: <strong className="text-slate-300">{doc.expiry_date}</strong></p>
+                              <p>Multi-Tender Reuses: <strong className="text-emerald-400">{doc.reuse_count} bids</strong></p>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-[11px]">
+                              <span className="text-emerald-400 font-bold">
+                                {doc.is_valid ? '✅ Valid on Chain' : '❌ Suspended/Expired'}
+                              </span>
+                              <span className="text-slate-500 font-mono">{doc.file_size_kb} KB</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Feature 3: Graph-Based Entity Linker & Cartel Detection */}
+                  {activeTab === 'graph' && (
+                    <div className="glass-panel rounded-2xl p-5 space-y-4">
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                        <div>
+                          <h3 className="text-sm font-bold text-white uppercase">Corporate Entity Linkage & Cartel Map</h3>
+                          <p className="text-xs text-slate-400">Mapping Director DINs, common addresses, and blacklisted promoters</p>
+                        </div>
+                        <span className="text-xs bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2.5 py-0.5 rounded-full font-mono font-bold">
+                          {entityGraph?.cartels_detected || 0} Conflict Edges Found
+                        </span>
+                      </div>
+
+                      {/* Visual SVG Network Graph */}
+                      <div className="bg-slate-950 rounded-2xl p-4 border border-slate-800 overflow-x-auto">
+                        <svg className="w-full h-80 min-w-[650px]" viewBox="0 0 700 320">
+                          {/* Edges */}
+                          {entityGraph?.edges?.map((edge, idx) => {
+                            // Coordinate calculations for demo visualization
+                            let x1 = 120, y1 = 70, x2 = 350, y2 = 70;
+                            if (edge.source === 'BIDDER_APEX') { x1 = 100; y1 = 70; }
+                            if (edge.source === 'BIDDER_BHARAT') { x1 = 100; y1 = 160; }
+                            if (edge.source === 'BIDDER_VANGUARD') { x1 = 100; y1 = 250; }
+                            
+                            if (edge.target === 'DIR_RAJIV') { x2 = 300; y2 = 50; }
+                            if (edge.target === 'ADDR_MUMBAI') { x2 = 300; y2 = 90; }
+                            if (edge.target === 'DIR_SURESH') { x2 = 300; y2 = 140; }
+                            if (edge.target === 'ADDR_AHMEDABAD') { x2 = 300; y2 = 180; }
+                            if (edge.target === 'DIR_VIKRAM') { x2 = 300; y2 = 230; }
+                            if (edge.target === 'ADDR_OKHLA') { x2 = 480; y2 = 270; }
+                            if (edge.target === 'DEBARRED_CORP') { x2 = 580; y2 = 210; }
+                            if (edge.source === 'DIR_VIKRAM' && edge.target === 'DEBARRED_CORP') { x1 = 300; y1 = 230; x2 = 580; y2 = 210; }
+                            if (edge.source === 'DEBARRED_CORP' && edge.target === 'ADDR_OKHLA') { x1 = 580; y1 = 210; x2 = 480; y2 = 270; }
+
+                            const isConf = edge.is_conflict;
+                            return (
+                              <g key={idx}>
+                                <line
+                                  x1={x1} y1={y1} x2={x2} y2={y2}
+                                  stroke={isConf ? '#F43F5E' : '#334155'}
+                                  strokeWidth={isConf ? '3' : '1.5'}
+                                  strokeDasharray={isConf ? '4' : '0'}
+                                />
+                              </g>
+                            );
+                          })}
+
+                          {/* Nodes */}
+                          {entityGraph?.nodes?.map((node, idx) => {
+                            let cx = 100, cy = 100, fill = '#1E293B', stroke = '#475569';
+                            if (node.id === 'BIDDER_APEX') { cx = 100; cy = 70; fill = '#064E3B'; stroke = '#10B981'; }
+                            if (node.id === 'BIDDER_BHARAT') { cx = 100; cy = 160; fill = '#78350F'; stroke = '#F59E0B'; }
+                            if (node.id === 'BIDDER_VANGUARD') { cx = 100; cy = 250; fill = '#881337'; stroke = '#F43F5E'; }
+
+                            if (node.id === 'DIR_RAJIV') { cx = 300; cy = 50; }
+                            if (node.id === 'ADDR_MUMBAI') { cx = 300; cy = 90; }
+                            if (node.id === 'DIR_SURESH') { cx = 300; cy = 140; }
+                            if (node.id === 'ADDR_AHMEDABAD') { cx = 300; cy = 180; }
+                            
+                            if (node.id === 'DIR_VIKRAM') { cx = 300; cy = 230; fill = '#881337'; stroke = '#F43F5E'; }
+                            if (node.id === 'ADDR_OKHLA') { cx = 480; cy = 270; fill = '#881337'; stroke = '#F43F5E'; }
+                            if (node.id === 'DEBARRED_CORP') { cx = 580; cy = 210; fill = '#991B1B'; stroke = '#EF4444'; }
+
+                            return (
+                              <g key={node.id} className="cursor-pointer">
+                                <circle cx={cx} cy={cy} r={node.type === 'BIDDER' ? '20' : '14'} fill={fill} stroke={stroke} strokeWidth="2.5" />
+                                <text x={cx + 24} y={cy + 4} fill="#E2E8F0" fontSize="11" fontFamily="Inter" fontWeight="600">
+                                  {node.label}
+                                </text>
+                              </g>
+                            );
+                          })}
+                        </svg>
+                      </div>
+
+                      <div className="p-3 bg-rose-950/30 border border-rose-500/40 rounded-xl text-xs space-y-1">
+                        <span className="font-bold text-rose-300 uppercase text-[10px] tracking-wider block">
+                          🚨 Graph Risk Synthesis:
+                        </span>
+                        <p className="text-slate-200">
+                          {entityGraph?.risk_summary}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tab 4: Deterministic Rules Engine */}
                   {activeTab === 'rules' && (
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2.5">
+                    <div className="glass-panel rounded-2xl p-5 space-y-2.5">
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                        <span className="text-xs font-bold text-white uppercase">Deterministic YAML Rule Evaluator</span>
+                        <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">100% Explainable</span>
+                      </div>
+
                       {cur.rule_results?.map(r => (
-                        <div key={r.rule_id} className={`p-3 rounded-xl border text-xs flex justify-between items-start ${
+                        <div key={r.rule_id} className={`p-3.5 rounded-xl border text-xs flex justify-between items-start ${
                           r.passed ? 'bg-slate-950 border-slate-800' : 'bg-rose-950/20 border-rose-500/40'
                         }`}>
                           <div>
@@ -406,7 +845,7 @@
                               <span className="font-bold text-white">{r.passed ? '✅' : '❌'} {r.rule_name}</span>
                               {r.is_hard_block && <span className="text-[9px] bg-rose-500/20 text-rose-300 px-1.5 py-0.2 rounded uppercase font-bold">Hard Gate</span>}
                             </div>
-                            <p className="text-[11px] font-mono text-slate-400 mt-1">Expected: {r.expected_condition} | Actual: {String(r.actual_value)}</p>
+                            <p className="text-[11px] font-mono text-slate-400 mt-1">Condition: {r.expected_condition} | Evaluated: {String(r.actual_value)}</p>
                             {!r.passed && <p className="text-rose-300 mt-1">⚠️ {r.failure_reason}</p>}
                           </div>
                           <span className={`px-2 py-0.5 text-[10px] font-bold rounded uppercase ${r.passed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}>
@@ -418,14 +857,14 @@
                   )}
                 </div>
 
-                {/* Step 9: Officer Decision Panel */}
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
+                {/* Step 9: Human-in-the-Loop Officer Determination Panel */}
+                <div className="glass-panel p-5 rounded-2xl space-y-4 shadow-xl">
                   <div className="flex justify-between items-center border-b border-slate-800 pb-2">
                     <div>
                       <h3 className="text-sm font-bold text-white uppercase">Procurement Officer Determination</h3>
                       <p className="text-xs text-slate-400">Step 9: Human-in-the-Loop decision workflow</p>
                     </div>
-                    <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-mono">
+                    <span className="text-xs bg-blue-500/20 text-blue-300 px-2.5 py-0.5 rounded-full font-mono">
                       Current: {cur.officer_status}
                     </span>
                   </div>
@@ -453,7 +892,7 @@
                         placeholder="Mandatory CAG Audit Justification for override..."
                         value={overrideJustification}
                         onChange={e => setOverrideJustification(e.target.value)}
-                        className="w-full bg-slate-950 border border-purple-600/50 rounded-xl p-2.5 text-xs text-white"
+                        className="w-full bg-slate-950 border border-purple-600/50 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-purple-400"
                       />
                     )}
 
@@ -463,7 +902,7 @@
                       placeholder="Enter officer evaluation remarks..."
                       value={officerNotes}
                       onChange={e => setOfficerNotes(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white resize-none"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white resize-none focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
 
                     <div className="flex justify-between items-center pt-2">
@@ -483,7 +922,82 @@
             )}
           </main>
 
-          {/* Audit Log Modal */}
+          {/* Feature 5: Natural Language Officer Chat Assistant Slide-Over Drawer */}
+          {isChatOpen && (
+            <div className="fixed inset-0 z-50 bg-black/80 flex justify-end">
+              <div className="w-full max-w-xl bg-slate-900 h-full flex flex-col border-l border-slate-800 shadow-2xl">
+                
+                {/* Chat Header */}
+                <div className="p-4 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xl">💬</span>
+                    <div>
+                      <h3 className="text-sm font-bold text-white uppercase">AI Procurement Officer Assistant</h3>
+                      <p className="text-xs text-slate-400">Cross-bidder comparative analysis & tender queries</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setIsChatOpen(false)} className="text-slate-400 hover:text-white font-bold p-1">✕</button>
+                </div>
+
+                {/* Chat Message Stream */}
+                <div className="flex-1 p-4 overflow-y-auto space-y-4">
+                  {chatMessages.map((msg, idx) => (
+                    <div key={idx} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
+                      <div className={`p-3.5 rounded-2xl max-w-[90%] text-xs leading-relaxed ${
+                        msg.sender === 'user'
+                          ? 'bg-blue-600 text-white rounded-br-none'
+                          : 'bg-slate-950 text-slate-200 border border-slate-800 rounded-bl-none shadow-lg'
+                      }`}>
+                        <div className="whitespace-pre-wrap">{msg.text}</div>
+
+                        {msg.suggested && (
+                          <div className="mt-3 pt-2 border-t border-slate-800 space-y-1">
+                            <span className="text-[10px] text-slate-400 uppercase font-bold block">Suggested Prompts:</span>
+                            {msg.suggested.map((s, i) => (
+                              <button
+                                key={i}
+                                onClick={() => { setChatInput(s); }}
+                                className="block text-left text-[11px] text-blue-400 hover:text-blue-300 font-mono"
+                              >
+                                → {s}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {chatLoading && (
+                    <div className="text-xs text-slate-400 flex items-center space-x-2 p-2 bg-slate-950 rounded-xl w-fit">
+                      <span className="animate-spin">⚡</span>
+                      <span>AI Assistant is analyzing tender dossier...</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Chat Input Bar */}
+                <form onSubmit={handleSendChat} className="p-3 bg-slate-950 border-t border-slate-800 flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Ask about bidders, cartels, trust scores, or GFR rules..."
+                    value={chatInput}
+                    onChange={e => setChatInput(e.target.value)}
+                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={chatLoading || !chatInput.trim()}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl disabled:opacity-50"
+                  >
+                    Send
+                  </button>
+                </form>
+
+              </div>
+            </div>
+          )}
+
+          {/* CAG Audit Trail Modal */}
           {isAuditOpen && (
             <div className="fixed inset-0 z-50 bg-black/80 flex justify-end">
               <div className="w-full max-w-xl bg-slate-900 h-full p-6 overflow-y-auto space-y-4 border-l border-slate-800">

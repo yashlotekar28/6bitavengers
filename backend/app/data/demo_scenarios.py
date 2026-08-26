@@ -3,7 +3,8 @@ from app.models.schemas import (
     Bidder,
     BidderIdentifiers,
     BidderFinancials,
-    DocumentType
+    DocumentType,
+    DirectorInfo
 )
 
 DEMO_BIDDERS_SEED: List[Dict[str, Any]] = [
@@ -13,6 +14,13 @@ DEMO_BIDDERS_SEED: List[Dict[str, Any]] = [
         "company_name": "Apex InfraTech Private Limited",
         "legal_structure": "Private Limited",
         "registered_state": "Maharashtra",
+        "registered_address": "Plot 45, Andheri East, Mumbai, Maharashtra, 400069",
+        "bank_branch_code": "SBIN0004921",
+        "conflict_links_count": 0,
+        "directors": [
+            {"din": "08412910", "name": "Rajiv Mehta", "designation": "Managing Director", "is_flagged_debarred": False},
+            {"din": "08412911", "name": "Pooja Mehta", "designation": "Director", "is_flagged_debarred": False}
+        ],
         "identifiers": {
             "gstin": "27AABCA1234F1Z5",
             "pan": "AABCA1234F",
@@ -27,11 +35,12 @@ DEMO_BIDDERS_SEED: List[Dict[str, Any]] = [
             "itr_filed_years": ["2022-23", "2023-24", "2024-25"]
         },
         "scenario_type": "COMPLIANT_MODEL_BIDDER",
-        "scenario_description": "Model MSME vendor: Fully compliant across GST, PAN, Udyam, EPFO, and CPPP registries. All uploaded documents match official data.",
+        "scenario_description": "Model MSME vendor: Fully compliant across GST, PAN, Udyam, EPFO, and CPPP registries. Trust Score 868 (AAA Prime). All documents match official data.",
         "documents_to_seed": [
             {"type": DocumentType.GST_CERTIFICATE, "name": "Apex_GST_Registration_Certificate.pdf"},
             {"type": DocumentType.UDYAM_CERTIFICATE, "name": "Apex_Udyam_MSME_Certificate.pdf"},
-            {"type": DocumentType.BALANCE_SHEET, "name": "Apex_Audited_Financials_FY25.pdf"}
+            {"type": DocumentType.BALANCE_SHEET, "name": "Apex_Audited_Financials_FY25.pdf"},
+            {"type": DocumentType.ISO_27001_CERTIFICATE, "name": "Apex_ISO_27001_Certificate.pdf"}
         ]
     },
     {
@@ -40,6 +49,13 @@ DEMO_BIDDERS_SEED: List[Dict[str, Any]] = [
         "company_name": "Bharat Heavy Logistics Solutions",
         "legal_structure": "LLP",
         "registered_state": "Gujarat",
+        "registered_address": "B-402, SG Highway, Ahmedabad, Gujarat, 380054",
+        "bank_branch_code": "HDFC0001842",
+        "conflict_links_count": 0,
+        "directors": [
+            {"din": "07198234", "name": "Suresh Patel", "designation": "Designated Partner", "is_flagged_debarred": False},
+            {"din": "07198235", "name": "Kiran Patel", "designation": "Partner", "is_flagged_debarred": False}
+        ],
         "identifiers": {
             "gstin": "24AAACB9876Q1Z3",
             "pan": "AAACB9876Q",
@@ -54,7 +70,7 @@ DEMO_BIDDERS_SEED: List[Dict[str, Any]] = [
             "itr_filed_years": ["2023-24", "2024-25"]
         },
         "scenario_type": "DOCUMENT_MISMATCH_SUSPICIOUS",
-        "scenario_description": "Data Discrepancy Case: Audited balance sheet claims ₹4.5 Cr turnover, but GSTN tax filings reflect only ₹1.2 Cr. Legal name variations detected.",
+        "scenario_description": "Data Discrepancy Case: Audited balance sheet claims ₹4.5 Cr turnover, but GSTN tax filings reflect only ₹1.2 Cr. Trust Score 720 (BBB).",
         "documents_to_seed": [
             {"type": DocumentType.GST_CERTIFICATE, "name": "Bharat_Logistics_GST_Form.pdf"},
             {"type": DocumentType.UDYAM_CERTIFICATE, "name": "Bharat_Udyam_Registration.pdf"},
@@ -67,6 +83,13 @@ DEMO_BIDDERS_SEED: List[Dict[str, Any]] = [
         "company_name": "Vanguard Defense & Engineering Works",
         "legal_structure": "Private Limited",
         "registered_state": "Delhi",
+        "registered_address": "Plot 12, Phase-II, Okhla Industrial Area, New Delhi, 110020",
+        "bank_branch_code": "SBIN0004921",
+        "conflict_links_count": 3,
+        "directors": [
+            {"din": "01928374", "name": "Vikram Malhotra", "designation": "Managing Director", "is_flagged_debarred": True},
+            {"din": "03849102", "name": "Anil Sharma", "designation": "Director", "is_flagged_debarred": False}
+        ],
         "identifiers": {
             "gstin": "07AAACV7788P1Z8",
             "pan": "AAACV7788P",
@@ -81,7 +104,7 @@ DEMO_BIDDERS_SEED: List[Dict[str, Any]] = [
             "itr_filed_years": ["2022-23", "2023-24"]
         },
         "scenario_type": "HARD_FAIL_DEBARRED_VENDOR",
-        "scenario_description": "Hard-Fail / Blacklisted Vendor: Active debarment order under GFR 151 on CPPP for fake Bank Guarantee. Section 206AB tax proceedings flagged.",
+        "scenario_description": "Hard-Fail / Blacklisted Vendor: Active debarment order under GFR 151 on CPPP. Trust Score 385 (D Subprime). High-risk cartel linkage to debarred firm.",
         "documents_to_seed": [
             {"type": DocumentType.GST_CERTIFICATE, "name": "Vanguard_GST_Cert.pdf"},
             {"type": DocumentType.BALANCE_SHEET, "name": "Vanguard_Financial_Summary.pdf"}
