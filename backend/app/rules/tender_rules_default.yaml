@@ -1,0 +1,68 @@
+tender_id: "GEM/2026/B/89420"
+tender_title: "Procurement of Enterprise Cloud Infra & Digital Services"
+evaluating_department: "Ministry of Electronics & Information Technology (MeitY)"
+min_annual_turnover_inr: 20000000.0 # 2.0 Crores INR
+msme_relaxation_eligible: true
+
+rules:
+  - id: "RULE_NO_DEBARMENT"
+    name: "CPPP & GeM Debarment Clear Record"
+    category: "DEBARMENT"
+    is_hard_block: true
+    description: "Bidder must not be blacklisted or debarred under GFR 151 by any Central/State Ministry or GeM Incident Management."
+    source_field: "portal.debarment.is_debarred"
+    expected_value: false
+    failure_message: "Bidder is currently debarred on CPPP/GeM registry under active Ministry order."
+
+  - id: "RULE_ACTIVE_GST"
+    name: "Active GSTIN Registration"
+    category: "STATUTORY"
+    is_hard_block: true
+    description: "Bidder must possess a valid, active GSTIN registration in the operational jurisdiction."
+    source_field: "portal.gst.status"
+    expected_value: "ACTIVE"
+    failure_message: "GSTIN is suspended, cancelled, or inactive on the GSTN portal."
+
+  - id: "RULE_GSTR3B_FILING"
+    name: "Statutory GSTR-3B Tax Filings"
+    category: "STATUTORY"
+    is_hard_block: false
+    description: "All mandatory GSTR-3B returns for the preceding 3 tax periods must be filed."
+    source_field: "portal.gst.last_3_gstr3b_filed"
+    expected_value: true
+    failure_message: "Unfiled or delayed GSTR-3B tax returns detected in the last quarter."
+
+  - id: "RULE_VALID_PAN"
+    name: "Valid & Operative PAN"
+    category: "STATUTORY"
+    is_hard_block: true
+    description: "Permanent Account Number must be active and compliant with Section 206AB of IT Act."
+    source_field: "portal.pan.status"
+    expected_value: "VALID"
+    failure_message: "PAN is not valid, inoperative, or flagged for pending tax proceedings."
+
+  - id: "RULE_MIN_TURNOVER"
+    name: "Minimum Annual Turnover Threshold"
+    category: "FINANCIAL"
+    is_hard_block: true
+    description: "Average annual turnover over the last 3 financial years must exceed the tender minimum (₹2.0 Cr)."
+    source_field: "financials.annual_turnover_inr"
+    threshold_min: 20000000.0
+    failure_message: "Declared/verified turnover is below the mandatory ₹2.0 Cr tender requirement."
+
+  - id: "RULE_MSME_BENEFITS"
+    name: "MSME Udyam Registration & Eligibility"
+    category: "POLICY"
+    is_hard_block: false
+    description: "Verification of valid Micro/Small Enterprise status under Public Procurement Policy."
+    source_field: "portal.udyam.status"
+    expected_value: "VERIFIED_MSME"
+    failure_message: "Bidder does not hold a verified active Udyam certificate (Standard EMD terms apply)."
+
+  - id: "RULE_DOC_PORTAL_INTEGRITY"
+    name: "Zero Critical Document-to-Portal Discrepancies"
+    category: "INTEGRITY"
+    is_hard_block: false
+    description: "Uploaded statutory certificates must reconcile with live government registry databases."
+    max_critical_mismatches: 0
+    failure_message: "Discrepancy detected between uploaded document and live government registry record."
