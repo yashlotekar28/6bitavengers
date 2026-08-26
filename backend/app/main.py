@@ -294,7 +294,7 @@ async def get_vendor_trust_score(bidder_id: str):
     )
 
 # Feature 3 Endpoint: Graph-Based Entity Linking
-@app.get("/api/graph/tender/{tender_id}", response_model=EntityGraph)
+@app.get("/api/graph/tender/{tender_id:path}", response_model=EntityGraph)
 async def get_tender_entity_graph(tender_id: str):
     return EntityGraphLinkingService.build_tender_graph(tender_id)
 
