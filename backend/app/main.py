@@ -2,7 +2,7 @@ import asyncio
 import os
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, BackgroundTasks
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, BackgroundTasks, Depends
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -39,8 +39,17 @@ from app.services.trust_scoring_service import LongitudinalTrustScoringService
 from app.services.entity_graph_service import EntityGraphLinkingService
 from app.services.chat_service import OfficerChatAssistantService
 from app.data.demo_scenarios import DEMO_BIDDERS_SEED
-from app.core.auth import authenticate_user, create_access_token, require_officer, require_auditor, TokenData
-from app.tasks.verification_tasks import run_verification_pipeline
+try:
+    from app.core.auth import authenticate_user, create_access_token, require_officer, require_auditor, TokenData
+    AUTH_AVAILABLE = True
+except Exception:
+    AUTH_AVAILABLE = False
+
+try:
+    from app.tasks.verification_tasks import run_verification_pipeline
+    CELERY_AVAILABLE = True
+except Exception:
+    CELERY_AVAILABLE = False
 
 app = FastAPI(
     title="ProcureShield AI - GeM Bidder Verification Engine",
