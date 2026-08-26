@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
-import { Building, ShieldCheck, RefreshCw, Layers, CheckSquare, Sparkles, FileText, IndianRupee, MapPin } from 'lucide-react';
-import { Bidder } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Building, RefreshCw, Layers, CheckSquare, FileText, Vault, Award, Network, MessageSquare } from 'lucide-react';
+import { Bidder, VendorVault, LongitudinalTrustScore, EntityGraph } from '../types';
 import { ScoreGauge } from './ScoreGauge';
 import { RulesChecklistView } from './RulesChecklistView';
 import { SideBySideDiffViewer } from './SideBySideDiffViewer';
 import { AIRecommendationCard } from './AIRecommendationCard';
 import { OfficerActionPanel } from './OfficerActionPanel';
+import { VaultPanel } from './VaultPanel';
+import { TrustScorePanel } from './TrustScorePanel';
+import { EntityGraphPanel } from './EntityGraphPanel';
+import { OfficerChatPanel } from './OfficerChatPanel';
+import { fetchVault, fetchTrustScore, fetchEntityGraph } from '../services/api';
 
 interface BidderDetailProps {
   bidder: Bidder;
@@ -20,7 +25,35 @@ export const BidderDetailView: React.FC<BidderDetailProps> = ({
   onDecisionSubmit,
   isVerifying
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'rules' | 'diff' | 'ai'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'rules' | 'diff' | 'ai' | 'vault' | 'trust' | 'graph' | 'chat'>('overview');
+
+  const [vault, setVault] = useState<VendorVault | null>(null);
+  const [isVaultLoading, setIsVaultLoading] = useState(false);
+  const [trustScore, setTrustScore] = useState<LongitudinalTrustScore | null>(null);
+  const [isTrustLoading, setIsTrustLoading] = useState(false);
+  const [entityGraph, setEntityGraph] = useState<EntityGraph | null>(null);
+  const [isGraphLoading, setIsGraphLoading] = useState(false);
+
+  useEffect(() => {
+    setVault(null);
+    setTrustScore(null);
+    setEntityGraph(null);
+  }, [bidder.bidder_id]);
+
+  useEffect(() => {
+    if (activeTab === 'vault' && !vault && !isVaultLoading) {
+      setIsVaultLoading(true);
+      fetchVault(bidder.bidder_id).then(setVault).catch(console.error).finally(() => setIsVaultLoading(false));
+    }
+    if (activeTab === 'trust' && !trustScore && !isTrustLoading) {
+      setIsTrustLoading(true);
+      fetchTrustScore(bidder.bidder_id).then(setTrustScore).catch(console.error).finally(() => setIsTrustLoading(false));
+    }
+    if (activeTab === 'graph' && !entityGraph && !isGraphLoading) {
+      setIsGraphLoading(true);
+      fetchEntityGraph(bidder.tender_id).then(setEntityGraph).catch(console.error).finally(() => setIsGraphLoading(false));
+    }
+  }, [activeTab, bidder.bidder_id, bidder.tender_id]);
 
   const formatCurrency = (val: number) => {
     if (val >= 10000000) return `₹${(val / 10000000).toFixed(2)} Cr`;
@@ -136,6 +169,54 @@ export const BidderDetailView: React.FC<BidderDetailProps> = ({
             <CheckSquare className="w-4 h-4" />
             <span>Deterministic Rules ({bidder.rule_results.length})</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('vault')}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition flex items-center space-x-2 ${
+              activeTab === 'vault'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Vault className="w-4 h-4" />
+            <span>Document Vault</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('trust')}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition flex items-center space-x-2 ${
+              activeTab === 'trust'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Award className="w-4 h-4" />
+            <span>Trust Score</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('graph')}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition flex items-center space-x-2 ${
+              activeTab === 'graph'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Network className="w-4 h-4" />
+            <span>Entity Graph</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition flex items-center space-x-2 ${
+              activeTab === 'chat'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>Officer Assistant</span>
+          </button>
         </div>
 
         {/* Tab Panes */}
@@ -160,6 +241,22 @@ export const BidderDetailView: React.FC<BidderDetailProps> = ({
 
         {activeTab === 'rules' && (
           <RulesChecklistView rules={bidder.rule_results} />
+        )}
+
+        {activeTab === 'vault' && (
+          <VaultPanel vault={vault} isLoading={isVaultLoading} />
+        )}
+
+        {activeTab === 'trust' && (
+          <TrustScorePanel trustScore={trustScore} isLoading={isTrustLoading} />
+        )}
+
+        {activeTab === 'graph' && (
+          <EntityGraphPanel graph={entityGraph} isLoading={isGraphLoading} />
+        )}
+
+        {activeTab === 'chat' && (
+          <OfficerChatPanel activeBidderId={bidder.bidder_id} tenderId={bidder.tender_id} />
         )}
       </div>
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Activity, Clock, ShieldCheck, FileText, Cpu, CheckCircle2, User } from 'lucide-react';
+import { X, Activity, Clock, ShieldCheck, Cpu, CheckCircle2, User } from 'lucide-react';
 import { AuditLogEntry } from '../types';
 
 interface AuditDrawerProps {

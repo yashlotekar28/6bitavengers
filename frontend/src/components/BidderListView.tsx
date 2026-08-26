@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, AlertTriangle, ShieldAlert, ChevronRight, Building, CheckCircle2, XCircle } from 'lucide-react';
+import { ChevronRight, Building } from 'lucide-react';
 import { Bidder } from '../types';
 
 interface BidderListProps {

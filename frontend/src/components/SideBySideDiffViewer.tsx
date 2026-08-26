@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FileSearch, Layers, AlertTriangle, CheckCircle, FileText, Globe } from 'lucide-react';
-import { UploadedDocument, PortalVerificationResult, CrossCheckMismatch, RiskLevel } from '../types';
+import { UploadedDocument, PortalVerificationResult, CrossCheckMismatch } from '../types';
 
 interface SideBySideProps {
   documents: UploadedDocument[];
@@ -18,7 +18,6 @@ export const SideBySideDiffViewer: React.FC<SideBySideProps> = ({
   const activeDoc = documents[selectedDocIndex] || documents[0];
   const gstPortal = portalVerifications['GST_PORTAL'];
   const udyamPortal = portalVerifications['UDYAM_PORTAL'];
-  const panPortal = portalVerifications['PAN_REGISTRY'];
 
   return (
     <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-lg">

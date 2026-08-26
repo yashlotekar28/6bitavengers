@@ -6,7 +6,7 @@ import { MetricsOverview } from './components/MetricsOverview';
 import { BidderListView } from './components/BidderListView';
 import { BidderDetailView } from './components/BidderDetailView';
 import { AuditTrailDrawer } from './components/AuditTrailDrawer';
-import { ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
+import { ShieldCheck, Loader2 } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [bidders, setBidders] = useState<Bidder[]>([]);

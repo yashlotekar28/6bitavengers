@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, CheckCircle, AlertTriangle, ShieldAlert, Zap, Clock } from 'lucide-react';
+import { Users, CheckCircle, AlertTriangle, ShieldAlert, Zap } from 'lucide-react';
 import { DashboardMetrics } from '../types';
 
 interface MetricsProps {

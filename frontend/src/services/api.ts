@@ -1,4 +1,4 @@
-import { Bidder, DashboardMetrics, AuditLogEntry } from '../types';
+import { Bidder, DashboardMetrics, AuditLogEntry, VendorVault, LongitudinalTrustScore, EntityGraph, OfficerChatRequest, OfficerChatResponse } from '../types';
 
 const API_BASE = '/api';
 
@@ -57,5 +57,33 @@ export const fetchAuditLogs = async (bidderId?: string): Promise<AuditLogEntry[]
 export const fetchMetrics = async (): Promise<DashboardMetrics> => {
   const res = await fetch(`${API_BASE}/metrics`);
   if (!res.ok) throw new Error('Failed to fetch metrics');
+  return res.json();
+};
+
+export const fetchVault = async (bidderId: string): Promise<VendorVault> => {
+  const res = await fetch(`${API_BASE}/vault/${bidderId}`);
+  if (!res.ok) throw new Error('Failed to fetch vault');
+  return res.json();
+};
+
+export const fetchTrustScore = async (bidderId: string): Promise<LongitudinalTrustScore> => {
+  const res = await fetch(`${API_BASE}/trust-score/${bidderId}`);
+  if (!res.ok) throw new Error('Failed to fetch trust score');
+  return res.json();
+};
+
+export const fetchEntityGraph = async (tenderId: string): Promise<EntityGraph> => {
+  const res = await fetch(`${API_BASE}/graph/tender/${tenderId}`);
+  if (!res.ok) throw new Error('Failed to fetch entity graph');
+  return res.json();
+};
+
+export const sendOfficerChatQuery = async (payload: OfficerChatRequest): Promise<OfficerChatResponse> => {
+  const res = await fetch(`${API_BASE}/chat/officer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error('Failed to send chat query');
   return res.json();
 };

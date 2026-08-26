@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, RefreshCw, FileText, Activity, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+import { ShieldCheck, RefreshCw, Activity, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 import { Bidder } from '../types';
 
 interface NavbarProps {

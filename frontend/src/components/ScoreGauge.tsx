@@ -1,6 +1,6 @@
 import React from 'react';
 import { ShieldCheck, ShieldAlert, AlertTriangle } from 'lucide-react';
-import { ComplianceScore, RiskLevel } from '../types';
+import { ComplianceScore } from '../types';
 
 interface ScoreGaugeProps {
   complianceScore?: ComplianceScore;

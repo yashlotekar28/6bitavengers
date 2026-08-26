@@ -11,9 +11,9 @@ interface OfficerActionProps {
 }
 
 export const OfficerActionPanel: React.FC<OfficerActionProps> = ({
-  bidderId,
+  bidderId: _bidderId,
   currentStatus,
-  officerNotes,
+  officerNotes: _officerNotes,
   onDecisionSubmit,
   isSubmitting
 }) => {
