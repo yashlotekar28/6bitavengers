@@ -1,6 +1,34 @@
-fastapi>=0.110.0
-uvicorn>=0.28.0
-pydantic>=2.6.0
-pyyaml>=6.0.1
-requests>=2.31.0
+# --- Core API ---
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
 python-multipart>=0.0.9
+pyyaml>=6.0
+
+# --- PostgreSQL (Person A) ---
+sqlalchemy>=2.0.0
+asyncpg>=0.29.0
+alembic>=1.13.0
+psycopg2-binary>=2.9.9
+
+# --- Redis + Celery (Person A) ---
+redis>=5.0.0
+celery>=5.3.0
+flower>=2.0.0
+
+# --- Auth: JWT (Person A - Day 4) ---
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# --- OCR: Tesseract tooling (Person B) ---
+pytesseract>=0.3.10
+pdf2image>=1.17.0
+Pillow>=10.0.0
+
+# --- AI: Structured output extraction (Person B) ---
+openai>=1.30.0
+anthropic>=0.29.0
+
+# --- Caching ---
+hiredis>=2.3.0

@@ -39,6 +39,8 @@ from app.services.trust_scoring_service import LongitudinalTrustScoringService
 from app.services.entity_graph_service import EntityGraphLinkingService
 from app.services.chat_service import OfficerChatAssistantService
 from app.data.demo_scenarios import DEMO_BIDDERS_SEED
+from app.core.auth import authenticate_user, create_access_token, require_officer, require_auditor, TokenData
+from app.tasks.verification_tasks import run_verification_pipeline
 
 app = FastAPI(
     title="ProcureShield AI - GeM Bidder Verification Engine",
@@ -345,6 +347,76 @@ async def get_dashboard_metrics():
         "manual_verification_baseline_days": 4.5,
         "time_saved_percentage": "99.8%"
     }
+
+# ---------------------------------------------------------------------------
+# AUTH ENDPOINTS (Day 4 — Person A)
+# ---------------------------------------------------------------------------
+
+from fastapi.security import OAuth2PasswordRequestForm
+
+@app.post("/api/auth/login", tags=["Auth"])
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    """
+    Authenticate and receive a JWT Bearer token.
+    Demo credentials:
+      Officer  — username: officer.sharma / password: officer123
+      Admin    — username: admin.procure  / password: admin123
+      Auditor  — username: auditor.cag    / password: auditor123
+    """
+    from fastapi.security import OAuth2PasswordRequestForm
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    token = create_access_token(username=user["username"], role=user["role"])
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "role": user["role"],
+        "full_name": user["full_name"],
+    }
+
+
+# ---------------------------------------------------------------------------
+# ASYNC CELERY VERIFICATION ENDPOINTS (Person A)
+# ---------------------------------------------------------------------------
+
+@app.post("/api/verify/{bidder_id}", tags=["Verification"])
+async def trigger_async_verification(
+    bidder_id: str,
+    tender_id: str = "GEM/2026/B/89420",
+    scenario_type: str = "apex",
+):
+    """
+    Enqueue a full background verification job for the given bidder.
+    Returns immediately with a Celery task_id.
+    The React frontend polls /api/verify/status/{task_id} for progress.
+    """
+    task = run_verification_pipeline.delay(bidder_id, tender_id, scenario_type)
+    return {
+        "task_id": task.id,
+        "bidder_id": bidder_id,
+        "status": "QUEUED",
+        "message": f"Verification pipeline queued. Poll /api/verify/status/{task.id} for progress.",
+    }
+
+
+@app.get("/api/verify/status/{task_id}", tags=["Verification"])
+async def get_verification_status(task_id: str):
+    """
+    Poll Celery task status for the React frontend WebSocket/polling loop.
+    States: PENDING → STARTED → PROGRESS → SUCCESS / FAILURE
+    """
+    from app.tasks.celery_app import celery as celery_app
+    task = celery_app.AsyncResult(task_id)
+    response = {
+        "task_id": task_id,
+        "state": task.state,
+        "info": task.info if isinstance(task.info, dict) else str(task.info),
+    }
+    if task.state == "SUCCESS":
+        response["result"] = task.result
+    return response
+
 
 if __name__ == "__main__":
     import uvicorn

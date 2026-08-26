@@ -7,7 +7,7 @@ import uvicorn
 
 def open_browser():
     time.sleep(1.5)
-    print("\n🚀 Opening ProcureShield AI Dashboard in your browser: http://localhost:8000")
+    print("\n[INFO] Opening ProcureShield AI Dashboard in your browser: http://localhost:8000")
     webbrowser.open("http://localhost:8000")
 
 if __name__ == "__main__":
