@@ -1,6 +1,6 @@
 import React from 'react';
-import { Sparkles, AlertTriangle, HelpCircle, CheckCircle, Info } from 'lucide-react';
-import { AIRecommendation } from '../types';
+import { Sparkles, AlertTriangle, ShieldCheck, HelpCircle, CheckCircle, Info } from 'lucide-react';
+import { AIRecommendation, RiskLevel } from '../types';
 
 interface AIRecommendationProps {
   recommendation?: AIRecommendation;
