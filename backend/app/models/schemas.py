@@ -323,11 +323,16 @@ class Bidder(BaseModel):
     # Entity Linkage Risk Counter
     conflict_links_count: int = 0
     
-    # Final Human Decision
+    # Final Human Decision & Priority Contingency Allocation
     officer_status: str = "PENDING_REVIEW"
     officer_notes: Optional[str] = None
     officer_id: Optional[str] = None
     decided_at: Optional[datetime] = None
+    
+    # Priority Allocation Deck (L1 Primary Confirmed, L2 & L3 Standby Contingencies)
+    award_priority: Optional[str] = None # "PRIORITY_1_L1", "PRIORITY_2_L2", "PRIORITY_3_L3"
+    award_status: Optional[str] = "UNASSIGNED" # "CONFIRMED_L1", "CONTINGENCY_STANDBY", "REJECTED", "UNASSIGNED"
+    contingency_sla_hours: int = 72
 
 # Officer Decision Payload
 class OfficerDecisionPayload(BaseModel):

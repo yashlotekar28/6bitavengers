@@ -457,6 +457,55 @@ async def record_officer_decision(payload: OfficerDecisionPayload):
     bidder.officer_id = payload.officer_id
     bidder.decided_at = datetime.utcnow()
 
+    # If action is APPROVE -> Automatically assign Priority 1 (L1 Confirmed) and queue eligible L2 & L3 Contingencies!
+    if payload.action.value == "APPROVE":
+        tender_id = bidder.tender_id
+        
+        # 1. Set Primary Confirmed L1
+        bidder.award_priority = "PRIORITY_1_L1"
+        bidder.award_status = "CONFIRMED_L1"
+        
+        # 2. Reset any previous contingency allocations in this tender
+        other_bidders = [b for b in BIDDERS_DB.values() if b.tender_id == tender_id and b.bidder_id != bidder.bidder_id]
+        for ob in other_bidders:
+            if ob.award_status in ["CONFIRMED_L1", "CONTINGENCY_STANDBY"]:
+                ob.award_priority = None
+                ob.award_status = "UNASSIGNED"
+        
+        # 3. Find eligible compliant bidders for L2 & L3 standby contingency
+        eligible_standbys = [
+            b for b in other_bidders
+            if (b.compliance_score and b.compliance_score.score >= 90)
+            and b.conflict_links_count == 0
+            and (not b.documents or not b.documents[0].forensic_report or b.documents[0].forensic_report.overall_tamper_score <= 25)
+            and (b.compliance_score and b.compliance_score.risk_level.value == "LOW")
+        ]
+        
+        # Sort by CIBIL Trust Score and Turnover
+        eligible_standbys.sort(
+            key=lambda x: (
+                x.longitudinal_trust_score.score if x.longitudinal_trust_score else 800,
+                x.financials.annual_turnover_inr
+            ),
+            reverse=True
+        )
+
+        if len(eligible_standbys) > 0:
+            eligible_standbys[0].award_priority = "PRIORITY_2_L2"
+            eligible_standbys[0].award_status = "CONTINGENCY_STANDBY"
+            eligible_standbys[0].officer_status = "CONTINGENCY_L2"
+            eligible_standbys[0].contingency_sla_hours = 72
+
+        if len(eligible_standbys) > 1:
+            eligible_standbys[1].award_priority = "PRIORITY_3_L3"
+            eligible_standbys[1].award_status = "CONTINGENCY_STANDBY"
+            eligible_standbys[1].officer_status = "CONTINGENCY_L3"
+            eligible_standbys[1].contingency_sla_hours = 72
+
+    elif payload.action.value in ["REJECT", "DISQUALIFY"]:
+        bidder.award_priority = None
+        bidder.award_status = "REJECTED"
+
     audit_trail.log_event(
         bidder_id=bidder.bidder_id,
         step="STEP_9_OFFICER_DECISION",
@@ -466,12 +515,35 @@ async def record_officer_decision(payload: OfficerDecisionPayload):
             "officer_name": payload.officer_name,
             "officer_id": payload.officer_id,
             "action": payload.action.value,
+            "award_priority": bidder.award_priority,
+            "award_status": bidder.award_status,
             "comments": payload.comments,
             "override_justification": payload.override_justification
         },
         notes=payload.comments
     )
     return {"success": True, "bidder": bidder}
+
+@app.get("/api/bidders/contingency-roster/{tender_id}", tags=["Contingency"])
+async def get_tender_contingency_roster(tender_id: str):
+    """
+    Retrieves the confirmed Priority 1 (L1) Awardee and Priority 2 (L2) & Priority 3 (L3)
+    Standby Contingencies for a specific tender.
+    """
+    tender_bidders = [b for b in BIDDERS_DB.values() if b.tender_id == tender_id]
+    
+    primary_l1 = next((b for b in tender_bidders if b.award_priority == "PRIORITY_1_L1"), None)
+    standby_l2 = next((b for b in tender_bidders if b.award_priority == "PRIORITY_2_L2"), None)
+    standby_l3 = next((b for b in tender_bidders if b.award_priority == "PRIORITY_3_L3"), None)
+    
+    return {
+        "tender_id": tender_id,
+        "primary_l1": primary_l1,
+        "standby_l2": standby_l2,
+        "standby_l3": standby_l3,
+        "is_awarded": primary_l1 is not None,
+        "contingency_sla_hours": 72
+    }
 
 @app.get("/api/audit")
 async def get_audit_logs(bidder_id: Optional[str] = None):
