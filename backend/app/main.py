@@ -42,6 +42,7 @@ from app.services.trust_scoring_service import LongitudinalTrustScoringService
 from app.services.entity_graph_service import EntityGraphLinkingService
 from app.services.chat_service import OfficerChatAssistantService
 from app.services.document_forensics_service import DocumentForensicsService
+from app.services.document_viewer_service import DocumentViewerService
 from app.data.demo_scenarios import DEMO_BIDDERS_SEED, DEMO_TENDERS_SEED
 try:
     from app.core.auth import authenticate_user, create_access_token, require_officer, require_auditor, TokenData
@@ -409,6 +410,19 @@ async def upload_and_analyze_forensics(
     )
     
     return report
+
+# --- Feature: Visual Document Inspection Endpoint ---
+@app.get("/api/documents/view/{bidder_id}", tags=["Documents"])
+async def view_bidder_document(bidder_id: str, doc_type: Optional[str] = None):
+    """
+    Returns authentic rendered certificate layout data for Form GST REG-06,
+    Udyam Registration, CA Turnover UDIN Statement, or Debarment Record.
+    """
+    if bidder_id not in BIDDERS_DB:
+        raise HTTPException(status_code=404, detail="Bidder not found")
+    
+    bidder = BIDDERS_DB[bidder_id]
+    return DocumentViewerService.get_document_view_data(bidder, doc_type)
 
 # Feature 5 Endpoint: Natural Language Officer Assistant (Chat)
 @app.post("/api/chat/officer", response_model=OfficerChatResponse)

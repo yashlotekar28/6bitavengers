@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GeM ProcureShield AI — Multi-Bid Government Procurement Intelligence & Forensics</title>
+  <title>GeM ProcureShield AI — Central Government Procurement Intelligence & Forensics Cockpit</title>
   
   <!-- Tailwind CSS & Google Fonts -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -19,7 +19,7 @@
   <style>
     body {
       font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-      background-color: #f1f5f9;
+      background-color: #f8fafc;
       color: #0f172a;
     }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -33,13 +33,13 @@
     }
     
     .gem-header-gradient {
-      background: linear-gradient(135deg, #06152B 0%, #0A1E3F 50%, #0D2859 100%);
+      background: linear-gradient(135deg, #051329 0%, #0A1E3F 60%, #0D2859 100%);
     }
 
     .bms-pill-active {
       background-color: #0B2559;
       color: #ffffff;
-      box-shadow: 0 4px 12px rgba(11, 37, 89, 0.22);
+      box-shadow: 0 4px 14px rgba(11, 37, 89, 0.25);
     }
     
     .card-hover-lift {
@@ -47,14 +47,20 @@
     }
     .card-hover-lift:hover {
       transform: translateY(-2px);
-      box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.08);
+      box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.08);
+    }
+
+    @media print {
+      body { background-color: #ffffff !important; }
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
     }
   </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-blue-900 selection:text-white">
   
   <!-- Tricolor National Stripe -->
-  <div class="gem-tricolor-bar"></div>
+  <div class="gem-tricolor-bar no-print"></div>
 
   <div id="root"></div>
 
@@ -67,42 +73,50 @@
       const [selectedTenderId, setSelectedTenderId] = useState('GEM/2026/B/89420');
       const [bidders, setBidders] = useState([]);
       const [expandedBidderId, setExpandedBidderId] = useState('BID-2026-0891');
-      const [bidderTabMap, setBidderTabMap] = useState({}); // { [bidderId]: tab }
+      const [bidderTabMap, setBidderTabMap] = useState({});
 
       // Analytics & Logs State
       const [metrics, setMetrics] = useState(null);
       const [auditLogs, setAuditLogs] = useState([]);
       const [entityGraph, setEntityGraph] = useState(null);
       
-      // UI Drawer & Modal States
+      // UI Modals & Drawers State
       const [isAuditOpen, setIsAuditOpen] = useState(false);
       const [isChatOpen, setIsChatOpen] = useState(false);
       const [isFilterOpen, setIsFilterOpen] = useState(false);
       const [isForensicLabOpen, setIsForensicLabOpen] = useState(false);
+      
+      // Document Viewer & Full Report Modals
+      const [previewBidder, setPreviewBidder] = useState(null);
+      const [previewDocType, setPreviewDocType] = useState('GST_CERTIFICATE');
+      const [previewDocData, setPreviewDocData] = useState(null);
+      const [fullReportBidder, setFullReportBidder] = useState(null);
+
       const [loading, setLoading] = useState(true);
       const [verifyingId, setVerifyingId] = useState(null);
       const [notification, setNotification] = useState(null);
       const [searchQuery, setSearchQuery] = useState('');
 
-      // Constraint Filters
+      // Enhanced Constraint Filters
       const [filterMinTrust, setFilterMinTrust] = useState(300);
-      const [filterMsmeOnly, setFilterMsmeOnly] = useState(false);
       const [filterMinTurnover, setFilterMinTurnover] = useState(0);
+      const [filterRiskProfile, setFilterRiskProfile] = useState('ALL'); // ALL | LOW | MEDIUM | CRITICAL
+      const [filterMsmeOnly, setFilterMsmeOnly] = useState(false);
+      const [filterTamperedOnly, setFilterTamperedOnly] = useState(false);
       const [filterExcludeConflicts, setFilterExcludeConflicts] = useState(false);
 
-      // Live Forensic Upload State
+      // Live Forensic Upload Sandbox State
       const [forensicFile, setForensicFile] = useState(null);
       const [forensicClaimedDate, setForensicClaimedDate] = useState('2025-06-15');
       const [forensicUploading, setForensicUploading] = useState(false);
       const [liveForensicResult, setLiveForensicResult] = useState(null);
-      const [forensicPreviewUrl, setForensicPreviewUrl] = useState(null);
       const fileInputRef = useRef(null);
 
       // AI Chat State
       const [chatMessages, setChatMessages] = useState([
         {
           sender: 'ai',
-          text: 'Namaste Officer! I am your GeM ProcureShield AI Intelligence Assistant.\n\nI have evaluated all 3 active Government Tenders and 45 participating vendor dossiers. In addition to statutory cross-checks and cartel networks, I now execute automated Document Forensics & ELA Tamper Analysis on all uploaded certificates.\n\nHow may I assist your Technical Evaluation Committee today?'
+          text: 'Namaste Officer! I am your GeM ProcureShield AI Intelligence Assistant.\n\nI have loaded all 3 active Government Tenders and 45 participating vendor dossiers. I can provide comparative technical evaluations, inspect ELA forensic tamper heatmaps, explain GFR 2017 rules, and analyze cartel networks.\n\nHow may I assist your Technical Evaluation Committee today?'
         }
       ]);
       const [chatInput, setChatInput] = useState('');
@@ -169,13 +183,26 @@
         }
       }, [selectedTenderId]);
 
+      // Open Original Certificate Viewer
+      const handleOpenDocViewer = async (bidder, docType = 'GST_CERTIFICATE') => {
+        setPreviewBidder(bidder);
+        setPreviewDocType(docType);
+        try {
+          const res = await fetch(`/api/documents/view/${bidder.bidder_id}?doc_type=${encodeURIComponent(docType)}`);
+          const data = await res.json();
+          setPreviewDocData(data);
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
       // Re-run 10-step verification for a single bidder
       const handleReverify = async (bidderId) => {
         setVerifyingId(bidderId);
         try {
           await fetch(`/api/bidders/verify/${bidderId}`, { method: 'POST' });
           await loadTenderData(selectedTenderId);
-          showNotice(`10-Step Automated Verification Re-Evaluated for ${bidderId}!`);
+          showNotice(`10-Step Automated Verification & Forensics Re-Evaluated for ${bidderId}!`);
         } catch (e) {
           console.error(e);
         } finally {
@@ -229,14 +256,7 @@
         }
       };
 
-      // Handle Live File Upload for Real ELA Forensic Scan
-      const handleForensicFileSelect = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        setForensicFile(file);
-        setForensicPreviewUrl(URL.createObjectURL(file));
-      };
-
+      // Live File Upload for ELA Forensic Scan
       const handleRunLiveForensicScan = async () => {
         if (!forensicFile) return;
         setForensicUploading(true);
@@ -262,7 +282,7 @@
         }
       };
 
-      // Handle AI Chat
+      // AI Chat Handler
       const handleSendChat = async (e) => {
         if (e) e.preventDefault();
         if (!chatInput.trim() || chatLoading) return;
@@ -301,72 +321,90 @@
 
       // Toggle Vendor Accordion Expansion
       const toggleBidderAccordion = (bidderId) => {
-        if (expandedBidderId === bidderId) {
-          setExpandedBidderId(null);
-        } else {
-          setExpandedBidderId(bidderId);
-        }
+        setExpandedBidderId(expandedBidderId === bidderId ? null : bidderId);
       };
 
-      // Set active report tab for a specific bidder
       const setBidderTab = (bidderId, tab) => {
         setBidderTabMap(prev => ({ ...prev, [bidderId]: tab }));
       };
-
       const getBidderTab = (bidderId) => bidderTabMap[bidderId] || 'overview';
 
-      // Filtered Bidders list
+      // Active filter count computation
+      const activeFilterCount = useMemo(() => {
+        let count = 0;
+        if (filterMinTrust > 300) count++;
+        if (filterMinTurnover > 0) count++;
+        if (filterRiskProfile !== 'ALL') count++;
+        if (filterMsmeOnly) count++;
+        if (filterTamperedOnly) count++;
+        if (filterExcludeConflicts) count++;
+        if (searchQuery.trim()) count++;
+        return count;
+      }, [filterMinTrust, filterMinTurnover, filterRiskProfile, filterMsmeOnly, filterTamperedOnly, filterExcludeConflicts, searchQuery]);
+
+      // Reactive Filtered Bidders List
       const filteredBidders = useMemo(() => {
         return bidders.filter(b => {
           if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
             const matchName = b.company_name.toLowerCase().includes(q);
             const matchId = b.bidder_id.toLowerCase().includes(q);
-            const matchGst = b.identifiers.gstin.toLowerCase().includes(q);
-            if (!matchName && !matchId && !matchGst) return false;
+            const matchGst = b.identifiers.gstin?.toLowerCase().includes(q);
+            const matchState = b.registered_state?.toLowerCase().includes(q);
+            if (!matchName && !matchId && !matchGst && !matchState) return false;
           }
           const trust = b.longitudinal_trust_score?.score ?? 0;
           if (trust < filterMinTrust) return false;
-          if (filterMsmeOnly && !b.identifiers.udyam_registration_number) return false;
+
+          const risk = b.compliance_score?.risk_level ?? 'LOW';
+          if (filterRiskProfile !== 'ALL' && risk !== filterRiskProfile) return false;
+
           if (filterMinTurnover > 0 && b.financials.annual_turnover_inr < filterMinTurnover) return false;
+          if (filterMsmeOnly && !b.identifiers.udyam_registration_number) return false;
+
+          const firstDoc = b.documents?.[0];
+          const tamperScore = firstDoc?.forensic_report?.overall_tamper_score ?? 0;
+          if (filterTamperedOnly && tamperScore <= 25) return false;
+
           if (filterExcludeConflicts && b.conflict_links_count > 0) return false;
+
           return true;
         });
-      }, [bidders, searchQuery, filterMinTrust, filterMsmeOnly, filterMinTurnover, filterExcludeConflicts]);
+      }, [bidders, searchQuery, filterMinTrust, filterMinTurnover, filterRiskProfile, filterMsmeOnly, filterTamperedOnly, filterExcludeConflicts]);
 
       const currentTender = tenders.find(t => t.tender_id === selectedTenderId) || tenders[0];
 
       return (
-        <div className="min-h-screen flex flex-col bg-[#F1F5F9]">
+        <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
           
           {/* GeM National Top Utility Bar */}
-          <div className="bg-[#040E1E] text-slate-300 text-[11px] font-medium px-4 py-1.5 border-b border-slate-800">
-            <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center">
+          <div className="bg-[#040E1E] text-slate-300 text-[11px] font-medium px-4 py-2 border-b border-slate-800 no-print">
+            <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
               <div className="flex items-center space-x-3">
                 <span className="flex items-center space-x-1.5">
                   <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span className="text-white font-bold">Government of India</span>
+                  <span className="text-white font-bold tracking-wide">Government of India</span>
                 </span>
                 <span className="text-slate-600">•</span>
                 <span>Ministry of Commerce & Industry</span>
                 <span className="text-slate-600">•</span>
-                <span className="text-amber-400 font-bold">Government e-Marketplace (GeM AI)</span>
+                <span className="text-amber-400 font-bold">GeM ProcureShield AI Cockpit</span>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="font-mono text-slate-300">API Setu / GSTN / ELA Forensics Online</span>
+                <span className="font-mono text-slate-300">API Setu / GSTN / ELA Forensics Live</span>
                 <span className="text-slate-600">|</span>
-                <span>Security: <strong className="text-emerald-400">CERT-In Level 4</strong></span>
+                <span>Security: <strong className="text-emerald-400 font-mono">CERT-In Level 4</strong></span>
               </div>
             </div>
           </div>
 
           {/* Main Top Header Navbar */}
-          <header className="gem-header-gradient text-white sticky top-0 z-40 px-4 py-3 shadow-lg border-b border-blue-900/50">
+          <header className="gem-header-gradient text-white sticky top-0 z-40 px-4 py-3.5 shadow-xl border-b border-blue-900/40 no-print">
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
               
               {/* Brand Emblem & Logo */}
               <div className="flex items-center space-x-3.5">
-                <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shadow-inner">
+                <div className="w-11 h-11 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shadow-inner">
                   <span className="text-2xl">🏛️</span>
                 </div>
                 <div>
@@ -374,7 +412,7 @@
                     <h1 className="font-extrabold text-xl tracking-tight text-white flex items-center gap-1.5">
                       GeM <span className="text-[#FF9933]">Procure</span><span className="text-[#38BDF8]">Shield</span>
                     </h1>
-                    <span className="px-2 py-0.5 text-[10px] font-extrabold bg-[#F84464] text-white rounded-full uppercase tracking-wider shadow-sm">
+                    <span className="px-2.5 py-0.5 text-[10px] font-black bg-[#F84464] text-white rounded-full uppercase tracking-wider shadow">
                       3 BIDS • 45 VENDORS • ELA FORENSICS
                     </span>
                   </div>
@@ -392,10 +430,10 @@
                   </span>
                   <input
                     type="text"
-                    placeholder="Search 15 vendors by Name, GSTIN, or Bidder ID..."
+                    placeholder="Search 15 vendors by Name, GSTIN, State, or Bidder ID..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-1.5 bg-white/10 border border-white/20 rounded-xl text-xs text-white placeholder-blue-200/60 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white/15 transition"
+                    className="w-full pl-9 pr-4 py-2 bg-white/10 border border-white/20 rounded-xl text-xs text-white placeholder-blue-200/60 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white/15 transition"
                   />
                   {searchQuery && (
                     <button onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-0 pr-3 flex items-center text-blue-200 text-xs hover:text-white">
@@ -430,13 +468,15 @@
                 {/* Filter Drawer Toggle */}
                 <button
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
-                  className={`px-3 py-2 text-xs font-bold rounded-xl border transition flex items-center space-x-1.5 ${
-                    isFilterOpen ? 'bg-amber-500 text-slate-950 border-amber-400 font-extrabold' : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+                  className={`px-3.5 py-2 text-xs font-bold rounded-xl border transition flex items-center space-x-1.5 ${
+                    activeFilterCount > 0
+                      ? 'bg-amber-500 text-slate-950 border-amber-400 font-extrabold shadow'
+                      : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
                   }`}
                 >
                   <span>🎛️ Filters</span>
                   <span className="px-1.5 py-0.2 text-[10px] bg-black/30 rounded-full font-mono">
-                    {filteredBidders.length}
+                    {filteredBidders.length} / {bidders.length}
                   </span>
                 </button>
 
@@ -467,27 +507,27 @@
 
           {/* Floating Notice Toast */}
           {notification && (
-            <div className="fixed top-20 right-6 z-50 bg-[#0B2559] border-2 border-amber-400 text-white px-5 py-3.5 rounded-2xl shadow-2xl text-xs font-bold flex items-center space-x-3 animate-bounce">
+            <div className="fixed top-20 right-6 z-50 bg-[#0B2559] border-2 border-amber-400 text-white px-5 py-3.5 rounded-2xl shadow-2xl text-xs font-bold flex items-center space-x-3 animate-bounce no-print">
               <span className="text-lg">🛡️</span>
               <span>{notification}</span>
             </div>
           )}
 
           {/* Main Layout Container */}
-          <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8 space-y-8">
             
             {/* STEP 1: OFFICIAL GeM TENDER / BID SELECTOR DECK */}
-            <div className="space-y-3">
+            <section className="space-y-3 no-print">
               <div className="flex justify-between items-center px-1">
                 <div>
                   <span className="text-[10px] font-black uppercase tracking-wider text-blue-900 bg-blue-100 px-2.5 py-0.5 rounded-md">
-                    STEP 1: SELECT TENDER / BID CATEGORY
+                    STEP 1: SELECT CENTRAL GOVERNMENT TENDER
                   </span>
-                  <h2 className="text-base font-extrabold text-slate-800 mt-1">
-                    Active Central Government Tenders Under Evaluation ({tenders.length} Live Bids)
+                  <h2 className="text-lg font-extrabold text-slate-900 mt-1">
+                    Active Tenders Under Technical Evaluation ({tenders.length} Live Bids)
                   </h2>
                 </div>
-                <span className="text-xs text-slate-500 font-semibold">15 Participating Vendors Per Tender</span>
+                <span className="text-xs text-slate-500 font-semibold">15 Participating Vendors Per Bid</span>
               </div>
 
               {/* 3 Interactive Tender Selection Cards */}
@@ -498,61 +538,65 @@
                     <div
                       key={t.tender_id}
                       onClick={() => setSelectedTenderId(t.tender_id)}
-                      className={`relative bg-white rounded-2xl p-5 cursor-pointer border-2 transition-all card-hover-lift shadow-sm ${
+                      className={`relative bg-white rounded-2xl p-5 cursor-pointer border-2 transition-all card-hover-lift shadow-sm flex flex-col justify-between ${
                         isSel
-                          ? 'border-[#0B2559] ring-2 ring-blue-600/20 shadow-md bg-blue-50/20'
+                          ? 'border-[#0B2559] ring-2 ring-blue-600/20 shadow-md bg-blue-50/25'
                           : 'border-slate-200/90 hover:border-slate-300'
                       }`}
                     >
-                      {/* Top Tender Badge */}
-                      <div className="flex justify-between items-start mb-2.5">
-                        <span className="px-2.5 py-0.5 text-[10px] font-extrabold bg-blue-100 text-blue-900 rounded font-mono">
-                          {t.tender_id}
-                        </span>
-                        <span className="px-2 py-0.5 text-[10px] font-extrabold bg-emerald-100 text-emerald-800 rounded-full uppercase">
-                          {t.status.replace('_', ' ')}
-                        </span>
+                      <div>
+                        {/* Top Tender Badge */}
+                        <div className="flex justify-between items-start mb-2.5">
+                          <span className="px-2.5 py-0.5 text-[10px] font-extrabold bg-blue-100 text-blue-900 rounded font-mono">
+                            {t.tender_id}
+                          </span>
+                          <span className="px-2 py-0.5 text-[10px] font-extrabold bg-emerald-100 text-emerald-800 rounded-full uppercase">
+                            {t.status.replace('_', ' ')}
+                          </span>
+                        </div>
+
+                        {/* Tender Title */}
+                        <h3 className="text-sm font-extrabold text-slate-900 leading-snug line-clamp-2">
+                          {t.title}
+                        </h3>
+                        
+                        {/* Ministry & Category */}
+                        <p className="text-xs text-slate-500 mt-1.5 font-medium">
+                          {t.ministry} • <span className="text-slate-700 font-semibold">{t.category}</span>
+                        </p>
                       </div>
 
-                      {/* Tender Title */}
-                      <h3 className="text-sm font-extrabold text-slate-800 leading-snug line-clamp-2">
-                        {t.title}
-                      </h3>
-                      
-                      {/* Ministry & Category */}
-                      <p className="text-xs text-slate-500 mt-1 font-medium">
-                        {t.ministry} • <span className="text-slate-700">{t.category}</span>
-                      </p>
+                      <div>
+                        {/* Financial & Bid Stats */}
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                          <div>
+                            <span className="text-[10px] text-slate-400 font-bold uppercase block">Sanctioned Value</span>
+                            <span className="text-base font-black font-mono text-emerald-700">₹{t.estimated_value_cr.toFixed(2)} Cr</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase block">Vendors Ingested</span>
+                            <span className="text-sm font-black font-mono text-[#0B2559]">15 Dossiers</span>
+                          </div>
+                        </div>
 
-                      {/* Financial & Bid Stats */}
-                      <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                        <div>
-                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Est. Sanctioned Value</span>
-                          <span className="text-base font-black font-mono text-emerald-700">₹{t.estimated_value_cr.toFixed(2)} Cr</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Vendors Ingested</span>
-                          <span className="text-sm font-black font-mono text-[#0B2559]">15 Dossiers</span>
-                        </div>
+                        {/* Active Selector Pill */}
+                        {isSel && (
+                          <div className="mt-3 pt-2.5 border-t border-blue-200/60 flex items-center justify-between text-xs font-extrabold text-[#0B2559]">
+                            <span>Active Evaluation Roster</span>
+                            <span>Selected ✓</span>
+                          </div>
+                        )}
                       </div>
-
-                      {/* Active Selector Pill */}
-                      {isSel && (
-                        <div className="mt-3 pt-2 border-t border-blue-200/60 flex items-center justify-between text-xs font-extrabold text-[#0B2559]">
-                          <span>Active Evaluation Dossier</span>
-                          <span>Selected ✓</span>
-                        </div>
-                      )}
                     </div>
                   );
                 })}
               </div>
-            </div>
+            </section>
 
             {/* Active Tender Header Banner */}
             {currentTender && (
-              <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="space-y-1">
+              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
+                <div className="space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="px-2.5 py-1 text-[10px] font-bold bg-blue-100 text-blue-900 rounded font-mono">
                       BID: {currentTender.tender_id}
@@ -564,20 +608,20 @@
                       Closing: {currentTender.closing_date}
                     </span>
                     <span className="px-2.5 py-1 text-[10px] font-bold bg-rose-100 text-rose-900 rounded">
-                      🔬 ELA Forensics Active
+                      🔬 ELA Forensics Pre-Check Active
                     </span>
                   </div>
-                  <h3 className="text-base font-black text-slate-800">
+                  <h3 className="text-lg font-black text-slate-900">
                     {currentTender.title}
                   </h3>
-                  <p className="text-xs text-slate-500">
-                    Department: <strong className="text-slate-700">{currentTender.department}</strong> • Scope: {currentTender.description}
+                  <p className="text-xs text-slate-500 max-w-3xl leading-relaxed">
+                    Department: <strong className="text-slate-700">{currentTender.department}</strong> • {currentTender.description}
                   </p>
                 </div>
 
-                <div className="text-right">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Evaluation Engine</span>
-                  <span className="text-xs font-extrabold text-[#0B2559] bg-blue-50 px-3 py-1 rounded-lg border border-blue-200 inline-block mt-0.5">
+                <div className="text-right flex-shrink-0">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Decision Protocol</span>
+                  <span className="text-xs font-extrabold text-[#0B2559] bg-blue-50 px-3.5 py-1.5 rounded-xl border border-blue-200 inline-block mt-1">
                     ⚡ 10-Step AI + ELA Tamper Analysis
                   </span>
                 </div>
@@ -586,67 +630,76 @@
 
             {/* Live KPI Metric Ribbon for Active Tender */}
             {metrics && (
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
-                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm border-t-4 border-t-blue-700">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm border-t-4 border-t-blue-700">
                   <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Ingested Bids</p>
-                  <p className="text-2xl font-black text-slate-800 mt-1">{metrics.total_bidders}</p>
+                  <p className="text-2xl font-black text-slate-900 mt-1">{metrics.total_bidders}</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">15 Participating Vendors</p>
                 </div>
 
-                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm border-t-4 border-t-emerald-500">
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm border-t-4 border-t-emerald-500">
                   <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">100% Compliant (Pass)</p>
                   <p className="text-2xl font-black text-emerald-600 mt-1">{metrics.compliant_count}</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">Statutory & ELA Clear</p>
                 </div>
 
-                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm border-t-4 border-t-amber-500">
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm border-t-4 border-t-amber-500">
                   <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Discrepancy Flags</p>
                   <p className="text-2xl font-black text-amber-600 mt-1">{metrics.flagged_count}</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">Officer Review Req.</p>
                 </div>
 
-                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm border-t-4 border-t-rose-500">
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm border-t-4 border-t-rose-500">
                   <p className="text-[11px] font-bold text-[#F84464] uppercase tracking-wider">Debarred / Shell Links</p>
                   <p className="text-2xl font-black text-[#F84464] mt-1">{metrics.debarred_count}</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">Cartel / Collusion Risk</p>
                 </div>
 
-                <div className="col-span-2 sm:col-span-1 bg-gradient-to-br from-[#06152B] to-[#0D2859] p-4 rounded-2xl text-white shadow-sm">
-                  <p className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">Verification Speed</p>
-                  <p className="text-xl font-black font-mono mt-1 text-white">{metrics.automated_verification_time_sec}s</p>
-                  <p className="text-[10px] text-blue-200 mt-0.5">Manual: 4.5 Business Days</p>
+                <div className="col-span-2 sm:col-span-1 bg-gradient-to-br from-[#06152B] to-[#0D2859] p-5 rounded-2xl text-white shadow-sm flex flex-col justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">Verification Speed</p>
+                    <p className="text-2xl font-black font-mono mt-1 text-white">{metrics.automated_verification_time_sec}s</p>
+                  </div>
+                  <p className="text-[10px] text-blue-200 mt-1">Manual: 4.5 Business Days</p>
                 </div>
               </div>
             )}
 
             {/* Expandable Officer Constraint Filter Panel */}
             {isFilterOpen && (
-              <div className="bg-white rounded-2xl p-5 border-2 border-blue-200 shadow-lg space-y-4 animate-fadeIn">
+              <div className="bg-white rounded-3xl p-6 border-2 border-blue-200 shadow-xl space-y-5 animate-fadeIn no-print">
                 <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                   <div className="flex items-center space-x-2">
-                    <span className="text-base">🎛️</span>
-                    <h3 className="text-xs font-black text-[#0B2559] uppercase tracking-wider">
-                      Officer Evaluation & Constraint Rules Engine
-                    </h3>
+                    <span className="text-lg">🎛️</span>
+                    <div>
+                      <h3 className="text-sm font-black text-[#0B2559] uppercase tracking-wider">
+                        Procurement Officer Constraint & Filter Engine
+                      </h3>
+                      <p className="text-xs text-slate-500">Live multi-dimensional filters across 15 vendor dossiers</p>
+                    </div>
                   </div>
                   <button
                     onClick={() => {
                       setFilterMinTrust(300);
-                      setFilterMsmeOnly(false);
                       setFilterMinTurnover(0);
+                      setFilterRiskProfile('ALL');
+                      setFilterMsmeOnly(false);
+                      setFilterTamperedOnly(false);
                       setFilterExcludeConflicts(false);
                       setSearchQuery('');
                     }}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-semibold"
+                    className="text-xs text-rose-600 hover:text-rose-800 font-bold bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-200 transition"
                   >
-                    Reset All Filters
+                    ✕ Reset All Filters
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
-                  <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-6 gap-4 text-xs">
+                  
+                  {/* Slider: Min CIBIL Score */}
+                  <div className="space-y-1.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
                     <label className="text-slate-700 font-bold block">
-                      Min CIBIL Trust Score: <strong className="text-blue-700 font-mono text-sm">{filterMinTrust}</strong>
+                      Min CIBIL Trust: <strong className="text-blue-700 font-mono text-sm">{filterMinTrust}</strong>
                     </label>
                     <input
                       type="range"
@@ -658,25 +711,43 @@
                       className="w-full accent-[#0B2559] cursor-pointer"
                     />
                     <div className="flex justify-between text-[10px] text-slate-400 font-mono">
-                      <span>300 (Subprime)</span>
-                      <span>900 (Prime AAA)</span>
+                      <span>300 (D)</span>
+                      <span>900 (AAA)</span>
                     </div>
                   </div>
 
-                  <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <label className="text-slate-700 font-bold block">Minimum Annual Turnover:</label>
+                  {/* Dropdown: Minimum Turnover */}
+                  <div className="space-y-1.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                    <label className="text-slate-700 font-bold block">Minimum Turnover:</label>
                     <select
                       value={filterMinTurnover}
                       onChange={e => setFilterMinTurnover(Number(e.target.value))}
-                      className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      className="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-600"
                     >
                       <option value="0">All Turnovers</option>
                       <option value="20000000">₹2.0+ Cr (Tender Min)</option>
                       <option value="50000000">₹5.0+ Cr (High Capacity)</option>
+                      <option value="100000000">₹10.0+ Cr (Major)</option>
                     </select>
                   </div>
 
-                  <div className="flex items-center space-x-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  {/* Dropdown: Risk Level */}
+                  <div className="space-y-1.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                    <label className="text-slate-700 font-bold block">Compliance Risk:</label>
+                    <select
+                      value={filterRiskProfile}
+                      onChange={e => setFilterRiskProfile(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-600"
+                    >
+                      <option value="ALL">All Risk Profiles</option>
+                      <option value="LOW">100% Pass (Low Risk)</option>
+                      <option value="MEDIUM">Discrepancy (Medium)</option>
+                      <option value="CRITICAL">Debarred / Shell (Critical)</option>
+                    </select>
+                  </div>
+
+                  {/* Checkbox: MSME Only */}
+                  <div className="flex items-center space-x-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
                     <input
                       type="checkbox"
                       id="msmeCheck"
@@ -685,12 +756,28 @@
                       className="w-5 h-5 rounded accent-blue-700 cursor-pointer"
                     />
                     <label htmlFor="msmeCheck" className="text-slate-700 font-bold cursor-pointer leading-tight">
-                      MSME Preference Quota Only
-                      <span className="block text-[10px] font-normal text-slate-500">Public Procurement Policy 2012</span>
+                      MSME Preference
+                      <span className="block text-[10px] font-normal text-slate-500">25% Purchase Quota</span>
                     </label>
                   </div>
 
-                  <div className="flex items-center space-x-3 bg-rose-50/60 p-3 rounded-xl border border-rose-200">
+                  {/* Checkbox: ELA Tamper Flags Only */}
+                  <div className="flex items-center space-x-3 bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200">
+                    <input
+                      type="checkbox"
+                      id="tamperCheck"
+                      checked={filterTamperedOnly}
+                      onChange={e => setFilterTamperedOnly(e.target.checked)}
+                      className="w-5 h-5 rounded accent-amber-600 cursor-pointer"
+                    />
+                    <label htmlFor="tamperCheck" className="text-amber-950 font-bold cursor-pointer leading-tight">
+                      ELA Tampered Only
+                      <span className="block text-[10px] font-normal text-amber-700">Flagged documents</span>
+                    </label>
+                  </div>
+
+                  {/* Checkbox: Exclude Shell Links */}
+                  <div className="flex items-center space-x-3 bg-rose-50/70 p-3.5 rounded-2xl border border-rose-200">
                     <input
                       type="checkbox"
                       id="conflictCheck"
@@ -698,32 +785,37 @@
                       onChange={e => setFilterExcludeConflicts(e.target.checked)}
                       className="w-5 h-5 rounded accent-rose-600 cursor-pointer"
                     />
-                    <label htmlFor="conflictCheck" className="text-rose-900 font-bold cursor-pointer leading-tight">
-                      Exclude Entity Risk Links
-                      <span className="block text-[10px] font-normal text-rose-600">Zero tolerance for shell links</span>
+                    <label htmlFor="conflictCheck" className="text-rose-950 font-bold cursor-pointer leading-tight">
+                      Zero Shell Links
+                      <span className="block text-[10px] font-normal text-rose-700">Exclude cartels</span>
                     </label>
                   </div>
+
                 </div>
               </div>
             )}
 
             {/* STEP 2: VENDOR ROSTER WITH EXPANDABLE TOGGLE ACCORDIONS */}
-            <div className="space-y-3">
-              <div className="flex justify-between items-center px-1">
+            <section className="space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-1 gap-2">
                 <div>
                   <span className="text-[10px] font-black uppercase tracking-wider text-blue-900 bg-blue-100 px-2.5 py-0.5 rounded-md">
-                    STEP 2: VENDOR ROSTER & ON-DEMAND REPORT TOGGLES
+                    STEP 2: VENDOR ROSTER & ON-DEMAND REPORTS
                   </span>
-                  <h3 className="text-base font-extrabold text-slate-800 mt-1">
-                    Participating Vendors ({filteredBidders.length} Displayed)
+                  <h3 className="text-lg font-extrabold text-slate-900 mt-1">
+                    Participating Vendors ({filteredBidders.length} of {bidders.length} Displayed)
                   </h3>
-                  <p className="text-xs text-slate-500">Click any vendor row or name to expand complete verification reports, ELA tamper forensics & cartel map</p>
+                  <p className="text-xs text-slate-500">
+                    Click any vendor row to toggle full statutory verification, ELA tamper forensics, and cartel network graphs
+                  </p>
                 </div>
-                <span className="text-xs font-semibold text-slate-400">Click vendor to expand/collapse</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-semibold text-slate-400">Click vendor to expand/collapse</span>
+                </div>
               </div>
 
               {/* Vendor Accordion Cards List (15 Vendors per Bid) */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {filteredBidders.map(b => {
                   const isExpanded = expandedBidderId === b.bidder_id;
                   const score = b.compliance_score?.score ?? 0;
@@ -740,22 +832,22 @@
                   return (
                     <div
                       key={b.bidder_id}
-                      className={`bg-white rounded-2xl border-2 transition-all shadow-sm overflow-hidden ${
+                      className={`bg-white rounded-3xl border-2 transition-all shadow-sm overflow-hidden ${
                         isExpanded
-                          ? 'border-[#0B2559] ring-2 ring-blue-600/15 shadow-md'
+                          ? 'border-[#0B2559] ring-2 ring-blue-600/15 shadow-lg'
                           : 'border-slate-200/90 hover:border-slate-300'
                       }`}
                     >
                       {/* Compact Vendor Header Row (Clickable Toggle Header) */}
                       <div
                         onClick={() => toggleBidderAccordion(b.bidder_id)}
-                        className={`p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer transition select-none ${
-                          isExpanded ? 'bg-blue-50/40 border-b border-slate-200' : 'hover:bg-slate-50'
+                        className={`p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer transition select-none ${
+                          isExpanded ? 'bg-blue-50/30 border-b border-slate-200' : 'hover:bg-slate-50/80'
                         }`}
                       >
                         {/* Company Name & Identifiers */}
-                        <div className="flex items-start space-x-3.5">
-                          <div className={`p-2.5 rounded-xl text-lg font-bold mt-0.5 shadow-sm ${
+                        <div className="flex items-start space-x-4">
+                          <div className={`p-3 rounded-2xl text-xl font-bold mt-0.5 shadow-sm flex-shrink-0 ${
                             risk === 'LOW' ? 'bg-emerald-100 text-emerald-800' :
                             risk === 'CRITICAL' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
                           }`}>
@@ -766,24 +858,29 @@
                               <h4 className="font-extrabold text-slate-900 text-base hover:text-blue-900 transition">
                                 {b.company_name}
                               </h4>
-                              <span className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 font-mono font-bold rounded">
+                              <span className="text-[10px] px-2.5 py-0.5 bg-slate-100 text-slate-700 font-mono font-bold rounded-lg">
                                 {b.bidder_id}
                               </span>
-                              <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-900 rounded font-semibold">
+                              <span className="text-[10px] px-2.5 py-0.5 bg-blue-50 text-blue-900 rounded-lg font-semibold">
                                 {b.legal_structure}
                               </span>
+                              {b.identifiers.udyam_registration_number && (
+                                <span className="text-[10px] px-2.5 py-0.5 bg-purple-50 text-purple-900 font-bold rounded-lg">
+                                  MSME MSE
+                                </span>
+                              )}
                               {tamperStatus === 'LIKELY_TAMPERED' && (
-                                <span className="text-[10px] px-2 py-0.5 bg-rose-100 text-rose-900 border border-rose-300 rounded font-extrabold uppercase">
-                                  🚨 ELA Tamper Flag ({tamperScore}%)
+                                <span className="text-[10px] px-2.5 py-0.5 bg-rose-100 text-rose-900 border border-rose-300 rounded-lg font-extrabold uppercase">
+                                  🚨 ELA Tamper ({tamperScore}%)
                                 </span>
                               )}
                               {hasConflict && (
-                                <span className="text-[10px] px-2 py-0.5 bg-rose-100 text-rose-800 rounded font-extrabold uppercase">
+                                <span className="text-[10px] px-2.5 py-0.5 bg-rose-100 text-rose-800 rounded-lg font-extrabold uppercase">
                                   ⚠️ {b.conflict_links_count} Shell Links
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-slate-500 font-mono mt-1 space-x-3">
+                            <div className="text-xs text-slate-500 font-mono mt-1.5 space-x-3">
                               <span>State: <strong className="text-slate-700 font-sans">{b.registered_state}</strong></span>
                               <span>GSTIN: <strong className="text-slate-700">{b.identifiers.gstin}</strong></span>
                               <span>Turnover: <strong className="text-emerald-700 font-sans">₹{(b.financials.annual_turnover_inr/10000000).toFixed(1)} Cr</strong></span>
@@ -792,11 +889,11 @@
                         </div>
 
                         {/* Scores, Status, and Expand/Collapse Button */}
-                        <div className="flex items-center justify-between sm:justify-end space-x-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                        <div className="flex items-center justify-between sm:justify-end space-x-4 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                           {/* Forensics ELA Pill */}
                           <div className="text-right">
                             <span className="text-[10px] text-slate-400 font-bold uppercase block">ELA Forensics</span>
-                            <span className={`text-xs font-mono font-black px-2 py-0.5 rounded ${
+                            <span className={`text-xs font-mono font-black px-2.5 py-1 rounded-lg inline-block mt-0.5 ${
                               tamperStatus === 'CLEAN' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
                               tamperStatus === 'LIKELY_TAMPERED' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
                               'bg-amber-100 text-amber-800 border border-amber-300'
@@ -816,7 +913,7 @@
                           {/* Compliance Score Pill */}
                           <div className="text-right">
                             <span className="text-[10px] text-slate-400 font-bold uppercase block">Compliance</span>
-                            <span className={`text-xs font-extrabold px-2.5 py-1 rounded-md uppercase ${
+                            <span className={`text-xs font-extrabold px-3 py-1 rounded-lg uppercase inline-block mt-0.5 ${
                               risk === 'LOW' ? 'bg-emerald-100 text-emerald-800' :
                               risk === 'CRITICAL' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
                             }`}>
@@ -827,7 +924,7 @@
                           {/* Action Toggle Button */}
                           <button
                             type="button"
-                            className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition flex items-center space-x-1.5 ${
+                            className={`px-3.5 py-2 text-xs font-bold rounded-xl border transition flex items-center space-x-1.5 ${
                               isExpanded
                                 ? 'bg-[#0B2559] text-white border-[#0B2559] shadow-sm'
                                 : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
@@ -840,36 +937,55 @@
 
                       {/* EXPANDABLE DOSSIER REPORT COCKPIT (Visible when toggled) */}
                       {isExpanded && (
-                        <div className="p-5 bg-white space-y-5 animate-fadeIn">
+                        <div className="p-6 bg-white space-y-6 animate-fadeIn">
                           
-                          {/* Top Quick Actions & Re-run Button */}
+                          {/* Top Quick Actions Bar */}
                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
                             <div>
-                              <p className="text-xs text-slate-600 font-medium">
-                                Registered Premises: <strong className="text-slate-800">{b.registered_address}</strong> • Bank Branch: <strong className="text-slate-800">{b.bank_branch_code}</strong>
+                              <p className="text-xs text-slate-700 font-medium">
+                                Registered Premises: <strong className="text-slate-900">{b.registered_address}</strong> • Bank Branch: <strong className="text-slate-900">{b.bank_branch_code}</strong>
                               </p>
                               <p className="text-xs text-slate-500 font-mono mt-0.5">
-                                Current Human-in-Loop Status: <strong className="text-blue-900">{b.officer_status}</strong>
+                                Current Officer Status: <strong className="text-blue-900 font-sans">{b.officer_status}</strong>
                               </p>
                             </div>
 
-                            <button
-                              onClick={() => handleReverify(b.bidder_id)}
-                              disabled={verifyingId === b.bidder_id}
-                              className="px-4 py-2 bg-[#0B2559] hover:bg-[#07183a] text-white text-xs font-bold rounded-xl transition shadow disabled:opacity-50 flex items-center space-x-1.5"
-                            >
-                              <span>{verifyingId === b.bidder_id ? '⚡ Evaluating 10 Steps...' : '⚡ Re-Run Verification & ELA Engine'}</span>
-                            </button>
+                            <div className="flex items-center space-x-2 flex-wrap">
+                              {/* Open Original Certificate Viewer */}
+                              <button
+                                onClick={() => handleOpenDocViewer(b, 'GST_CERTIFICATE')}
+                                className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 transition shadow-sm flex items-center space-x-1.5"
+                              >
+                                <span>📄 View Original Certificate</span>
+                              </button>
+
+                              {/* Full Executive Dossier Report */}
+                              <button
+                                onClick={() => setFullReportBidder(b)}
+                                className="px-3.5 py-2 bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold rounded-xl transition shadow flex items-center space-x-1.5"
+                              >
+                                <span>🖨️ Full Executive Dossier Report</span>
+                              </button>
+
+                              {/* Re-Run Engine */}
+                              <button
+                                onClick={() => handleReverify(b.bidder_id)}
+                                disabled={verifyingId === b.bidder_id}
+                                className="px-3.5 py-2 bg-[#0B2559] hover:bg-[#07183a] text-white text-xs font-bold rounded-xl transition shadow disabled:opacity-50 flex items-center space-x-1.5"
+                              >
+                                <span>{verifyingId === b.bidder_id ? '⚡ Evaluating...' : '⚡ Re-Run Engine'}</span>
+                              </button>
+                            </div>
                           </div>
 
                           {/* 3 Executive High-Level Gauge Cards */}
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                             
                             {/* Card 1: Statutory Compliance */}
-                            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col items-center justify-between text-center">
-                              <span className="text-[11px] font-bold uppercase text-slate-500">Statutory Compliance Index</span>
+                            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 flex flex-col items-center justify-between text-center">
+                              <span className="text-[11px] font-bold uppercase text-slate-500 tracking-wider">Statutory Compliance Index</span>
                               <div className="my-3 w-24 h-24 rounded-full border-4 border-slate-200 flex flex-col items-center justify-center bg-white shadow-inner">
-                                <span className="text-2xl font-black text-slate-800 font-mono">{b.compliance_score?.score}</span>
+                                <span className="text-2xl font-black text-slate-900 font-mono">{b.compliance_score?.score}</span>
                                 <span className="text-[9px] text-slate-400 font-bold uppercase">/ 100</span>
                               </div>
                               <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase ${
@@ -881,15 +997,15 @@
                             </div>
 
                             {/* Card 2: Longitudinal CIBIL Trust Index */}
-                            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col justify-between space-y-2">
+                            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 flex flex-col justify-between space-y-2">
                               <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                                 <span className="text-xs font-bold uppercase text-[#0B2559]">📈 Longitudinal Trust Index</span>
-                                <span className="text-[10px] bg-blue-100 text-blue-900 px-2 py-0.5 rounded font-bold font-mono">CIBIL 300-900</span>
+                                <span className="text-[10px] bg-blue-100 text-blue-900 px-2.5 py-0.5 rounded font-bold font-mono">CIBIL 300-900</span>
                               </div>
 
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <span className="text-2xl font-black text-slate-800 font-mono">{b.longitudinal_trust_score?.score}</span>
+                                  <span className="text-2xl font-black text-slate-900 font-mono">{b.longitudinal_trust_score?.score}</span>
                                   <span className="text-xs text-slate-400 font-mono"> / 900</span>
                                   <p className="text-[11px] font-bold text-blue-800 mt-0.5">{b.longitudinal_trust_score?.rating_band}</p>
                                 </div>
@@ -924,9 +1040,9 @@
                             </div>
 
                             {/* Card 3: AI Advisor Briefing */}
-                            <div className="bg-gradient-to-br from-[#06152B] to-[#0D2859] text-white rounded-2xl p-4 flex flex-col justify-between space-y-2 shadow-sm">
+                            <div className="bg-gradient-to-br from-[#06152B] to-[#0D2859] text-white rounded-2xl p-5 flex flex-col justify-between space-y-2 shadow-md">
                               <div className="flex items-center justify-between pb-2 border-b border-blue-900/60">
-                                <span className="text-xs font-black text-amber-400 uppercase tracking-wider">✨ AI Recommendation</span>
+                                <span className="text-xs font-black text-amber-400 uppercase tracking-wider">✨ AI Determination Advisory</span>
                                 <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase ${
                                   b.ai_recommendation?.recommended_action === 'RECOMMEND_APPROVAL' ? 'bg-emerald-500 text-white' :
                                   b.ai_recommendation?.recommended_action === 'RECOMMEND_REJECTION' ? 'bg-[#F84464] text-white' :
@@ -935,12 +1051,12 @@
                                   {b.ai_recommendation?.recommended_action}
                                 </span>
                               </div>
-                              <p className="text-xs text-slate-200 leading-relaxed bg-white/10 p-2.5 rounded-xl border border-white/10">
+                              <p className="text-xs text-slate-200 leading-relaxed bg-white/10 p-3 rounded-xl border border-white/10">
                                 {b.ai_recommendation?.executive_summary}
                               </p>
                               <button
                                 onClick={() => setIsChatOpen(true)}
-                                className="w-full py-1.5 text-xs font-bold bg-white text-[#0B2559] hover:bg-slate-100 rounded-xl transition text-center shadow"
+                                className="w-full py-2 text-xs font-bold bg-white text-[#0B2559] hover:bg-slate-100 rounded-xl transition text-center shadow"
                               >
                                 💬 Ask AI About This Vendor →
                               </button>
@@ -949,8 +1065,8 @@
                           </div>
 
                           {/* Deep-Dive Report Sub-Navigation Tabs */}
-                          <div className="space-y-3">
-                            <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200">
+                          <div className="space-y-4">
+                            <div className="flex flex-wrap gap-2 p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
                               {[
                                 { id: 'overview', label: `🔍 Cross-Check (${b.cross_check_mismatches?.length || 0} Flags)` },
                                 { id: 'forensics', label: `🔬 Forensic ELA (${tamperScore}% Tamper Risk)` },
@@ -962,7 +1078,7 @@
                                 <button
                                   key={tab.id}
                                   onClick={() => setBidderTab(b.bidder_id, tab.id)}
-                                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
+                                  className={`px-4 py-2 text-xs font-bold rounded-xl transition ${
                                     currentTab === tab.id
                                       ? 'bms-pill-active'
                                       : 'text-slate-600 hover:bg-white'
@@ -975,54 +1091,66 @@
 
                             {/* Tab 1: Cross-Verification Reconciler */}
                             {currentTab === 'overview' && (
-                              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
                                 {b.cross_check_mismatches?.length > 0 ? (
-                                  <div className="space-y-2.5">
-                                    <span className="text-xs font-extrabold text-amber-700 uppercase tracking-wider block">
-                                      ⚠️ Cross-Check Discrepancies Between Uploaded PDF & Government Database:
+                                  <div className="space-y-3">
+                                    <span className="text-xs font-extrabold text-amber-800 uppercase tracking-wider block">
+                                      ⚠️ Cross-Check Discrepancies Between Uploaded Certificate & Government Database:
                                     </span>
                                     {b.cross_check_mismatches.map((m, i) => (
-                                      <div key={i} className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-1.5">
+                                      <div key={i} className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs space-y-2">
                                         <div className="flex justify-between font-bold text-amber-900">
-                                          <span>⚠️ {m.field_name}</span>
-                                          <span className="uppercase text-[9px] px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-extrabold">{m.severity} RISK</span>
+                                          <span className="text-sm">⚠️ {m.field_name}</span>
+                                          <span className="uppercase text-[9px] px-2.5 py-0.5 rounded bg-amber-200 text-amber-900 font-extrabold">{m.severity} RISK</span>
                                         </div>
                                         <p className="text-slate-700">{m.discrepancy_explanation}</p>
                                         <div className="flex flex-wrap gap-2 text-xs font-mono mt-1">
-                                          <span className="bg-white px-2.5 py-1 rounded border border-slate-200">
-                                            Doc Extraction: <strong className="text-rose-600">{String(m.source_a_value)}</strong>
+                                          <span className="bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+                                            Doc Extraction: <strong className="text-rose-600 font-sans">{String(m.source_a_value)}</strong>
                                           </span>
-                                          <span className="bg-white px-2.5 py-1 rounded border border-slate-200">
-                                            Live Portal Master: <strong className="text-emerald-700">{String(m.source_b_value)}</strong>
+                                          <span className="bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+                                            Live Portal Master: <strong className="text-emerald-700 font-sans">{String(m.source_b_value)}</strong>
                                           </span>
                                         </div>
                                         <p className="text-xs text-blue-900 font-medium pt-1">
-                                          💡 <strong>Investigation Note:</strong> {m.suggested_investigation}
+                                          💡 <strong>Investigation Protocol:</strong> {m.suggested_investigation}
                                         </p>
                                       </div>
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center space-x-2">
-                                    <span>✅ <strong>Zero Discrepancies Found:</strong> All uploaded certificates match 100% with the live databases of GSTN, MCA21, EPFO, and CPPP.</span>
+                                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-900 font-medium flex items-center space-x-3">
+                                    <span className="text-xl">✅</span>
+                                    <span><strong>Zero Discrepancies Detected:</strong> All uploaded certificates match 100% with the live master databases of GSTN, MCA21, EPFO, and CPPP.</span>
                                   </div>
                                 )}
 
-                                {/* Raw Data Side-by-Side */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                                  <div className="bg-white p-3.5 rounded-xl border border-slate-200">
-                                    <span className="text-[10px] font-bold text-blue-900 uppercase tracking-wider block mb-1">
-                                      📄 Uploaded Document Extraction (OCR)
-                                    </span>
-                                    <pre className="text-[11px] font-mono text-slate-700 whitespace-pre-wrap overflow-x-auto bg-slate-50 p-2.5 rounded border border-slate-200">
+                                {/* Raw Extraction Side-by-Side */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                                  <div className="bg-white p-4 rounded-2xl border border-slate-200">
+                                    <div className="flex justify-between items-center mb-2">
+                                      <span className="text-[10px] font-bold text-blue-900 uppercase tracking-wider">
+                                        📄 Uploaded Document Extraction (OCR)
+                                      </span>
+                                      <button
+                                        onClick={() => handleOpenDocViewer(b, 'GST_CERTIFICATE')}
+                                        className="text-[11px] text-blue-600 hover:text-blue-800 font-bold"
+                                      >
+                                        View Certificate →
+                                      </button>
+                                    </div>
+                                    <pre className="text-[11px] font-mono text-slate-700 whitespace-pre-wrap overflow-x-auto bg-slate-50 p-3 rounded-xl border border-slate-200">
                                       {JSON.stringify(b.documents[0]?.extracted_fields || {}, null, 2)}
                                     </pre>
                                   </div>
-                                  <div className="bg-white p-3.5 rounded-xl border border-slate-200">
-                                    <span className="text-[10px] font-bold text-emerald-900 uppercase tracking-wider block mb-1">
-                                      🏛️ Live Master Portal Record (API Setu)
-                                    </span>
-                                    <pre className="text-[11px] font-mono text-slate-700 whitespace-pre-wrap overflow-x-auto bg-slate-50 p-2.5 rounded border border-slate-200">
+                                  <div className="bg-white p-4 rounded-2xl border border-slate-200">
+                                    <div className="flex justify-between items-center mb-2">
+                                      <span className="text-[10px] font-bold text-emerald-900 uppercase tracking-wider">
+                                        🏛️ Live Master Portal Record (API Setu)
+                                      </span>
+                                      <span className="text-[10px] text-emerald-700 font-mono font-bold">GSTN Live</span>
+                                    </div>
+                                    <pre className="text-[11px] font-mono text-slate-700 whitespace-pre-wrap overflow-x-auto bg-slate-50 p-3 rounded-xl border border-slate-200">
                                       {JSON.stringify(b.portal_verifications['GST_PORTAL']?.key_fields || {}, null, 2)}
                                     </pre>
                                   </div>
@@ -1030,17 +1158,17 @@
                               </div>
                             )}
 
-                            {/* Tab 2: Document Forensics & ELA Tamper Analysis (NEW) */}
+                            {/* Tab 2: Document Forensics & ELA Tamper Analysis */}
                             {currentTab === 'forensics' && (
-                              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-5">
                                 
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-slate-200 gap-2">
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-slate-200 gap-3">
                                   <div>
-                                    <div className="flex items-center space-x-2">
+                                    <div className="flex items-center space-x-2.5">
                                       <h4 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">
                                         🔬 3-Layer Document Forensics & ELA Tamper Analysis
                                       </h4>
-                                      <span className={`px-2.5 py-0.5 text-[10px] font-black rounded-full uppercase ${
+                                      <span className={`px-3 py-0.5 text-[10px] font-black rounded-full uppercase ${
                                         tamperStatus === 'CLEAN' ? 'bg-emerald-100 text-emerald-800' :
                                         tamperStatus === 'LIKELY_TAMPERED' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
                                         'bg-amber-100 text-amber-800'
@@ -1048,14 +1176,14 @@
                                         {tamperStatus} STATUS
                                       </span>
                                     </div>
-                                    <p className="text-xs text-slate-500">
-                                      Pre-OCR forensic scan analyzing pixel compression residue (ELA Q90), file metadata, and copy-move splices
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                      Pre-OCR forensic analysis inspecting pixel compression residue (ELA Q90), file headers, and copy-move splices
                                     </p>
                                   </div>
 
-                                  <div className="flex items-center space-x-3 bg-white px-3.5 py-2 rounded-xl border border-slate-200">
+                                  <div className="flex items-center space-x-3 bg-white px-4 py-2.5 rounded-2xl border border-slate-200 shadow-sm">
                                     <span className="text-xs font-bold text-slate-500 uppercase">Tamper Suspicion:</span>
-                                    <span className={`text-base font-black font-mono ${
+                                    <span className={`text-lg font-black font-mono ${
                                       tamperScore > 65 ? 'text-rose-600' : tamperScore > 25 ? 'text-amber-600' : 'text-emerald-600'
                                     }`}>
                                       {tamperScore} / 100
@@ -1064,15 +1192,15 @@
                                 </div>
 
                                 {/* 3 Forensic Detection Layer Gauges */}
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                   
                                   {/* Layer 1: ELA */}
-                                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1">
+                                  <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-1.5 shadow-sm">
                                     <div className="flex justify-between items-center text-xs">
                                       <span className="font-bold text-slate-700">1. Error Level Analysis (ELA)</span>
                                       <span className="font-mono font-extrabold text-blue-900">{forensic?.ela_score ?? 0}%</span>
                                     </div>
-                                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                                       <div
                                         className={`h-full ${
                                           (forensic?.ela_score ?? 0) > 60 ? 'bg-rose-500' : (forensic?.ela_score ?? 0) > 25 ? 'bg-amber-500' : 'bg-emerald-500'
@@ -1084,12 +1212,12 @@
                                   </div>
 
                                   {/* Layer 2: Metadata */}
-                                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1">
+                                  <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-1.5 shadow-sm">
                                     <div className="flex justify-between items-center text-xs">
                                       <span className="font-bold text-slate-700">2. Metadata Consistency</span>
                                       <span className="font-mono font-extrabold text-blue-900">{forensic?.metadata_score ?? 0}%</span>
                                     </div>
-                                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                                       <div
                                         className={`h-full ${
                                           (forensic?.metadata_score ?? 0) > 60 ? 'bg-rose-500' : (forensic?.metadata_score ?? 0) > 25 ? 'bg-amber-500' : 'bg-emerald-500'
@@ -1101,12 +1229,12 @@
                                   </div>
 
                                   {/* Layer 3: Copy-Move */}
-                                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1">
+                                  <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-1.5 shadow-sm">
                                     <div className="flex justify-between items-center text-xs">
                                       <span className="font-bold text-slate-700">3. Stamp/Signature Splice</span>
                                       <span className="font-mono font-extrabold text-blue-900">{forensic?.copy_move_score ?? 0}%</span>
                                     </div>
-                                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                                       <div
                                         className={`h-full ${
                                           (forensic?.copy_move_score ?? 0) > 60 ? 'bg-rose-500' : (forensic?.copy_move_score ?? 0) > 25 ? 'bg-amber-500' : 'bg-emerald-500'
@@ -1120,7 +1248,7 @@
                                 </div>
 
                                 {/* Forensic Summary Callout */}
-                                <div className={`p-4 rounded-xl text-xs space-y-1.5 border ${
+                                <div className={`p-4 rounded-2xl text-xs space-y-1.5 border ${
                                   tamperStatus === 'LIKELY_TAMPERED' ? 'bg-rose-50 border-rose-200 text-rose-900' :
                                   tamperStatus === 'SUSPICIOUS' ? 'bg-amber-50 border-amber-200 text-amber-900' :
                                   'bg-emerald-50 border-emerald-200 text-emerald-900'
@@ -1132,21 +1260,21 @@
                                 </div>
 
                                 {/* Side-by-Side ELA Heatmap and Metadata Analysis */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                   
                                   {/* ELA Heatmap Visualizer */}
-                                  <div className="bg-slate-900 text-white rounded-2xl p-4 border border-slate-800 space-y-3 shadow-inner">
+                                  <div className="bg-slate-900 text-white rounded-2xl p-5 border border-slate-800 space-y-3 shadow-inner">
                                     <div className="flex justify-between items-center">
                                       <span className="text-xs font-black text-amber-400 uppercase tracking-wider">
                                         🔥 ELA Pixel Heatmap (Quality 90 Residue)
                                       </span>
-                                      <span className="text-[9px] bg-white/10 px-2 py-0.5 rounded text-slate-300 font-mono">
+                                      <span className="text-[9px] bg-white/10 px-2.5 py-0.5 rounded text-slate-300 font-mono">
                                         JPEG Diff Matrix
                                       </span>
                                     </div>
 
                                     {forensic?.ela_heatmap_base64 ? (
-                                      <div className="rounded-xl overflow-hidden border border-slate-700 bg-black flex items-center justify-center p-1">
+                                      <div className="rounded-xl overflow-hidden border border-slate-700 bg-black flex items-center justify-center p-2">
                                         <img
                                           src={forensic.ela_heatmap_base64}
                                           alt="ELA Heatmap"
@@ -1163,7 +1291,7 @@
                                       <span className="text-[10px] font-bold text-slate-400 uppercase">Flagged Coordinate Anomaly Zones:</span>
                                       {forensic?.flagged_regions?.length > 0 ? (
                                         forensic.flagged_regions.map((reg, idx) => (
-                                          <div key={idx} className="p-2 bg-slate-800/90 rounded-lg border border-rose-500/40 text-[11px] font-mono flex items-start space-x-2">
+                                          <div key={idx} className="p-2.5 bg-slate-800/90 rounded-xl border border-rose-500/40 text-[11px] font-mono flex items-start space-x-2">
                                             <span className="text-rose-400 font-bold">⚠️ [{reg.x},{reg.y}]</span>
                                             <span className="text-slate-200">{reg.description}</span>
                                           </div>
@@ -1175,29 +1303,29 @@
                                   </div>
 
                                   {/* Metadata & Splice Evidence */}
-                                  <div className="space-y-3">
+                                  <div className="space-y-4">
                                     
                                     {/* Metadata Box */}
-                                    <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2.5">
+                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-3 shadow-sm">
                                       <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                                         <span className="text-xs font-bold text-slate-800 uppercase">📄 File Header & Metadata Inspection</span>
-                                        <span className={`text-[9px] px-2 py-0.5 rounded font-mono font-bold ${
+                                        <span className={`text-[9px] px-2.5 py-0.5 rounded font-mono font-bold ${
                                           forensic?.metadata_analysis?.is_software_suspicious ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
                                         }`}>
                                           {forensic?.metadata_analysis?.is_software_suspicious ? 'SUSPICIOUS EDITOR' : 'GENUINE CREATOR'}
                                         </span>
                                       </div>
 
-                                      <div className="text-xs font-mono space-y-1 text-slate-600">
-                                        <p>Producing Software: <strong className="text-slate-900">{forensic?.metadata_analysis?.producing_software || 'Official Engine'}</strong></p>
+                                      <div className="text-xs font-mono space-y-1.5 text-slate-600">
+                                        <p>Producing Software: <strong className="text-slate-900">{forensic?.metadata_analysis?.producing_software || 'Official Statutory Engine'}</strong></p>
                                         <p>Created: <strong>{forensic?.metadata_analysis?.creation_date || 'N/A'}</strong></p>
                                         <p>Modified: <strong>{forensic?.metadata_analysis?.modification_date || 'N/A'}</strong></p>
                                       </div>
 
-                                      <div className="space-y-1 pt-1">
+                                      <div className="space-y-1.5 pt-1">
                                         <span className="text-[10px] font-bold text-slate-400 uppercase block">Observations:</span>
                                         {forensic?.metadata_analysis?.flags?.map((fl, i) => (
-                                          <div key={i} className="text-[11px] text-slate-700 bg-slate-50 p-2 rounded border border-slate-200">
+                                          <div key={i} className="text-[11px] text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
                                             • {fl}
                                           </div>
                                         ))}
@@ -1205,14 +1333,14 @@
                                     </div>
 
                                     {/* Copy-Move Splice Evidence */}
-                                    <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
+                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-2.5 shadow-sm">
                                       <div className="flex justify-between items-center pb-1 border-b border-slate-100">
                                         <span className="text-xs font-bold text-slate-800 uppercase">🧩 Copy-Move / Stamp Splice Detection</span>
                                         <span className="text-[10px] font-mono text-slate-400">Block Matching</span>
                                       </div>
                                       {forensic?.copy_move_matches?.length > 0 ? (
                                         forensic.copy_move_matches.map((cm, i) => (
-                                          <div key={i} className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900">
+                                          <div key={i} className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900">
                                             <p className="font-bold">⚠️ Duplicate Cluster Detected (Confidence: {(cm.match_confidence*100).toFixed(0)}%)</p>
                                             <p className="text-[11px] text-slate-700 mt-0.5">{cm.explanation}</p>
                                           </div>
@@ -1231,35 +1359,41 @@
 
                             {/* Tab 3: Document Vault */}
                             {currentTab === 'vault' && (
-                              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
                                 <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                                   <div>
                                     <h4 className="text-xs font-bold text-slate-800 uppercase">Unified Vendor Document Vault</h4>
                                     <p className="text-[11px] text-slate-500">Verified credentials digitally notarized and reusable across central tenders</p>
                                   </div>
-                                  <span className="text-xs bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full font-bold font-mono">
+                                  <span className="text-xs bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-0.5 rounded-full font-bold font-mono">
                                     DigiLocker Certified
                                   </span>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   {b.vault_documents?.map(doc => (
-                                    <div key={doc.doc_id} className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2 shadow-sm">
-                                      <div className="flex justify-between items-start">
-                                        <span className="text-xs font-extrabold text-slate-800">{doc.document_name}</span>
-                                        <span className="text-[9px] bg-blue-100 text-blue-900 px-2 py-0.5 rounded font-mono font-bold">
-                                          {doc.verification_badge}
-                                        </span>
+                                    <div key={doc.doc_id} className="bg-white border border-slate-200 rounded-2xl p-4 space-y-2.5 shadow-sm flex flex-col justify-between">
+                                      <div>
+                                        <div className="flex justify-between items-start">
+                                          <span className="text-xs font-extrabold text-slate-900">{doc.document_name}</span>
+                                          <span className="text-[9px] bg-blue-100 text-blue-900 px-2 py-0.5 rounded font-mono font-bold">
+                                            {doc.verification_badge}
+                                          </span>
+                                        </div>
+                                        <div className="text-xs text-slate-600 font-mono space-y-1 mt-2">
+                                          <p>Issuer: <strong className="text-slate-800 font-sans">{doc.issuer}</strong></p>
+                                          <p>Issued: <strong>{doc.issue_date}</strong> | Expiry: <strong>{doc.expiry_date}</strong></p>
+                                          <p>Multi-Bid Reuses: <strong className="text-emerald-700">{doc.reuse_count} bids</strong></p>
+                                        </div>
                                       </div>
-                                      <div className="text-xs text-slate-600 font-mono space-y-0.5">
-                                        <p>Issuer: <strong className="text-slate-800 font-sans">{doc.issuer}</strong></p>
-                                        <p>Issued: <strong>{doc.issue_date}</strong> | Expiry: <strong>{doc.expiry_date}</strong></p>
-                                        <p>Multi-Bid Reuses: <strong className="text-emerald-700">{doc.reuse_count} bids</strong></p>
-                                      </div>
-                                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                                        <span className="text-emerald-700 font-bold">
-                                          {doc.is_valid ? '✅ Notarized & Active' : '❌ Expired/Revoked'}
-                                        </span>
+
+                                      <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
+                                        <button
+                                          onClick={() => handleOpenDocViewer(b, doc.doc_type)}
+                                          className="text-blue-700 hover:text-blue-900 font-bold"
+                                        >
+                                          📄 View Official Certificate →
+                                        </button>
                                         <span className="text-slate-400 font-mono text-[10px]">{doc.file_size_kb} KB</span>
                                       </div>
                                     </div>
@@ -1270,18 +1404,18 @@
 
                             {/* Tab 4: Cartel Network Graph */}
                             {currentTab === 'graph' && (
-                              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
                                 <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                                   <div>
                                     <h4 className="text-xs font-bold text-slate-800 uppercase">Corporate Entity Linkage & Cartel Map</h4>
                                     <p className="text-[11px] text-slate-500">Mapping Director DINs, common addresses, and blacklisted promoters</p>
                                   </div>
-                                  <span className="text-xs bg-rose-100 text-rose-800 border border-rose-300 px-2.5 py-0.5 rounded-full font-mono font-bold">
+                                  <span className="text-xs bg-rose-100 text-rose-800 border border-rose-300 px-3 py-0.5 rounded-full font-mono font-bold">
                                     {entityGraph?.cartels_detected || 0} Conflict Edges Found
                                   </span>
                                 </div>
 
-                                <div className="bg-slate-900 rounded-xl p-3 border border-slate-800 overflow-x-auto shadow-inner">
+                                <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800 overflow-x-auto shadow-inner">
                                   <svg className="w-full h-72 min-w-[600px]" viewBox="0 0 700 300">
                                     {entityGraph?.edges?.map((edge, idx) => {
                                       let x1 = 100, y1 = 70, x2 = 300, y2 = 70;
@@ -1331,25 +1465,25 @@
                                   </svg>
                                 </div>
 
-                                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs space-y-1">
+                                <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-xs space-y-1">
                                   <span className="font-extrabold text-rose-900 uppercase text-[10px] tracking-wider block">
                                     🚨 Graph Synthesis:
                                   </span>
-                                  <p className="text-slate-700">{entityGraph?.risk_summary}</p>
+                                  <p className="text-slate-700 leading-relaxed">{entityGraph?.risk_summary}</p>
                                 </div>
                               </div>
                             )}
 
                             {/* Tab 5: Deterministic Rules Engine */}
                             {currentTab === 'rules' && (
-                              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
+                              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
                                 <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                                   <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Deterministic YAML Rule Evaluator</span>
-                                  <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-mono font-bold">100% Explainable</span>
+                                  <span className="text-[10px] bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded font-mono font-bold">100% Explainable</span>
                                 </div>
 
                                 {b.rule_results?.map(r => (
-                                  <div key={r.rule_id} className={`p-3.5 rounded-xl border text-xs flex justify-between items-start ${
+                                  <div key={r.rule_id} className={`p-4 rounded-2xl border text-xs flex justify-between items-start ${
                                     r.passed ? 'bg-white border-slate-200' : 'bg-rose-50 border-rose-200'
                                   }`}>
                                     <div>
@@ -1357,10 +1491,10 @@
                                         <span className="font-extrabold text-slate-900">{r.passed ? '✅' : '❌'} {r.rule_name}</span>
                                         {r.is_hard_block && <span className="text-[9px] bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.2 rounded uppercase font-bold">Hard Gate</span>}
                                       </div>
-                                      <p className="text-xs font-mono text-slate-500 mt-0.5">Condition: {r.expected_condition} | Evaluated: {String(r.actual_value)}</p>
+                                      <p className="text-xs font-mono text-slate-500 mt-1">Condition: {r.expected_condition} | Evaluated: {String(r.actual_value)}</p>
                                       {!r.passed && <p className="text-rose-700 font-semibold mt-1">⚠️ {r.failure_reason}</p>}
                                     </div>
-                                    <span className={`px-2.5 py-0.5 text-[10px] font-extrabold rounded uppercase ${
+                                    <span className={`px-3 py-1 text-[10px] font-extrabold rounded-lg uppercase ${
                                       r.passed ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
                                     }`}>
                                       {r.passed ? 'PASS' : 'FAIL'}
@@ -1372,19 +1506,19 @@
 
                             {/* Tab 6: Officer Determination & CAG Signing */}
                             {currentTab === 'decision' && (
-                              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
                                 <div className="flex justify-between items-center border-b border-slate-200 pb-2">
                                   <div>
                                     <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Procurement Officer Determination & Signature</h4>
                                     <p className="text-[11px] text-slate-500">Step 9: Human-in-the-Loop decision workflow</p>
                                   </div>
-                                  <span className="text-xs bg-blue-100 text-blue-900 px-2.5 py-0.5 rounded-full font-bold font-mono">
+                                  <span className="text-xs bg-blue-100 text-blue-900 px-3 py-1 rounded-full font-bold font-mono">
                                     Current: {b.officer_status}
                                   </span>
                                 </div>
 
-                                <form onSubmit={e => handleDecisionSubmit(e, b.bidder_id)} className="space-y-3">
-                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                <form onSubmit={e => handleDecisionSubmit(e, b.bidder_id)} className="space-y-4">
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                                     {[
                                       { id: 'APPROVE', label: '✅ Approve Tenderer' },
                                       { id: 'REJECT', label: '❌ Disqualify / Reject' },
@@ -1395,7 +1529,7 @@
                                         key={act.id}
                                         type="button"
                                         onClick={() => setDecisionAction(act.id)}
-                                        className={`p-2.5 rounded-xl border text-xs font-bold transition ${
+                                        className={`p-3 rounded-2xl border text-xs font-bold transition ${
                                           decisionAction === act.id
                                             ? 'bg-[#0B2559] text-white border-[#0B2559] shadow-sm'
                                             : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -1413,7 +1547,7 @@
                                       placeholder="Mandatory CAG / CVC Audit Justification for rule override..."
                                       value={overrideJustification}
                                       onChange={e => setOverrideJustification(e.target.value)}
-                                      className="w-full bg-purple-50 border border-purple-300 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                                      className="w-full bg-purple-50 border border-purple-300 rounded-2xl p-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-600"
                                     />
                                   )}
 
@@ -1423,15 +1557,15 @@
                                     placeholder="Enter officer technical evaluation remarks..."
                                     value={officerRemarks}
                                     onChange={e => setOfficerRemarks(e.target.value)}
-                                    className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                    className="w-full bg-white border border-slate-300 rounded-2xl p-3 text-xs text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-blue-600"
                                   />
 
-                                  <div className="flex justify-between items-center pt-1">
+                                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-1">
                                     <span className="text-[11px] text-slate-500 font-mono">Digital Signature: <strong>Rajesh Kumar (Senior Director, GeM)</strong></span>
                                     <button
                                       type="submit"
                                       disabled={verifyingId === b.bidder_id || !officerRemarks.trim()}
-                                      className="px-5 py-2 bg-[#F84464] hover:bg-[#d93b57] text-white text-xs font-bold rounded-xl shadow disabled:opacity-50"
+                                      className="px-6 py-2.5 bg-[#F84464] hover:bg-[#d93b57] text-white text-xs font-bold rounded-xl shadow disabled:opacity-50"
                                     >
                                       Commit Decision & Append CAG Log
                                     </button>
@@ -1449,13 +1583,309 @@
                   );
                 })}
               </div>
-            </div>
+            </section>
 
           </main>
 
+          {/* OFFICIAL STATUTORY DOCUMENT PREVIEWER MODAL */}
+          {previewBidder && previewDocData && (
+            <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex justify-center items-center p-4">
+              <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] animate-fadeIn">
+                
+                {/* Certificate Header */}
+                <div className="p-5 bg-gradient-to-r from-[#06152B] to-[#0B2559] text-white flex justify-between items-center">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">🏛️</span>
+                    <div>
+                      <h3 className="text-sm font-extrabold uppercase tracking-wide">
+                        Official Government Document Certificate Viewer
+                      </h3>
+                      <p className="text-xs text-blue-200">
+                        DigiLocker & API Setu Notarized Statutory Copy
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={() => { setPreviewBidder(null); setPreviewDocData(null); }} className="text-white hover:text-amber-400 font-bold text-xl p-1">✕</button>
+                </div>
+
+                {/* Document Type Switcher */}
+                <div className="p-3 bg-slate-100 border-b border-slate-200 flex gap-2 overflow-x-auto">
+                  {[
+                    { id: 'GST_CERTIFICATE', label: 'Form GST REG-06' },
+                    { id: 'UDYAM_CERTIFICATE', label: 'Udyam MSME Certificate' },
+                    { id: 'CA_TURNOVER_CERTIFICATE', label: 'CA Turnover UDIN Statement' },
+                    { id: 'DEBARMENT_RECORD', label: 'CPPP Debarment Record' }
+                  ].map(dt => (
+                    <button
+                      key={dt.id}
+                      onClick={() => handleOpenDocViewer(previewBidder, dt.id)}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition flex-shrink-0 ${
+                        previewDocType === dt.id
+                          ? 'bg-[#0B2559] text-white shadow'
+                          : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'
+                      }`}
+                    >
+                      {dt.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Certificate Body (Authentic Government Certificate Styling) */}
+                <div className="p-8 overflow-y-auto space-y-6 bg-amber-50/20 border-8 border-double border-slate-300 m-4 rounded-2xl relative shadow-inner">
+                  
+                  {/* Watermark */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none select-none">
+                    <span className="text-6xl font-black rotate-[-25deg] text-slate-900">
+                      {previewDocData.watermark || "DIGILOCKER VERIFIED"}
+                    </span>
+                  </div>
+
+                  {/* Emblem & Top Headings */}
+                  <div className="text-center space-y-1 pb-4 border-b-2 border-slate-800">
+                    <div className="text-3xl mx-auto">🇮🇳</div>
+                    <h3 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                      {previewDocData.title}
+                    </h3>
+                    <h4 className="text-xs font-bold text-slate-700 uppercase">
+                      {previewDocData.subtitle}
+                    </h4>
+                    <p className="text-[10px] text-slate-500 font-mono">{previewDocData.form_code} • {previewDocData.issuing_authority}</p>
+                  </div>
+
+                  {/* Certificate Fields Grid */}
+                  <div className="grid grid-cols-2 gap-4 text-xs font-mono">
+                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Registration / Doc Number</span>
+                      <strong className="text-slate-900 text-sm">{previewDocData.registration_number}</strong>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Constitution / Structure</span>
+                      <strong className="text-slate-900">{previewDocData.constitution}</strong>
+                    </div>
+
+                    <div className="col-span-2 bg-white p-3 rounded-xl border border-slate-200">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Legal Name of Enterprise</span>
+                      <strong className="text-slate-900 text-sm font-sans">{previewDocData.legal_name}</strong>
+                    </div>
+
+                    <div className="col-span-2 bg-white p-3 rounded-xl border border-slate-200">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Principal Place of Business</span>
+                      <span className="text-slate-800">{previewDocData.principal_address}</span>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Date of Validity / Period</span>
+                      <span className="text-slate-800">{previewDocData.date_of_validity}</span>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Jurisdiction / Officer</span>
+                      <span className="text-slate-800">{previewDocData.jurisdiction}</span>
+                    </div>
+                  </div>
+
+                  {/* Key Stats Pill Box */}
+                  <div className="bg-slate-100 p-4 rounded-xl border border-slate-200 text-xs space-y-1">
+                    <span className="font-bold text-slate-700 uppercase text-[10px]">Statutory Verification Parameters:</span>
+                    {Object.entries(previewDocData.key_stats || {}).map(([k, v]) => (
+                      <div key={k} className="flex justify-between font-mono">
+                        <span className="text-slate-500">{k}:</span>
+                        <strong className="text-slate-800">{String(v)}</strong>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Digital Signature & Seal */}
+                  <div className="pt-4 border-t-2 border-slate-800 flex justify-between items-center text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Digital Seal / Token</span>
+                      <span className="text-emerald-700 font-bold font-mono">✅ {previewDocData.udin_or_auth}</span>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{previewDocData.verification_status}</p>
+                    </div>
+                    <div className="w-14 h-14 bg-slate-900 rounded-lg flex items-center justify-center text-white text-2xl font-mono shadow">
+                      QR
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Modal Footer */}
+                <div className="p-4 bg-slate-100 border-t border-slate-200 text-right">
+                  <button
+                    onClick={() => { setPreviewBidder(null); setPreviewDocData(null); }}
+                    className="px-5 py-2 bg-[#0B2559] hover:bg-[#07183a] text-white text-xs font-bold rounded-xl transition shadow"
+                  >
+                    Close Document Viewer
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* COMPREHENSIVE FULL EXECUTIVE DOSSIER REPORT MODAL */}
+          {fullReportBidder && (
+            <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex justify-center items-center p-4">
+              <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[94vh] animate-fadeIn">
+                
+                {/* Top Action Header */}
+                <div className="p-5 bg-[#0B2559] text-white flex justify-between items-center no-print">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">📋</span>
+                    <div>
+                      <h3 className="text-base font-extrabold uppercase">
+                        Complete Executive Dossier & CAG Audit Report
+                      </h3>
+                      <p className="text-xs text-blue-200">
+                        Official Technical Evaluation Committee Multi-Page Audit Record
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => window.print()}
+                      className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow transition"
+                    >
+                      🖨️ Print / Save PDF
+                    </button>
+                    <button onClick={() => setFullReportBidder(null)} className="text-white hover:text-amber-400 font-bold text-xl p-1">✕</button>
+                  </div>
+                </div>
+
+                {/* Printable Full Report Body */}
+                <div className="p-8 overflow-y-auto space-y-6 bg-white text-slate-900">
+                  
+                  {/* Government Header */}
+                  <div className="text-center pb-4 border-b-2 border-slate-800 space-y-1">
+                    <div className="text-3xl">🇮🇳</div>
+                    <h2 className="text-base font-black uppercase text-slate-900 tracking-wider">
+                      GOVERNMENT OF INDIA • GOVERNMENT E-MARKETPLACE (GeM)
+                    </h2>
+                    <h3 className="text-xs font-bold text-slate-600 uppercase">
+                      TECHNICAL EVALUATION COMMITTEE EXECUTIVE DOSSIER REPORT
+                    </h3>
+                    <p className="text-[11px] font-mono text-slate-500">
+                      Tender ID: <strong>{fullReportBidder.tender_id}</strong> • Bidder ID: <strong>{fullReportBidder.bidder_id}</strong> • Generated: {new Date().toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  {/* Section 1: Bidder Identity */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black uppercase text-[#0B2559] tracking-wider border-b border-slate-200 pb-1">
+                      1. Bidder Corporate Profile & Statutory Identifiers
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+                      <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <span className="text-[10px] text-slate-400 font-bold block">Company Name</span>
+                        <strong className="text-slate-900 font-sans">{fullReportBidder.company_name}</strong>
+                      </div>
+                      <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <span className="text-[10px] text-slate-400 font-bold block">GSTIN Number</span>
+                        <strong className="text-slate-900">{fullReportBidder.identifiers.gstin}</strong>
+                      </div>
+                      <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <span className="text-[10px] text-slate-400 font-bold block">PAN Card</span>
+                        <strong className="text-slate-900">{fullReportBidder.identifiers.pan}</strong>
+                      </div>
+                      <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <span className="text-[10px] text-slate-400 font-bold block">Audited Turnover</span>
+                        <strong className="text-emerald-700">₹{(fullReportBidder.financials.annual_turnover_inr/10000000).toFixed(2)} Cr</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 2: Statutory Compliance & Forensics */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black uppercase text-[#0B2559] tracking-wider border-b border-slate-200 pb-1">
+                      2. Automated 10-Step Compliance & Digital Forensics Verdict
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Statutory Compliance</span>
+                        <span className="text-xl font-black font-mono text-slate-900">{fullReportBidder.compliance_score?.score} / 100</span>
+                        <span className="text-[10px] font-extrabold uppercase block text-emerald-700 mt-0.5">{fullReportBidder.compliance_score?.risk_level} RISK</span>
+                      </div>
+
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase block">CIBIL Trust Score</span>
+                        <span className="text-xl font-black font-mono text-blue-900">{fullReportBidder.longitudinal_trust_score?.score} / 900</span>
+                        <span className="text-[10px] font-bold block text-slate-600 mt-0.5">{fullReportBidder.longitudinal_trust_score?.rating_band}</span>
+                      </div>
+
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase block">ELA Tamper Risk</span>
+                        <span className="text-xl font-black font-mono text-rose-700">{fullReportBidder.documents[0]?.forensic_report?.overall_tamper_score ?? 0} %</span>
+                        <span className="text-[10px] font-bold uppercase block text-slate-600 mt-0.5">{fullReportBidder.documents[0]?.forensic_report?.status ?? 'CLEAN'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 3: ELA Heatmap & Forensic Observations */}
+                  {fullReportBidder.documents[0]?.forensic_report && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-black uppercase text-[#0B2559] tracking-wider border-b border-slate-200 pb-1">
+                        3. Error Level Analysis (ELA Q90) Heatmap & Forensic Observations
+                      </h4>
+                      <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-2">
+                        <p className="font-semibold text-slate-800">{fullReportBidder.documents[0].forensic_report.forensic_summary}</p>
+                        {fullReportBidder.documents[0].forensic_report.metadata_analysis.flags.map((fl, idx) => (
+                          <div key={idx} className="text-[11px] font-mono text-slate-700 bg-white p-2 rounded border border-slate-200">
+                            • {fl}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Section 4: AI Determination Advisory */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black uppercase text-[#0B2559] tracking-wider border-b border-slate-200 pb-1">
+                      4. AI Determination Advisory & Regulatory Synthesis
+                    </h4>
+                    <div className="p-4 bg-blue-50/60 rounded-xl border border-blue-200 text-xs space-y-1">
+                      <div className="flex justify-between font-bold text-blue-950">
+                        <span>Recommended Action: {fullReportBidder.ai_recommendation?.recommended_action}</span>
+                        <span>Confidence: {(fullReportBidder.ai_recommendation?.confidence_score * 100).toFixed(0)}%</span>
+                      </div>
+                      <p className="text-slate-700 leading-relaxed">{fullReportBidder.ai_recommendation?.executive_summary}</p>
+                    </div>
+                  </div>
+
+                  {/* Section 5: Officer Signature Block */}
+                  <div className="pt-6 border-t-2 border-slate-800 flex justify-between items-end text-xs">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">CAG Audit Trail Verification</span>
+                      <span className="font-mono text-slate-600">SHA-256: 8f92b4c7a10e5d38f29910a7b</span>
+                      <p className="text-[10px] text-emerald-700 font-bold">DIGITALLY SIGNED & NOTARIZED</p>
+                    </div>
+                    <div className="text-right space-y-1">
+                      <div className="w-44 border-b border-slate-800 pb-1 font-bold text-slate-900">
+                        Rajesh Kumar
+                      </div>
+                      <p className="text-[10px] text-slate-500">Senior Director & Member Secretary, TEC</p>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Footer */}
+                <div className="p-4 bg-slate-100 border-t border-slate-200 text-right no-print">
+                  <button
+                    onClick={() => setFullReportBidder(null)}
+                    className="px-5 py-2 bg-[#0B2559] hover:bg-[#07183a] text-white text-xs font-bold rounded-xl transition shadow"
+                  >
+                    Close Report
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
+
           {/* LIVE FORENSIC LAB INTERACTIVE MODAL / SANDBOX */}
           {isForensicLabOpen && (
-            <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex justify-center items-center p-4">
+            <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex justify-center items-center p-4">
               <div className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
                 
                 {/* Header */}
@@ -1478,11 +1908,14 @@
                 <div className="p-6 overflow-y-auto space-y-5 bg-[#F8FAFC]">
                   
                   {/* Upload Controls */}
-                  <div className="bg-white p-5 rounded-2xl border-2 border-dashed border-blue-200 space-y-4 text-center">
+                  <div className="bg-white p-6 rounded-2xl border-2 border-dashed border-blue-200 space-y-4 text-center">
                     <input
                       type="file"
                       ref={fileInputRef}
-                      onChange={handleForensicFileSelect}
+                      onChange={e => {
+                        const file = e.target.files[0];
+                        if (file) setForensicFile(file);
+                      }}
                       accept="image/*,.pdf"
                       className="hidden"
                     />
@@ -1613,7 +2046,7 @@
 
           {/* AI Officer Chat Assistant Slide-Over Drawer */}
           {isChatOpen && (
-            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex justify-end">
+            <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex justify-end no-print">
               <div className="w-full max-w-xl bg-white h-full flex flex-col shadow-2xl border-l border-slate-200 animate-slideLeft">
                 
                 {/* Chat Header */}
@@ -1622,7 +2055,7 @@
                     <span className="text-2xl">🤖</span>
                     <div>
                       <h3 className="text-sm font-extrabold uppercase">GeM AI Intelligence Officer Assistant</h3>
-                      <p className="text-[11px] text-blue-200">Cross-bidder comparative analysis & GFR 2017 advisory</p>
+                      <p className="text-[11px] text-blue-200">Dynamic Multi-Vendor Reasoning & GFR 2017 Advisory</p>
                     </div>
                   </div>
                   <button onClick={() => setIsChatOpen(false)} className="text-white hover:text-amber-400 font-bold text-lg p-1">✕</button>
@@ -1632,7 +2065,7 @@
                 <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-[#F8FAFC]">
                   {chatMessages.map((msg, idx) => (
                     <div key={idx} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
-                      <div className={`p-4 rounded-2xl max-w-[90%] text-xs leading-relaxed ${
+                      <div className={`p-4 rounded-2xl max-w-[92%] text-xs leading-relaxed ${
                         msg.sender === 'user'
                           ? 'bg-[#0B2559] text-white rounded-br-none shadow-sm'
                           : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none shadow-sm'
@@ -1641,12 +2074,12 @@
 
                         {msg.suggested && (
                           <div className="mt-3 pt-2 border-t border-slate-200 space-y-1">
-                            <span className="text-[10px] text-slate-500 uppercase font-bold block">Recommended Prompts:</span>
+                            <span className="text-[10px] text-slate-500 uppercase font-bold block">Recommended Next Actions:</span>
                             {msg.suggested.map((s, i) => (
                               <button
                                 key={i}
                                 onClick={() => { setChatInput(s); }}
-                                className="block text-left text-xs text-blue-700 hover:text-blue-900 font-medium"
+                                className="block text-left text-xs text-blue-700 hover:text-blue-900 font-semibold"
                               >
                                 → {s}
                               </button>
@@ -1659,16 +2092,16 @@
                   {chatLoading && (
                     <div className="text-xs text-slate-500 flex items-center space-x-2 p-3 bg-white rounded-xl border border-slate-200 w-fit">
                       <span className="animate-spin">⚡</span>
-                      <span>AI Engine is parsing tender dossiers & registers...</span>
+                      <span>AI Procurement Engine is analyzing tender dossiers & statutory registers...</span>
                     </div>
                   )}
                 </div>
 
                 {/* Chat Input */}
-                <form onSubmit={handleSendChat} className="p-3.5 bg-white border-t border-slate-200 flex gap-2">
+                <form onSubmit={handleSendChat} className="p-4 bg-white border-t border-slate-200 flex gap-2">
                   <input
                     type="text"
-                    placeholder="Ask about ELA tamper flags, cartel risks, CIBIL scores, or GFR rules..."
+                    placeholder="Ask comparative questions, ELA forensic flags, cartel links, or GFR rules..."
                     value={chatInput}
                     onChange={e => setChatInput(e.target.value)}
                     className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
@@ -1688,7 +2121,7 @@
 
           {/* CAG Compliance Audit Trail Modal */}
           {isAuditOpen && (
-            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex justify-end">
+            <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex justify-end no-print">
               <div className="w-full max-w-xl bg-white h-full p-6 overflow-y-auto space-y-4 border-l border-slate-200 shadow-2xl">
                 <div className="flex justify-between items-center pb-3 border-b border-slate-200">
                   <div>
@@ -1717,7 +2150,7 @@
           )}
 
           {/* Footer */}
-          <footer className="bg-[#040E1E] text-slate-400 text-xs py-6 border-t border-slate-800 mt-12">
+          <footer className="bg-[#040E1E] text-slate-400 text-xs py-6 border-t border-slate-800 mt-12 no-print">
             <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
               <div className="flex items-center space-x-2">
                 <span className="text-lg">🇮🇳</span>
