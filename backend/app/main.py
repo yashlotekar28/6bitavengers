@@ -442,7 +442,9 @@ async def get_bidder_gem_proposal_dossier(bidder_id: str):
 # Feature 5 Endpoint: Natural Language Officer Assistant (Chat)
 @app.post("/api/chat/officer", response_model=OfficerChatResponse)
 async def chat_with_officer_assistant(request: OfficerChatRequest):
-    return OfficerChatAssistantService.process_officer_query(
+    # Run in thread pool so Gemini's blocking HTTP call doesn't freeze the event loop
+    return await asyncio.to_thread(
+        OfficerChatAssistantService.process_officer_query,
         request=request,
         bidders_db=BIDDERS_DB
     )
