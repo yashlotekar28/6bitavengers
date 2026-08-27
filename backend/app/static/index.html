@@ -123,8 +123,10 @@
           ]);
           setTenders(tRes);
           setAuditLogs(aRes);
-          if (tRes.length > 0 && !selectedTenderId) {
-            setSelectedTenderId(tRes[0].tender_id);
+          const initialTenderId = (tRes && tRes.length > 0) ? tRes[0].tender_id : selectedTenderId;
+          if (initialTenderId) {
+            setSelectedTenderId(initialTenderId);
+            await loadTenderData(initialTenderId);
           }
         } catch (e) {
           console.error('Error loading initial data:', e);
@@ -137,14 +139,14 @@
       const loadTenderData = async (tenderId) => {
         try {
           const [bRes, mRes, gRes] = await Promise.all([
-            fetch(`/api/tenders/${encodeURIComponent(tenderId)}/bidders`).then(r => r.json()),
+            fetch(`/api/bidders?tender_id=${encodeURIComponent(tenderId)}`).then(r => r.json()),
             fetch(`/api/metrics?tender_id=${encodeURIComponent(tenderId)}`).then(r => r.json()),
             fetch(`/api/graph/tender/${encodeURIComponent(tenderId)}`).then(r => r.json())
           ]);
           setBidders(bRes);
           setMetrics(mRes);
           setEntityGraph(gRes);
-          if (bRes.length > 0) {
+          if (bRes && bRes.length > 0) {
             setExpandedBidderId(bRes[0].bidder_id);
           }
         } catch (e) {
