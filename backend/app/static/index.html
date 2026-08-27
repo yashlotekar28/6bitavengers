@@ -19,21 +19,22 @@
   <style>
     body {
       font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-      background-color: #f1f5f9;
+      background-color: #f8fafc;
       color: #0f172a;
     }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #e2e8f0; }
-    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     
     .gem-tricolor-bar {
       background: linear-gradient(90deg, #FF9933 0%, #FF9933 33.3%, #FFFFFF 33.3%, #FFFFFF 66.6%, #138808 66.6%, #138808 100%);
       height: 4px;
     }
     
+    /* Warm Vibrant Government Saffron / Orange Gradient */
     .gem-header-gradient {
-      background: linear-gradient(135deg, #051329 0%, #0A1E3F 60%, #0D2859 100%);
+      background: linear-gradient(135deg, #EA580C 0%, #D9480F 45%, #C2410C 80%, #9A3412 100%);
     }
 
     .card-hover-lift {
@@ -41,13 +42,13 @@
     }
     .card-hover-lift:hover {
       transform: translateY(-2px);
-      box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.08);
+      box-shadow: 0 12px 24px -6px rgba(234, 88, 12, 0.12);
     }
 
     .bms-pill-active {
-      background-color: #0B2559;
+      background-color: #EA580C;
       color: #ffffff;
-      box-shadow: 0 4px 14px rgba(11, 37, 89, 0.25);
+      box-shadow: 0 4px 14px rgba(234, 88, 12, 0.3);
     }
 
     @keyframes pulseSlow {
@@ -65,7 +66,7 @@
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col selection:bg-blue-900 selection:text-white">
+<body class="min-h-screen flex flex-col selection:bg-orange-600 selection:text-white">
   
   <!-- Tricolor National Stripe -->
   <div class="gem-tricolor-bar no-print"></div>
@@ -89,7 +90,6 @@
         );
       }
 
-      // Compute simple dynamic layout coordinates for nodes
       const width = 760;
       const height = 440;
       const centerX = width / 2;
@@ -97,9 +97,6 @@
 
       const nodesWithPos = useMemo(() => {
         const nodes = entityGraph.nodes;
-        const total = nodes.length;
-        
-        // Group by type for visual clustering
         const bidders = nodes.filter(n => n.type === 'BIDDER');
         const directors = nodes.filter(n => n.type === 'DIRECTOR');
         const addresses = nodes.filter(n => n.type === 'ADDRESS');
@@ -107,7 +104,6 @@
 
         const map = {};
         
-        // Place Bidders in an outer circle on the left/top
         bidders.forEach((n, i) => {
           const angle = (i / Math.max(1, bidders.length)) * Math.PI + Math.PI / 2;
           map[n.id] = {
@@ -117,7 +113,6 @@
           };
         });
 
-        // Place Directors in center ring
         directors.forEach((n, i) => {
           const angle = (i / Math.max(1, directors.length)) * 2 * Math.PI;
           map[n.id] = {
@@ -127,7 +122,6 @@
           };
         });
 
-        // Place Addresses on the right
         addresses.forEach((n, i) => {
           const angle = (i / Math.max(1, addresses.length)) * Math.PI - Math.PI / 2;
           map[n.id] = {
@@ -137,7 +131,6 @@
           };
         });
 
-        // Place Debarred / Bank nodes
         others.forEach((n, i) => {
           map[n.id] = {
             ...n,
@@ -176,7 +169,6 @@
 
       return (
         <div className="bg-slate-900 rounded-3xl p-5 text-white space-y-4 border border-slate-800 shadow-xl">
-          {/* Header & Controls */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-slate-800 gap-2">
             <div>
               <div className="flex items-center space-x-2">
@@ -203,7 +195,6 @@
             </div>
           </div>
 
-          {/* SVG Canvas */}
           <div className="relative bg-slate-950/80 rounded-2xl border border-slate-800 p-2 overflow-hidden flex justify-center">
             <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto max-h-[460px] select-none">
               <defs>
@@ -215,7 +206,6 @@
                 </marker>
               </defs>
 
-              {/* Draw Edges */}
               {visibleEdges.map((edge, i) => {
                 const s = nodesWithPos[edge.source];
                 const t = nodesWithPos[edge.target];
@@ -235,7 +225,6 @@
                       opacity={isSelected ? 1 : 0.7}
                       markerEnd={edge.is_conflict ? 'url(#arrow-conflict)' : 'url(#arrow-clean)'}
                     />
-                    {/* Edge Label */}
                     <text
                       x={(s.x + t.x) / 2}
                       y={(s.y + t.y) / 2 - 4}
@@ -251,7 +240,6 @@
                 );
               })}
 
-              {/* Draw Nodes */}
               {Object.values(nodesWithPos).map((node) => {
                 const colors = getNodeColor(node);
                 const isSelected = selectedNode?.id === node.id;
@@ -267,7 +255,7 @@
                     <circle
                       r={node.type === 'BIDDER' ? 22 : 17}
                       fill={colors.fill}
-                      stroke={isMatchActive ? '#38BDF8' : colors.stroke}
+                      stroke={isMatchActive ? '#F97316' : colors.stroke}
                       strokeWidth={isMatchActive ? 4 : (isSelected ? 3 : 2)}
                       className={node.risk_level === 'CRITICAL' ? 'animate-pulse' : ''}
                     />
@@ -278,7 +266,6 @@
                     >
                       {getNodeIcon(node.type)}
                     </text>
-                    {/* Node Label Below */}
                     <text
                       y={node.type === 'BIDDER' ? 34 : 28}
                       textAnchor="middle"
@@ -295,12 +282,9 @@
             </svg>
           </div>
 
-          {/* Node Inspector Drawer / Legend */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-            
-            {/* Selected Node Details */}
             <div className="md:col-span-2 bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700 text-xs space-y-1.5">
-              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">
+              <span className="text-[10px] font-bold text-orange-400 uppercase tracking-wider block">
                 Node Inspector (Click any node above to inspect)
               </span>
               {selectedNode ? (
@@ -326,7 +310,6 @@
               )}
             </div>
 
-            {/* Legend & Stats */}
             <div className="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700 text-xs space-y-2">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Network Legend</span>
               <div className="grid grid-cols-2 gap-1.5 text-[11px]">
@@ -340,10 +323,8 @@
                 <span className="text-rose-400">--- Red: Cartel / Debarred</span>
               </div>
             </div>
-
           </div>
 
-          {/* Cartel Risk Summary Banner */}
           <div className="p-3 bg-rose-950/60 border border-rose-800 rounded-2xl text-xs flex items-start space-x-2 text-rose-200">
             <span className="text-base flex-shrink-0">🚨</span>
             <div>
@@ -351,16 +332,13 @@
               <span>{entityGraph.risk_summary}</span>
             </div>
           </div>
-
         </div>
       );
     }
 
     function App() {
-      // Screen View Mode: 'SELECT_TENDER' (Initial 3 Bids) vs 'EVALUATION_COCKPIT' (Deep Dive)
       const [currentView, setCurrentView] = useState('SELECT_TENDER');
       
-      // Tenders & Bidders State
       const [tenders, setTenders] = useState([]);
       const [selectedTenderId, setSelectedTenderId] = useState('GEM/2026/B/89420');
       const [bidders, setBidders] = useState([]);
@@ -369,23 +347,19 @@
       const [expandedBidderId, setExpandedBidderId] = useState('BID-2026-0891');
       const [bidderTabMap, setBidderTabMap] = useState({});
 
-      // Analytics & Logs State
       const [metrics, setMetrics] = useState(null);
       const [auditLogs, setAuditLogs] = useState([]);
       const [entityGraph, setEntityGraph] = useState(null);
       
-      // UI Modals & Drawers State
       const [isAuditOpen, setIsAuditOpen] = useState(false);
       const [isChatOpen, setIsChatOpen] = useState(false);
       const [isForensicLabOpen, setIsForensicLabOpen] = useState(false);
       const [isFullGraphOpen, setIsFullGraphOpen] = useState(false);
       
-      // Document Viewer & Official 30-Page Proposal Dossier Modal
       const [previewBidder, setPreviewBidder] = useState(null);
       const [previewDocType, setPreviewDocType] = useState('GST_CERTIFICATE');
       const [previewDocData, setPreviewDocData] = useState(null);
       
-      // Official 30-Page GeM Proposal Dossier Viewer State
       const [gemDossierBidder, setGemDossierBidder] = useState(null);
       const [gemDossierData, setGemDossierData] = useState(null);
       const [dossierPage, setDossierPage] = useState(1);
@@ -408,14 +382,12 @@
       const [filterExcludeConflicts, setFilterExcludeConflicts] = useState(false);
       const [vendorSortBy, setVendorSortBy] = useState('DEFAULT');
 
-      // Live Forensic Upload Sandbox State
       const [forensicFile, setForensicFile] = useState(null);
       const [forensicClaimedDate, setForensicClaimedDate] = useState('2025-06-15');
       const [forensicUploading, setForensicUploading] = useState(false);
       const [liveForensicResult, setLiveForensicResult] = useState(null);
       const fileInputRef = useRef(null);
 
-      // AI Chat State
       const [chatMessages, setChatMessages] = useState([
         {
           sender: 'ai',
@@ -430,7 +402,6 @@
         setTimeout(() => setNotification(null), 4000);
       };
 
-      // Load Initial Tenders
       const loadInitialData = async () => {
         try {
           setLoading(true);
@@ -447,7 +418,6 @@
         }
       };
 
-      // Select a Tender and Open its Evaluation Cockpit
       const handleSelectTender = async (tenderId) => {
         setSelectedTenderId(tenderId);
         setCurrentView('EVALUATION_COCKPIT');
@@ -477,9 +447,7 @@
         loadInitialData();
       }, []);
 
-      // Instant Officer Priority Change (Priority 1 L1, Priority 2 L2, Priority 3 L3, or Clear)
       const handleSetPriority = async (bidderId, newPriority) => {
-        // Optimistic UI Update (instant reflection)
         setBidders(prev => prev.map(b => {
           if (b.bidder_id === bidderId) {
             return {
@@ -509,7 +477,6 @@
         }
       };
 
-      // Open Original Certificate Viewer
       const handleOpenDocViewer = async (bidder, docType = 'GST_CERTIFICATE') => {
         setPreviewBidder(bidder);
         setPreviewDocType(docType);
@@ -522,7 +489,6 @@
         }
       };
 
-      // Open Official 30-Page GeM Proposal Document Dossier
       const handleOpenGemDossier = async (bidder) => {
         setGemDossierBidder(bidder);
         setDossierPage(1);
@@ -535,7 +501,6 @@
         }
       };
 
-      // Re-run 10-step verification for a single bidder
       const handleReverify = async (bidderId) => {
         try {
           await fetch(`/api/bidders/verify/${bidderId}`, { method: 'POST' });
@@ -551,7 +516,6 @@
         }
       };
 
-      // Live File Upload for ELA Forensic Scan
       const handleRunLiveForensicScan = async () => {
         if (!forensicFile) return;
         setForensicUploading(true);
@@ -571,7 +535,6 @@
         }
       };
 
-      // AI Chat Handler
       const handleSendChat = async (e) => {
         if (e) e.preventDefault();
         if (!chatInput.trim() || chatLoading) return;
@@ -659,7 +622,6 @@
           return true;
         });
 
-        // Sorting
         if (vendorSortBy === 'TRUST_DESC') {
           list.sort((a, b) => (b.longitudinal_trust_score?.score || 0) - (a.longitudinal_trust_score?.score || 0));
         } else if (vendorSortBy === 'TURNOVER_DESC') {
@@ -679,13 +641,13 @@
         <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
           
           {/* Top Utility Ribbon */}
-          <div className="bg-[#030F21] text-slate-300 text-[11px] font-medium px-4 py-2 border-b border-slate-800 no-print">
+          <div className="bg-[#18110D] text-amber-200/80 text-[11px] font-medium px-4 py-2 border-b border-orange-950 no-print">
             <div className="max-w-7xl mx-auto flex justify-between items-center">
               <div className="flex items-center space-x-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span className="text-white font-bold">Government of India • Ministry of Commerce & Industry</span>
-                <span className="text-slate-600">|</span>
-                <span className="text-amber-400 font-bold">GeM ProcureShield AI</span>
+                <span className="text-orange-900">|</span>
+                <span className="text-orange-400 font-bold">GeM ProcureShield AI</span>
               </div>
               <div className="flex items-center space-x-3 text-xs">
                 <span>Security: <strong className="text-emerald-400 font-mono">CERT-In Level 4</strong></span>
@@ -693,19 +655,19 @@
             </div>
           </div>
 
-          {/* Main Top Navigation Header */}
-          <header className="gem-header-gradient text-white sticky top-0 z-40 px-4 py-3.5 shadow-md no-print">
+          {/* Main Top Navigation Header — Vibrant Government Saffron / Orange Gradient */}
+          <header className="gem-header-gradient text-white sticky top-0 z-40 px-4 py-3.5 shadow-lg border-b border-orange-700/50 no-print">
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-              <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setCurrentView('SELECT_TENDER')}>
-                <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-2xl shadow">
+              <div className="flex items-center space-x-3.5 cursor-pointer" onClick={() => setCurrentView('SELECT_TENDER')}>
+                <div className="w-11 h-11 rounded-2xl bg-white/15 border border-white/30 flex items-center justify-center text-2xl shadow-inner backdrop-blur-sm">
                   🏛️
                 </div>
                 <div>
-                  <h1 className="font-extrabold text-lg tracking-tight text-white flex items-center gap-1.5">
-                    GeM <span className="text-[#FF9933]">Procure</span><span className="text-[#38BDF8]">Shield</span> AI
+                  <h1 className="font-extrabold text-xl tracking-tight text-white flex items-center gap-1.5 drop-shadow-sm">
+                    GeM <span className="text-amber-200">Procure</span><span className="text-white">Shield</span> AI
                   </h1>
-                  <p className="text-[11px] text-blue-200/80 font-medium">
-                    Technical Evaluation Committee AI Decision Cockpit & Forensics
+                  <p className="text-[11px] text-orange-100 font-medium">
+                    Technical Evaluation Committee AI Decision Cockpit & Fraud Shield
                   </p>
                 </div>
               </div>
@@ -713,28 +675,29 @@
               <div className="flex items-center space-x-2.5">
                 <button
                   onClick={() => setIsFullGraphOpen(true)}
-                  className="px-3 py-1.5 text-xs font-bold bg-blue-700 hover:bg-blue-600 text-white rounded-xl shadow transition flex items-center space-x-1"
+                  className="px-3.5 py-2 text-xs font-bold bg-slate-900 hover:bg-slate-950 text-orange-300 rounded-xl shadow-md transition flex items-center space-x-1.5 border border-orange-500/30"
                 >
                   <span>🕸️ Cartel Graph</span>
                 </button>
 
                 <button
                   onClick={() => setIsForensicLabOpen(true)}
-                  className="px-3 py-1.5 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl shadow transition"
+                  className="px-3.5 py-2 text-xs font-bold bg-white text-orange-950 hover:bg-orange-50 rounded-xl shadow-md transition"
                 >
                   🔬 Live Forensic Lab
                 </button>
 
                 <button
                   onClick={() => setIsChatOpen(true)}
-                  className="px-3 py-1.5 text-xs font-bold bg-[#F84464] hover:bg-[#d93b57] text-white rounded-xl shadow transition flex items-center space-x-1.5"
+                  className="px-3.5 py-2 text-xs font-bold bg-[#F84464] hover:bg-[#d93b57] text-white rounded-xl shadow-md transition flex items-center space-x-1.5"
                 >
                   <span>💬 AI Assistant</span>
+                  <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
                 </button>
 
                 <button
                   onClick={() => setIsAuditOpen(true)}
-                  className="px-3 py-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 transition"
+                  className="px-3 py-2 text-xs font-bold bg-white/20 hover:bg-white/30 text-white rounded-xl border border-white/30 transition"
                 >
                   📜 CAG Audit
                 </button>
@@ -744,7 +707,7 @@
 
           {/* Notification Toast */}
           {notification && (
-            <div className="fixed top-20 right-6 z-50 bg-[#0B2559] border-2 border-amber-400 text-white px-5 py-3 rounded-2xl shadow-2xl text-xs font-bold flex items-center space-x-2 animate-bounce no-print">
+            <div className="fixed top-20 right-6 z-50 bg-[#18110D] border-2 border-orange-500 text-white px-5 py-3 rounded-2xl shadow-2xl text-xs font-bold flex items-center space-x-2 animate-bounce no-print">
               <span>🛡️</span>
               <span>{notification}</span>
             </div>
@@ -758,7 +721,7 @@
               
               {/* Header Title Banner */}
               <div className="text-center space-y-2 max-w-2xl mx-auto">
-                <span className="text-[10px] font-black uppercase tracking-widest text-blue-900 bg-blue-100 px-3.5 py-1 rounded-full">
+                <span className="text-[10px] font-black uppercase tracking-widest text-orange-800 bg-orange-100 border border-orange-200 px-3.5 py-1 rounded-full">
                   CENTRAL PROCUREMENT DASHBOARD
                 </span>
                 <h2 className="text-2xl font-black text-slate-900">
@@ -774,7 +737,7 @@
                 
                 {/* Search Bar */}
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 text-base">
+                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-orange-500 text-base">
                     🔍
                   </span>
                   <input
@@ -782,7 +745,7 @@
                     placeholder="Search bids by Bid Number (e.g. GEM/2026/B/89420), Title, Ministry, or Category..."
                     value={tenderSearchQuery}
                     onChange={e => setTenderSearchQuery(e.target.value)}
-                    className="w-full pl-11 pr-10 py-3 bg-slate-50 border border-slate-300 rounded-2xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition"
+                    className="w-full pl-11 pr-10 py-3 bg-orange-50/30 border border-slate-300 rounded-2xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition"
                   />
                   {tenderSearchQuery && (
                     <button
@@ -812,7 +775,7 @@
                         onClick={() => setTenderBidTypeFilter(bt.id)}
                         className={`px-3 py-1.5 rounded-xl font-bold transition ${
                           tenderBidTypeFilter === bt.id
-                            ? 'bg-[#0B2559] text-white shadow-sm'
+                            ? 'bg-orange-600 text-white shadow-sm'
                             : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                         }`}
                       >
@@ -826,7 +789,7 @@
                     <select
                       value={tenderMinistryFilter}
                       onChange={e => setTenderMinistryFilter(e.target.value)}
-                      className="bg-slate-100 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-600"
+                      className="bg-slate-100 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-orange-500"
                     >
                       <option value="ALL">All Ministries</option>
                       <option value="Ministry of Defence">Ministry of Defence</option>
@@ -837,7 +800,7 @@
                     <select
                       value={tenderValueFilter}
                       onChange={e => setTenderValueFilter(e.target.value)}
-                      className="bg-slate-100 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-600"
+                      className="bg-slate-100 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-orange-500"
                     >
                       <option value="ALL">All Estimated Values</option>
                       <option value="HIGH">High Value (&gt; ₹10 Cr)</option>
@@ -852,7 +815,7 @@
                           setTenderMinistryFilter('ALL');
                           setTenderValueFilter('ALL');
                         }}
-                        className="text-xs font-bold text-blue-700 hover:underline px-2"
+                        className="text-xs font-bold text-orange-600 hover:underline px-2"
                       >
                         Reset
                       </button>
@@ -861,9 +824,8 @@
 
                 </div>
 
-                {/* Results Counter */}
                 <div className="text-[11px] text-slate-500 font-mono pt-1">
-                  Showing <strong className="text-blue-900 font-bold">{filteredTenders.length}</strong> of {tenders.length} Active Government Bids
+                  Showing <strong className="text-orange-700 font-bold">{filteredTenders.length}</strong> of {tenders.length} Active Government Bids
                 </div>
 
               </div>
@@ -874,11 +836,11 @@
                   <div
                     key={t.tender_id}
                     onClick={() => handleSelectTender(t.tender_id)}
-                    className="bg-white rounded-3xl p-6 border-2 border-slate-200 hover:border-[#0B2559] cursor-pointer transition-all card-hover-lift shadow-sm flex flex-col justify-between space-y-5 group"
+                    className="bg-white rounded-3xl p-6 border-2 border-slate-200 hover:border-orange-500 cursor-pointer transition-all card-hover-lift shadow-sm flex flex-col justify-between space-y-5 group"
                   >
                     <div className="space-y-3">
                       <div className="flex justify-between items-start">
-                        <span className="px-2.5 py-1 text-xs font-black bg-blue-100 text-blue-900 rounded-lg font-mono">
+                        <span className="px-2.5 py-1 text-xs font-black bg-orange-100 text-orange-900 rounded-lg font-mono">
                           {t.tender_id}
                         </span>
                         <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 rounded uppercase">
@@ -886,7 +848,7 @@
                         </span>
                       </div>
 
-                      <h3 className="text-base font-extrabold text-slate-900 leading-snug group-hover:text-blue-900 transition">
+                      <h3 className="text-base font-extrabold text-slate-900 leading-snug group-hover:text-orange-600 transition">
                         {t.title}
                       </h3>
 
@@ -903,13 +865,13 @@
                         </div>
                         <div className="text-right">
                           <span className="text-[10px] text-slate-400 font-bold uppercase block">Vendors Ingested</span>
-                          <span className="text-sm font-black font-mono text-[#0B2559]">15 Bidders</span>
+                          <span className="text-sm font-black font-mono text-orange-700">15 Bidders</span>
                         </div>
                       </div>
 
                       <button
                         type="button"
-                        className="w-full py-2.5 bg-[#0B2559] group-hover:bg-blue-800 text-white text-xs font-bold rounded-xl transition shadow flex items-center justify-center space-x-1.5"
+                        className="w-full py-2.5 bg-orange-600 group-hover:bg-orange-700 text-white text-xs font-bold rounded-xl transition shadow flex items-center justify-center space-x-1.5"
                       >
                         <span>👉 Open Evaluation Roster</span>
                       </button>
@@ -930,7 +892,7 @@
                       setTenderMinistryFilter('ALL');
                       setTenderValueFilter('ALL');
                     }}
-                    className="px-4 py-2 bg-blue-900 text-white text-xs font-bold rounded-xl"
+                    className="px-4 py-2 bg-orange-600 text-white text-xs font-bold rounded-xl"
                   >
                     Reset All Filters
                   </button>
@@ -951,14 +913,14 @@
                 <div className="flex items-center space-x-3">
                   <button
                     onClick={() => setCurrentView('SELECT_TENDER')}
-                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 transition flex items-center space-x-1"
+                    className="px-3.5 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-900 text-xs font-bold rounded-xl border border-orange-200 transition flex items-center space-x-1"
                   >
                     <span>← Back to All Bids</span>
                   </button>
                   <div className="h-5 w-px bg-slate-200"></div>
                   <div>
                     <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                      <span>BID: {currentTender?.tender_id}</span>
+                      <span className="text-orange-700">BID: {currentTender?.tender_id}</span>
                       <span className="text-xs font-normal text-slate-500">• {currentTender?.title}</span>
                     </h3>
                   </div>
@@ -972,7 +934,7 @@
               </div>
 
               {/* DEDICATED TOP PRIORITY & AWARD ALLOCATION DECK (PRIORITY 1, 2, 3) */}
-              <section className="bg-white rounded-3xl p-6 border-2 border-purple-200 shadow-md space-y-4">
+              <section className="bg-white rounded-3xl p-6 border-2 border-orange-200 shadow-md space-y-4">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-slate-100 gap-2">
                   <div>
                     <div className="flex items-center space-x-2">
@@ -985,7 +947,7 @@
                       You are in full control: Change priorities at any time using the dropdown on any vendor below.
                     </p>
                   </div>
-                  <span className="text-xs font-bold text-purple-900 bg-purple-100 px-3 py-1 rounded-full font-mono">
+                  <span className="text-xs font-bold text-orange-950 bg-orange-100 px-3 py-1 rounded-full font-mono border border-orange-200">
                     72-Hour SLA Contingency Window
                   </span>
                 </div>
@@ -994,21 +956,21 @@
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   
                   {/* Priority 1 (L1 Confirmed) */}
-                  <div className="p-4 rounded-2xl border-2 bg-purple-50/70 border-purple-400 space-y-2.5">
+                  <div className="p-4 rounded-2xl border-2 bg-orange-50/70 border-orange-400 space-y-2.5">
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-purple-700 text-white font-mono">
+                      <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-orange-600 text-white font-mono">
                         PRIORITY 1 (L1 CONFIRMED)
                       </span>
-                      <span className="text-xs font-bold text-purple-950">Primary Winner</span>
+                      <span className="text-xs font-bold text-orange-950">Primary Winner</span>
                     </div>
 
                     {contingencyRoster?.primary_l1 ? (
                       <div className="space-y-1 text-xs">
                         <h5 className="font-extrabold text-slate-900 text-sm">{contingencyRoster.primary_l1.company_name}</h5>
                         <p className="text-slate-500 font-mono text-[11px]">ID: {contingencyRoster.primary_l1.bidder_id} • {contingencyRoster.primary_l1.registered_state}</p>
-                        <div className="flex justify-between text-[11px] font-mono text-slate-700 pt-1 border-t border-purple-200">
+                        <div className="flex justify-between text-[11px] font-mono text-slate-700 pt-1 border-t border-orange-200">
                           <span>Turnover: <strong>₹{(contingencyRoster.primary_l1.financials.annual_turnover_inr/10000000).toFixed(1)} Cr</strong></span>
-                          <span>Trust: <strong className="text-blue-900">{contingencyRoster.primary_l1.longitudinal_trust_score?.score}</strong></span>
+                          <span>Trust: <strong className="text-orange-700">{contingencyRoster.primary_l1.longitudinal_trust_score?.score}</strong></span>
                         </div>
                         <button
                           onClick={() => handleSetPriority(contingencyRoster.primary_l1.bidder_id, null)}
@@ -1040,11 +1002,11 @@
                         <p className="text-slate-500 font-mono text-[11px]">ID: {contingencyRoster.standby_l2.bidder_id} • {contingencyRoster.standby_l2.registered_state}</p>
                         <div className="flex justify-between text-[11px] font-mono text-slate-700 pt-1 border-t border-amber-200">
                           <span>Turnover: <strong>₹{(contingencyRoster.standby_l2.financials.annual_turnover_inr/10000000).toFixed(1)} Cr</strong></span>
-                          <span>Trust: <strong className="text-blue-900">{contingencyRoster.standby_l2.longitudinal_trust_score?.score}</strong></span>
+                          <span>Trust: <strong className="text-orange-700">{contingencyRoster.standby_l2.longitudinal_trust_score?.score}</strong></span>
                         </div>
                         <button
                           onClick={() => handleSetPriority(contingencyRoster.standby_l2.bidder_id, 'PRIORITY_1_L1')}
-                          className="w-full py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-bold rounded-lg transition"
+                          className="w-full py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-bold rounded-lg transition shadow"
                         >
                           ⚡ Promote to L1 Winner
                         </button>
@@ -1058,25 +1020,25 @@
                   </div>
 
                   {/* Priority 3 (L3 Standby) */}
-                  <div className="p-4 rounded-2xl border bg-blue-50/70 border-blue-300 space-y-2.5">
+                  <div className="p-4 rounded-2xl border bg-slate-50 border-slate-300 space-y-2.5">
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-blue-700 text-white font-mono">
+                      <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-slate-800 text-white font-mono">
                         PRIORITY 3 (L3 STANDBY)
                       </span>
-                      <span className="text-xs font-bold text-blue-950">2nd Backup</span>
+                      <span className="text-xs font-bold text-slate-800">2nd Backup</span>
                     </div>
 
                     {contingencyRoster?.standby_l3 ? (
                       <div className="space-y-1 text-xs">
                         <h5 className="font-extrabold text-slate-900 text-sm">{contingencyRoster.standby_l3.company_name}</h5>
                         <p className="text-slate-500 font-mono text-[11px]">ID: {contingencyRoster.standby_l3.bidder_id} • {contingencyRoster.standby_l3.registered_state}</p>
-                        <div className="flex justify-between text-[11px] font-mono text-slate-700 pt-1 border-t border-blue-200">
+                        <div className="flex justify-between text-[11px] font-mono text-slate-700 pt-1 border-t border-slate-200">
                           <span>Turnover: <strong>₹{(contingencyRoster.standby_l3.financials.annual_turnover_inr/10000000).toFixed(1)} Cr</strong></span>
-                          <span>Trust: <strong className="text-blue-900">{contingencyRoster.standby_l3.longitudinal_trust_score?.score}</strong></span>
+                          <span>Trust: <strong className="text-orange-700">{contingencyRoster.standby_l3.longitudinal_trust_score?.score}</strong></span>
                         </div>
                         <button
                           onClick={() => handleSetPriority(contingencyRoster.standby_l3.bidder_id, 'PRIORITY_1_L1')}
-                          className="w-full py-1 bg-blue-700 hover:bg-blue-600 text-white text-[10px] font-bold rounded-lg transition"
+                          className="w-full py-1 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-bold rounded-lg transition shadow"
                         >
                           ⚡ Promote to L1 Winner
                         </button>
@@ -1101,7 +1063,7 @@
                     
                     {/* Search Input */}
                     <div className="relative flex-1 min-w-[280px]">
-                      <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 text-xs">
+                      <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-orange-500 text-xs">
                         🔍
                       </span>
                       <input
@@ -1109,7 +1071,7 @@
                         placeholder="Search vendors by Name, GSTIN, ID, State..."
                         value={vendorSearchQuery}
                         onChange={e => setVendorSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                        className="w-full pl-9 pr-8 py-2 bg-orange-50/20 border border-slate-300 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-orange-500 focus:bg-white"
                       />
                       {vendorSearchQuery && (
                         <button
@@ -1127,7 +1089,7 @@
                       <select
                         value={filterRiskProfile}
                         onChange={e => setFilterRiskProfile(e.target.value)}
-                        className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-600"
+                        className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-orange-500"
                       >
                         <option value="ALL">All Compliance Profiles</option>
                         <option value="LOW">100% Passed (Low Risk)</option>
@@ -1138,7 +1100,7 @@
                       <select
                         value={filterPriorityStatus}
                         onChange={e => setFilterPriorityStatus(e.target.value)}
-                        className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-600"
+                        className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-orange-500"
                       >
                         <option value="ALL">All Submission Stages</option>
                         <option value="AWARDED">Awarded & Standbys (L1/L2/L3)</option>
@@ -1148,7 +1110,7 @@
                       <select
                         value={vendorSortBy}
                         onChange={e => setVendorSortBy(e.target.value)}
-                        className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-600"
+                        className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-orange-500"
                       >
                         <option value="DEFAULT">Sort: Default</option>
                         <option value="TRUST_DESC">CIBIL Trust: High to Low</option>
@@ -1169,7 +1131,7 @@
                           type="checkbox"
                           checked={filterMsmeOnly}
                           onChange={e => setFilterMsmeOnly(e.target.checked)}
-                          className="rounded accent-blue-700"
+                          className="rounded accent-orange-600"
                         />
                         <span>MSME Exemption Only</span>
                       </label>
@@ -1196,7 +1158,7 @@
                     </div>
 
                     <div className="flex items-center space-x-3 text-[11px] font-mono text-slate-500">
-                      <span>Showing <strong className="text-blue-900 font-bold">{filteredBidders.length}</strong> of {bidders.length} Proposals</span>
+                      <span>Showing <strong className="text-orange-700 font-bold">{filteredBidders.length}</strong> of {bidders.length} Proposals</span>
                       {(vendorSearchQuery || filterRiskProfile !== 'ALL' || filterPriorityStatus !== 'ALL' || filterMsmeOnly || filterTamperedOnly || filterExcludeConflicts || vendorSortBy !== 'DEFAULT') && (
                         <button
                           onClick={() => {
@@ -1208,7 +1170,7 @@
                             setFilterExcludeConflicts(false);
                             setVendorSortBy('DEFAULT');
                           }}
-                          className="text-blue-700 hover:underline font-bold"
+                          className="text-orange-600 hover:underline font-bold"
                         >
                           Clear Filters
                         </button>
@@ -1236,21 +1198,21 @@
                       <div
                         key={b.bidder_id}
                         className={`bg-white rounded-3xl border-2 transition-all shadow-sm overflow-hidden ${
-                          awardPri === 'PRIORITY_1_L1' ? 'border-purple-500 ring-2 ring-purple-600/20' :
+                          awardPri === 'PRIORITY_1_L1' ? 'border-orange-500 ring-2 ring-orange-500/20' :
                           awardPri ? 'border-amber-400' :
-                          isExpanded ? 'border-[#0B2559] ring-2 ring-blue-600/15 shadow-md' : 'border-slate-200'
+                          isExpanded ? 'border-orange-600 ring-2 ring-orange-500/15 shadow-md' : 'border-slate-200'
                         }`}
                       >
                         {/* Header Row */}
                         <div
                           onClick={() => toggleBidderAccordion(b.bidder_id)}
                           className={`p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer select-none ${
-                            isExpanded ? 'bg-blue-50/30 border-b border-slate-200' : 'hover:bg-slate-50/80'
+                            isExpanded ? 'bg-orange-50/30 border-b border-slate-200' : 'hover:bg-slate-50/80'
                           }`}
                         >
                           <div className="flex items-start space-x-3.5">
                             <div className={`p-2.5 rounded-2xl text-xl font-bold mt-0.5 shadow-sm ${
-                              awardPri === 'PRIORITY_1_L1' ? 'bg-purple-100 text-purple-800' :
+                              awardPri === 'PRIORITY_1_L1' ? 'bg-orange-100 text-orange-800' :
                               risk === 'LOW' ? 'bg-emerald-100 text-emerald-800' :
                               risk === 'CRITICAL' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
                             }`}>
@@ -1267,7 +1229,7 @@
                                 </span>
 
                                 {awardPri === 'PRIORITY_1_L1' && (
-                                  <span className="text-[10px] px-2.5 py-0.5 bg-purple-700 text-white font-black rounded-full font-mono">
+                                  <span className="text-[10px] px-2.5 py-0.5 bg-orange-600 text-white font-black rounded-full font-mono">
                                     ★ PRIORITY 1 (L1 CONFIRMED)
                                   </span>
                                 )}
@@ -1277,7 +1239,7 @@
                                   </span>
                                 )}
                                 {awardPri === 'PRIORITY_3_L3' && (
-                                  <span className="text-[10px] px-2.5 py-0.5 bg-blue-700 text-white font-black rounded-full font-mono">
+                                  <span className="text-[10px] px-2.5 py-0.5 bg-slate-800 text-white font-black rounded-full font-mono">
                                     PRIORITY 3 (L3 STANDBY)
                                   </span>
                                 )}
@@ -1297,7 +1259,7 @@
                               <div className="text-xs text-slate-500 font-mono mt-1 space-x-3">
                                 <span>State: <strong className="text-slate-700 font-sans">{b.registered_state}</strong></span>
                                 <span>Turnover: <strong className="text-emerald-700 font-sans">₹{(b.financials.annual_turnover_inr/10000000).toFixed(1)} Cr</strong></span>
-                                <span>CIBIL: <strong className="text-blue-900">{trust}</strong></span>
+                                <span>CIBIL: <strong className="text-orange-700">{trust}</strong></span>
                               </div>
                             </div>
                           </div>
@@ -1305,16 +1267,15 @@
                           {/* Officer Priority Assignment Dropdown & Actions */}
                           <div className="flex items-center space-x-3 pt-2 sm:pt-0" onClick={e => e.stopPropagation()}>
                             
-                            {/* Officer Dropdown for Instant Priority Control */}
                             <div className="flex items-center space-x-1 text-xs">
                               <span className="text-[10px] font-bold text-slate-400 uppercase">Priority:</span>
                               <select
                                 value={awardPri || 'NONE'}
                                 onChange={e => handleSetPriority(b.bidder_id, e.target.value === 'NONE' ? null : e.target.value)}
                                 className={`px-2.5 py-1.5 rounded-xl border text-xs font-black cursor-pointer shadow-sm ${
-                                  awardPri === 'PRIORITY_1_L1' ? 'bg-purple-700 text-white border-purple-700' :
+                                  awardPri === 'PRIORITY_1_L1' ? 'bg-orange-600 text-white border-orange-600' :
                                   awardPri === 'PRIORITY_2_L2' ? 'bg-amber-600 text-white border-amber-600' :
-                                  awardPri === 'PRIORITY_3_L3' ? 'bg-blue-700 text-white border-blue-700' :
+                                  awardPri === 'PRIORITY_3_L3' ? 'bg-slate-800 text-white border-slate-800' :
                                   'bg-white text-slate-700 border-slate-300'
                                 }`}
                               >
@@ -1329,7 +1290,7 @@
                               type="button"
                               onClick={() => toggleBidderAccordion(b.bidder_id)}
                               className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition ${
-                                isExpanded ? 'bg-[#0B2559] text-white border-[#0B2559]' : 'bg-white text-slate-700 border-slate-300'
+                                isExpanded ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-slate-700 border-slate-300'
                               }`}
                             >
                               {isExpanded ? '▲ Hide' : '▼ View Details'}
@@ -1341,7 +1302,6 @@
                         {isExpanded && (
                           <div className="p-6 bg-white space-y-5 animate-fadeIn">
                             
-                            {/* Actions bar */}
                             <div className="flex flex-wrap justify-between items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
                               <p className="text-xs text-slate-600">
                                 Address: <strong className="text-slate-900">{b.registered_address}</strong> • GSTIN: <strong className="text-slate-900 font-mono">{b.identifiers.gstin}</strong>
@@ -1350,7 +1310,7 @@
                               <div className="flex items-center space-x-2">
                                 <button
                                   onClick={() => handleOpenGemDossier(b)}
-                                  className="px-4 py-2 bg-[#0369A1] hover:bg-[#0284C7] text-white text-xs font-black rounded-xl transition shadow flex items-center space-x-1"
+                                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-black rounded-xl transition shadow flex items-center space-x-1"
                                 >
                                   <span>📄 View Submitted 30-Page Bid Proposal (Schedules 1-10)</span>
                                 </button>
@@ -1362,7 +1322,7 @@
                                 </button>
                                 <button
                                   onClick={() => handleReverify(b.bidder_id)}
-                                  className="px-3 py-2 bg-[#0B2559] text-white text-xs font-bold rounded-xl shadow"
+                                  className="px-3 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl shadow"
                                 >
                                   ⚡ Re-Run
                                 </button>
@@ -1439,7 +1399,7 @@
 
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="bg-slate-900 rounded-xl p-3 text-white space-y-2">
-                                      <span className="text-xs font-bold text-amber-400 uppercase block">🔥 ELA Heatmap</span>
+                                      <span className="text-xs font-bold text-orange-400 uppercase block">🔥 ELA Heatmap</span>
                                       {forensic?.ela_heatmap_base64 && (
                                         <div className="rounded-lg overflow-hidden bg-black p-1 border border-slate-700">
                                           <img src={forensic.ela_heatmap_base64} alt="ELA Heatmap" className="max-h-56 object-contain w-full" />
@@ -1472,7 +1432,7 @@
                                       <div key={doc.doc_id} className="bg-white border border-slate-200 rounded-xl p-3 space-y-1 text-xs">
                                         <div className="flex justify-between font-bold text-slate-800">
                                           <span>{doc.document_name}</span>
-                                          <span className="text-[9px] bg-blue-100 text-blue-900 px-2 py-0.5 rounded font-mono">{doc.verification_badge}</span>
+                                          <span className="text-[9px] bg-orange-100 text-orange-900 px-2 py-0.5 rounded font-mono">{doc.verification_badge}</span>
                                         </div>
                                         <p className="text-slate-500 font-mono text-[11px]">Issuer: {doc.issuer}</p>
                                       </div>
@@ -1497,7 +1457,6 @@
                                     </span>
                                   </div>
 
-                                  {/* RENDER INTERACTIVE VISUAL GRAPH */}
                                   <InteractiveEntityGraph
                                     entityGraph={entityGraph}
                                     tenderId={selectedTenderId}
@@ -1509,7 +1468,7 @@
                               {/* Tab 5: YAML Rules */}
                               {currentTab === 'rules' && (
                                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                                  <div className="p-3 rounded-xl border border-blue-300 bg-blue-50 text-blue-900 text-xs font-bold flex items-center space-x-2">
+                                  <div className="p-3 rounded-xl border border-orange-300 bg-orange-50 text-orange-950 text-xs font-bold flex items-center space-x-2">
                                     <span>⚙️</span>
                                     <span>
                                       <strong>Executive Rules Verdict:</strong> All mandatory GFR 2017 statutory rules and tender-specific gates passed with 100% explainability.
@@ -1546,15 +1505,15 @@
           {isFullGraphOpen && (
             <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex justify-center items-center p-4">
               <div className="w-full max-w-5xl bg-slate-900 rounded-3xl shadow-2xl border border-slate-800 overflow-hidden flex flex-col max-h-[92vh]">
-                <div className="p-4 bg-[#0B2559] text-white flex justify-between items-center">
+                <div className="p-4 bg-orange-600 text-white flex justify-between items-center">
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">🕸️</span>
                     <div>
                       <h3 className="text-sm font-extrabold uppercase">Full Tender Cartel & Entity Linkage Explorer</h3>
-                      <p className="text-xs text-blue-200">Interactive visual network of corporate directors, premises, and shell linkages</p>
+                      <p className="text-xs text-orange-100">Interactive visual network of corporate directors, premises, and shell linkages</p>
                     </div>
                   </div>
-                  <button onClick={() => setIsFullGraphOpen(false)} className="text-white hover:text-amber-400 font-bold text-xl p-1">✕</button>
+                  <button onClick={() => setIsFullGraphOpen(false)} className="text-white hover:text-amber-200 font-bold text-xl p-1">✕</button>
                 </div>
                 <div className="p-6 overflow-y-auto">
                   <InteractiveEntityGraph
@@ -1564,7 +1523,7 @@
                   />
                 </div>
                 <div className="p-4 bg-slate-950 border-t border-slate-800 text-right">
-                  <button onClick={() => setIsFullGraphOpen(false)} className="px-5 py-2 bg-blue-700 text-white text-xs font-bold rounded-xl shadow">
+                  <button onClick={() => setIsFullGraphOpen(false)} className="px-5 py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold rounded-xl shadow">
                     Close Graph Explorer
                   </button>
                 </div>
@@ -1576,23 +1535,23 @@
           {gemDossierBidder && gemDossierData && (
             <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex justify-center items-center p-4">
               <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col h-[94vh] animate-fadeIn">
-                <div className="p-4 bg-[#0B2559] text-white flex justify-between items-center no-print">
+                <div className="p-4 bg-orange-600 text-white flex justify-between items-center no-print">
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">📄</span>
                     <div>
                       <h3 className="text-sm font-extrabold uppercase tracking-wide">
                         Government e-Marketplace (GeM) — Technical Bid Submission Proposal
                       </h3>
-                      <p className="text-xs text-blue-200">
+                      <p className="text-xs text-orange-100">
                         Official 30-Page Technical Proposal Submitted by <strong className="text-white">{gemDossierBidder.company_name}</strong>
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <button onClick={() => window.print()} className="px-3.5 py-1.5 bg-amber-500 text-slate-950 text-xs font-bold rounded-xl shadow">
+                    <button onClick={() => window.print()} className="px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold rounded-xl shadow">
                       🖨️ Print
                     </button>
-                    <button onClick={() => setGemDossierBidder(null)} className="text-white hover:text-amber-400 font-bold text-xl p-1">✕</button>
+                    <button onClick={() => setGemDossierBidder(null)} className="text-white hover:text-amber-200 font-bold text-xl p-1">✕</button>
                   </div>
                 </div>
 
@@ -1607,7 +1566,7 @@
                         onClick={() => setDossierPage(p.page_num)}
                         className={`w-full text-left p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-between ${
                           dossierPage === p.page_num
-                            ? 'bg-[#0B2559] text-white shadow'
+                            ? 'bg-orange-600 text-white shadow'
                             : 'text-slate-700 hover:bg-slate-100 border border-slate-200'
                         }`}
                       >
@@ -1639,7 +1598,7 @@
 
                           <div className="space-y-1 text-center">
                             <h3 className="text-sm font-black text-slate-900 uppercase">{curPage.title}</h3>
-                            <span className="text-[11px] font-bold text-[#0369A1] uppercase tracking-wider">{curPage.section}</span>
+                            <span className="text-[11px] font-bold text-orange-700 uppercase tracking-wider">{curPage.section}</span>
                           </div>
 
                           <div className="flex-1 py-4 text-xs font-mono">
@@ -1681,9 +1640,9 @@
 
                             {curPage.content_type === 'financial_table' && (
                               <div className="space-y-2.5">
-                                <div className="p-3 bg-blue-50 rounded-xl border border-blue-200 font-bold text-blue-950 flex justify-between">
+                                <div className="p-3 bg-orange-50 rounded-xl border border-orange-200 font-bold text-orange-950 flex justify-between">
                                   <span>ICAI UDIN:</span>
-                                  <strong className="text-blue-700">{curPage.body.udin}</strong>
+                                  <strong className="text-orange-700">{curPage.body.udin}</strong>
                                 </div>
                                 {curPage.body.financial_years.map((f, i) => (
                                   <div key={i} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex justify-between">
@@ -1734,7 +1693,7 @@
 
                   <button
                     onClick={() => setGemDossierBidder(null)}
-                    className="px-5 py-2 bg-[#0B2559] text-white text-xs font-bold rounded-xl shadow"
+                    className="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-xl shadow"
                   >
                     Close Viewer
                   </button>
@@ -1747,12 +1706,12 @@
           {previewBidder && previewDocData && (
             <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex justify-center items-center p-4">
               <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] animate-fadeIn">
-                <div className="p-5 bg-gradient-to-r from-[#06152B] to-[#0B2559] text-white flex justify-between items-center">
+                <div className="p-5 bg-gradient-to-r from-orange-700 to-orange-600 text-white flex justify-between items-center">
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">🏛️</span>
                     <div>
                       <h3 className="text-sm font-extrabold uppercase">Official Government Document Certificate Viewer</h3>
-                      <p className="text-xs text-blue-200">DigiLocker Notarized Copy</p>
+                      <p className="text-xs text-orange-100">DigiLocker Notarized Copy</p>
                     </div>
                   </div>
                   <button onClick={() => { setPreviewBidder(null); setPreviewDocData(null); }} className="text-white font-bold text-xl p-1">✕</button>
@@ -1764,7 +1723,7 @@
                       key={dt}
                       onClick={() => handleOpenDocViewer(previewBidder, dt)}
                       className={`px-3 py-1.5 text-xs font-bold rounded-xl transition ${
-                        previewDocType === dt ? 'bg-[#0B2559] text-white shadow' : 'bg-white text-slate-700 border'
+                        previewDocType === dt ? 'bg-orange-600 text-white shadow' : 'bg-white text-slate-700 border'
                       }`}
                     >
                       {dt.replace(/_/g, ' ')}
@@ -1806,7 +1765,7 @@
                 </div>
 
                 <div className="p-4 bg-slate-100 border-t border-slate-200 text-right">
-                  <button onClick={() => { setPreviewBidder(null); setPreviewDocData(null); }} className="px-5 py-2 bg-[#0B2559] text-white text-xs font-bold rounded-xl">
+                  <button onClick={() => { setPreviewBidder(null); setPreviewDocData(null); }} className="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-xl">
                     Close Viewer
                   </button>
                 </div>
@@ -1818,19 +1777,19 @@
           {isForensicLabOpen && (
             <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex justify-center items-center p-4">
               <div className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
-                <div className="p-5 bg-[#0B2559] text-white flex justify-between items-center">
+                <div className="p-5 bg-orange-600 text-white flex justify-between items-center">
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">🔬</span>
                     <div>
                       <h3 className="text-base font-extrabold uppercase">Live ELA Forensic Lab</h3>
-                      <p className="text-xs text-blue-200">Test any certificate image for digital tampering & pixel residue</p>
+                      <p className="text-xs text-orange-100">Test any certificate image for digital tampering & pixel residue</p>
                     </div>
                   </div>
-                  <button onClick={() => setIsForensicLabOpen(false)} className="text-white font-bold text-xl p-1">✕</button>
+                  <button onClick={() => setIsForensicLabOpen(false)} className="text-white hover:text-amber-200 font-bold text-xl p-1">✕</button>
                 </div>
 
                 <div className="p-6 overflow-y-auto space-y-4 bg-[#F8FAFC]">
-                  <div className="bg-white p-6 rounded-2xl border-2 border-dashed border-blue-200 space-y-3 text-center">
+                  <div className="bg-white p-6 rounded-2xl border-2 border-dashed border-orange-200 space-y-3 text-center">
                     <input
                       type="file"
                       ref={fileInputRef}
@@ -1867,7 +1826,7 @@
                 </div>
 
                 <div className="p-4 bg-slate-100 border-t text-right">
-                  <button onClick={() => setIsForensicLabOpen(false)} className="px-5 py-2 bg-[#0B2559] text-white text-xs font-bold rounded-xl">
+                  <button onClick={() => setIsForensicLabOpen(false)} className="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-xl">
                     Close Lab
                   </button>
                 </div>
@@ -1879,15 +1838,15 @@
           {isChatOpen && (
             <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex justify-end no-print">
               <div className="w-full max-w-xl bg-white h-full flex flex-col shadow-2xl border-l border-slate-200 animate-slideLeft">
-                <div className="p-4 bg-[#0B2559] text-white flex justify-between items-center">
+                <div className="p-4 bg-orange-600 text-white flex justify-between items-center">
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">🤖</span>
                     <div>
                       <h3 className="text-sm font-extrabold uppercase">GeM AI Intelligence Officer Assistant</h3>
-                      <p className="text-[11px] text-blue-200">Multi-Vendor Reasoning & GFR 2017 Guidance</p>
+                      <p className="text-[11px] text-orange-100">Multi-Vendor Reasoning & GFR 2017 Guidance</p>
                     </div>
                   </div>
-                  <button onClick={() => setIsChatOpen(false)} className="text-white font-bold text-lg p-1">✕</button>
+                  <button onClick={() => setIsChatOpen(false)} className="text-white hover:text-amber-200 font-bold text-lg p-1">✕</button>
                 </div>
 
                 <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-[#F8FAFC]">
@@ -1895,7 +1854,7 @@
                     <div key={idx} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
                       <div className={`p-4 rounded-2xl max-w-[92%] text-xs leading-relaxed ${
                         msg.sender === 'user'
-                          ? 'bg-[#0B2559] text-white rounded-br-none shadow-sm'
+                          ? 'bg-orange-600 text-white rounded-br-none shadow-sm'
                           : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none shadow-sm'
                       }`}>
                         <div className="whitespace-pre-wrap">{msg.text}</div>
@@ -1903,7 +1862,7 @@
                           <div className="mt-3 pt-2 border-t border-slate-200 space-y-1">
                             <span className="text-[10px] text-slate-500 uppercase font-bold block">Suggestions:</span>
                             {msg.suggested.map((s, i) => (
-                              <button key={i} onClick={() => setChatInput(s)} className="block text-left text-xs text-blue-700 font-semibold">
+                              <button key={i} onClick={() => setChatInput(s)} className="block text-left text-xs text-orange-700 hover:text-orange-900 font-semibold">
                                 → {s}
                               </button>
                             ))}
@@ -1925,7 +1884,7 @@
                     placeholder="Ask questions (e.g. 'give me the names of all vendors', 'who is disqualified?')..."
                     value={chatInput}
                     onChange={e => setChatInput(e.target.value)}
-                    className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-blue-600"
+                    className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-orange-500"
                   />
                   <button type="submit" disabled={chatLoading || !chatInput.trim()} className="px-5 py-2 bg-[#F84464] text-white text-xs font-bold rounded-xl">
                     Send
@@ -1947,11 +1906,11 @@
                   {auditLogs.map(l => (
                     <div key={l.log_id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-1">
                       <div className="flex justify-between font-bold text-slate-700">
-                        <span className="text-[#0B2559]">{l.actor}</span>
+                        <span className="text-orange-700">{l.actor}</span>
                         <span className="text-slate-400 font-mono text-[11px]">{new Date(l.timestamp).toLocaleTimeString()}</span>
                       </div>
                       <p className="font-extrabold text-slate-900">{l.step}: {l.action_type}</p>
-                      {l.notes && <p className="text-blue-900 bg-blue-50 p-2 rounded-lg border border-blue-100">📝 {l.notes}</p>}
+                      {l.notes && <p className="text-orange-950 bg-orange-50 p-2 rounded-lg border border-orange-200 font-medium">📝 {l.notes}</p>}
                     </div>
                   ))}
                 </div>
@@ -1960,7 +1919,7 @@
           )}
 
           {/* Footer */}
-          <footer className="bg-[#030F21] text-slate-400 text-xs py-6 border-t border-slate-800 mt-12 no-print">
+          <footer className="bg-[#18110D] text-amber-200/60 text-xs py-6 border-t border-orange-950 mt-12 no-print">
             <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
               <span>🇮🇳 Government e-Marketplace (GeM) • ProcureShield AI</span>
               <span className="text-[11px]">GFR 2017 Verified • L1/L2/L3 Contingency Active • CAG Audit Ready</span>
