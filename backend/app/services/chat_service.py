@@ -40,7 +40,30 @@ class OfficerChatAssistantService:
                 explicit_target_bidder = b
                 break
 
-        # 3. Optional OpenAI/LLM invocation if API key is configured
+        # 3. Gemini Flash — primary LLM path (free tier available)
+        gemini_key = os.environ.get("GEMINI_API_KEY")
+        if gemini_key:
+            try:
+                from google import genai as google_genai
+                client = google_genai.Client(api_key=gemini_key)
+                system_prompt = cls._build_system_prompt(tender_id, tender_bidders)
+                full_prompt = f"{system_prompt}\n\n---\nOfficer Question: {q}"
+                response = client.models.generate_content(
+                    model="gemini-3.7-flash",
+                    contents=full_prompt
+                )
+                reply_text = response.text
+                return OfficerChatResponse(
+                    reply=reply_text,
+                    context_used=[f"Tender: {tender_id}", f"Live Database ({len(tender_bidders)} Bidders)", "🤖 Gemini Flash AI Engine"],
+                    suggested_actions=cls._generate_contextual_suggestions(q_lower, tender_bidders, explicit_target_bidder)
+                )
+            except Exception as e:
+                # Log the error but fall through to rule-based engine
+                import logging
+                logging.getLogger(__name__).warning(f"Gemini API error: {e}")
+
+        # 3b. Optional OpenAI fallback
         openai_key = os.environ.get("OPENAI_API_KEY")
         if openai_key:
             try:
@@ -468,24 +491,50 @@ class OfficerChatAssistantService:
         bidders_summary = []
         for b in bidders[:15]:
             f = b.documents[0].forensic_report if b.documents and b.documents[0].forensic_report else None
-            msme = "Yes (Udyam)" if b.identifiers.udyam_registration_number else "No"
+            msme_str = f"Yes (Udyam: {b.identifiers.udyam_registration_number})" if b.identifiers.udyam_registration_number else "No"
+            mismatch_str = "; ".join([f"{m.field_name}: {m.discrepancy_explanation}" for m in b.cross_check_mismatches]) or "None"
+            forensic_flags = ""
+            if f and f.metadata_analysis and f.metadata_analysis.flags:
+                forensic_flags = "; ".join(f.metadata_analysis.flags)
+            turnover_cr = b.financials.annual_turnover_inr / 10000000.0
             bidders_summary.append(
-                f"- {b.company_name} (ID: {b.bidder_id}): Compliance {b.compliance_score.score}/100, Trust {b.longitudinal_trust_score.score}/900, "
-                f"Turnover ₹{b.financials.annual_turnover_inr/10000000:.2f}Cr, State: {b.registered_state}, MSME: {msme}, "
-                f"Tamper: {f.overall_tamper_score if f else 0}%, Conflicts: {b.conflict_links_count}, Action: {b.ai_recommendation.recommended_action}"
+                f"VENDOR: {b.company_name}\n"
+                f"  BidderID: {b.bidder_id} | TenderID: {b.tender_id}\n"
+                f"  Compliance: {b.compliance_score.score}/100 ({b.compliance_score.risk_level.value} Risk)\n"
+                f"  CIBIL Trust Score: {b.longitudinal_trust_score.score}/900 ({b.longitudinal_trust_score.rating_band})\n"
+                f"  Annual Turnover: ₹{turnover_cr:.2f} Cr | State: {b.registered_state} | Legal: {b.legal_structure}\n"
+                f"  GSTIN: {b.identifiers.gstin} | PAN: {b.identifiers.pan} | CIN: {b.identifiers.cin or 'N/A'}\n"
+                f"  MSME/Udyam: {msme_str}\n"
+                f"  Document Tamper Score: {f.overall_tamper_score if f else 0}% ({f.status.value if f else 'CLEAN'})\n"
+                f"  ELA Score: {f.ela_score if f else 0}% | Producing Software: {f.metadata_analysis.producing_software if f else 'N/A'}\n"
+                f"  Forensic Flags: {forensic_flags or 'None'}\n"
+                f"  Cartel/Conflict Links: {b.conflict_links_count}\n"
+                f"  Portal Mismatches: {mismatch_str}\n"
+                f"  AI Recommendation: {b.ai_recommendation.recommended_action}\n"
+                f"  Executive Summary: {b.ai_recommendation.executive_summary}\n"
+                f"  Officer Status: {b.officer_status}"
             )
-        bidders_text = "\n".join(bidders_summary)
-        
-        return f"""You are the official GeM ProcureShield AI Assistant for the Government of India e-Marketplace.
-Answer the officer's questions with exact precision, directly answering what was asked without extraneous filler.
-Tender ID: {tender_id}
-Active Bidders:
+        bidders_text = "\n\n".join(bidders_summary)
+
+        return f"""You are ProcureShield AI — the official Government Procurement Intelligence Assistant for GeM (Government e-Marketplace), India.
+
+You are assisting a senior procurement officer evaluate vendor bids for a Central Government tender.
+
+ACTIVE TENDER: {tender_id}
+TOTAL VENDORS SUBMITTED: {len(bidders)}
+
+FULL VENDOR DATABASE:
 {bidders_text}
 
-Rules:
-1. When asked for names, provide the exact list of names clearly.
-2. Ground all answers strictly in the data above.
-3. Be professional, concise, and helpful.
+---
+YOUR ROLE:
+- Answer any question the officer asks about vendors, scores, documents, MSME eligibility, turnovers, forensic flags, or compliance.
+- Be precise, cite specific vendor names and data points from the database above.
+- Use Indian procurement terminology (GFR 2017, GeM portal, CPPP, MSME, GSTIN, PAN, L1/L2/L3 pricing, EMD, PBG, etc.).
+- Format your responses clearly using markdown — use bullet points, tables, and bold for key data.
+- Do NOT make up data not in the database above. If asked about something not in the data, say so clearly.
+- Be concise but thorough. Lead with the direct answer, then provide supporting details.
+- When asked about specific vendors by name, look up their exact data from the vendor records above.
 """
 
     @classmethod
