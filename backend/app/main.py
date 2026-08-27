@@ -424,6 +424,20 @@ async def view_bidder_document(bidder_id: str, doc_type: Optional[str] = None):
     bidder = BIDDERS_DB[bidder_id]
     return DocumentViewerService.get_document_view_data(bidder, doc_type)
 
+@app.get("/api/bidders/{bidder_id}/gem-proposal-dossier", tags=["Documents"])
+async def get_bidder_gem_proposal_dossier(bidder_id: str):
+    """
+    Returns the full, official 25-30 Page GeM Bid Proposal / Submission Document
+    submitted by the vendor for the active bid, matching official GeM portal specs.
+    """
+    if bidder_id not in BIDDERS_DB:
+        raise HTTPException(status_code=404, detail="Bidder not found")
+    
+    bidder = BIDDERS_DB[bidder_id]
+    tender = TENDERS_DB.get(bidder.tender_id)
+    tender_data = tender.dict() if tender else {}
+    return DocumentViewerService.get_full_gem_bid_submission_dossier(bidder, tender_data)
+
 # Feature 5 Endpoint: Natural Language Officer Assistant (Chat)
 @app.post("/api/chat/officer", response_model=OfficerChatResponse)
 async def chat_with_officer_assistant(request: OfficerChatRequest):
