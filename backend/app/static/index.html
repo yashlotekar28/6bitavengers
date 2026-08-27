@@ -50,6 +50,14 @@
       box-shadow: 0 4px 14px rgba(11, 37, 89, 0.25);
     }
 
+    @keyframes pulseSlow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .animate-pulse-slow {
+      animation: pulseSlow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
     @media print {
       body { background-color: #ffffff !important; }
       .no-print { display: none !important; }
@@ -66,6 +74,287 @@
 
   <script type="text/babel">
     const { useState, useEffect, useMemo, useRef } = React;
+
+    // Interactive SVG Cartel & Entity Linkage Graph Component
+    function InteractiveEntityGraph({ entityGraph, tenderId, activeBidderId }) {
+      const [selectedNode, setSelectedNode] = useState(null);
+      const [filterConflictOnly, setFilterConflictOnly] = useState(false);
+
+      if (!entityGraph || !entityGraph.nodes || entityGraph.nodes.length === 0) {
+        return (
+          <div className="p-8 text-center text-slate-400 bg-slate-50 rounded-2xl border border-slate-200">
+            <span className="text-3xl block mb-2">🕸️</span>
+            <p className="font-bold text-xs">Loading Entity Linkage Network Graph...</p>
+          </div>
+        );
+      }
+
+      // Compute simple dynamic layout coordinates for nodes
+      const width = 760;
+      const height = 440;
+      const centerX = width / 2;
+      const centerY = height / 2;
+
+      const nodesWithPos = useMemo(() => {
+        const nodes = entityGraph.nodes;
+        const total = nodes.length;
+        
+        // Group by type for visual clustering
+        const bidders = nodes.filter(n => n.type === 'BIDDER');
+        const directors = nodes.filter(n => n.type === 'DIRECTOR');
+        const addresses = nodes.filter(n => n.type === 'ADDRESS');
+        const others = nodes.filter(n => n.type !== 'BIDDER' && n.type !== 'DIRECTOR' && n.type !== 'ADDRESS');
+
+        const map = {};
+        
+        // Place Bidders in an outer circle on the left/top
+        bidders.forEach((n, i) => {
+          const angle = (i / Math.max(1, bidders.length)) * Math.PI + Math.PI / 2;
+          map[n.id] = {
+            ...n,
+            x: centerX + Math.cos(angle) * 220,
+            y: centerY + Math.sin(angle) * 150
+          };
+        });
+
+        // Place Directors in center ring
+        directors.forEach((n, i) => {
+          const angle = (i / Math.max(1, directors.length)) * 2 * Math.PI;
+          map[n.id] = {
+            ...n,
+            x: centerX + Math.cos(angle) * 110,
+            y: centerY + Math.sin(angle) * 80
+          };
+        });
+
+        // Place Addresses on the right
+        addresses.forEach((n, i) => {
+          const angle = (i / Math.max(1, addresses.length)) * Math.PI - Math.PI / 2;
+          map[n.id] = {
+            ...n,
+            x: centerX + Math.cos(angle) * 230 + 40,
+            y: centerY + Math.sin(angle) * 140
+          };
+        });
+
+        // Place Debarred / Bank nodes
+        others.forEach((n, i) => {
+          map[n.id] = {
+            ...n,
+            x: centerX + (i % 2 === 0 ? 160 : -160),
+            y: centerY + (i % 2 === 0 ? 140 : -130)
+          };
+        });
+
+        return map;
+      }, [entityGraph]);
+
+      const visibleEdges = useMemo(() => {
+        return entityGraph.edges.filter(e => {
+          if (filterConflictOnly && !e.is_conflict) return false;
+          return nodesWithPos[e.source] && nodesWithPos[e.target];
+        });
+      }, [entityGraph, filterConflictOnly, nodesWithPos]);
+
+      const getNodeColor = (node) => {
+        if (node.risk_level === 'CRITICAL') return { fill: '#FEE2E2', stroke: '#EF4444', text: '#991B1B', badge: 'bg-rose-100 text-rose-800' };
+        if (node.risk_level === 'HIGH') return { fill: '#FFEDD5', stroke: '#F97316', text: '#9A3412', badge: 'bg-orange-100 text-orange-800' };
+        if (node.risk_level === 'MEDIUM') return { fill: '#FEF3C7', stroke: '#F59E0B', text: '#92400E', badge: 'bg-amber-100 text-amber-800' };
+        return { fill: '#DCFCE7', stroke: '#22C55E', text: '#166534', badge: 'bg-emerald-100 text-emerald-800' };
+      };
+
+      const getNodeIcon = (type) => {
+        switch (type) {
+          case 'BIDDER': return '🏢';
+          case 'DIRECTOR': return '👤';
+          case 'ADDRESS': return '📍';
+          case 'DEBARRED_ENTITY': return '🚫';
+          case 'BANK_BRANCH': return '🏦';
+          default: return '🔗';
+        }
+      };
+
+      return (
+        <div className="bg-slate-900 rounded-3xl p-5 text-white space-y-4 border border-slate-800 shadow-xl">
+          {/* Header & Controls */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-slate-800 gap-2">
+            <div>
+              <div className="flex items-center space-x-2">
+                <span className="text-xl">🕸️</span>
+                <h4 className="text-sm font-extrabold uppercase tracking-wide text-white">
+                  Interactive Cartel & Entity Linkage Graph ({tenderId})
+                </h4>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Maps cross-bidder directors (DIN), shared premises, bank branch linkages, and CPPP debarment networks.
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-2 text-xs">
+              <label className="flex items-center space-x-1.5 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 text-amber-400 font-bold cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filterConflictOnly}
+                  onChange={e => setFilterConflictOnly(e.target.checked)}
+                  className="rounded accent-amber-500"
+                />
+                <span>Show Conflicts & Cartels Only</span>
+              </label>
+            </div>
+          </div>
+
+          {/* SVG Canvas */}
+          <div className="relative bg-slate-950/80 rounded-2xl border border-slate-800 p-2 overflow-hidden flex justify-center">
+            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto max-h-[460px] select-none">
+              <defs>
+                <marker id="arrow-clean" markerWidth="8" markerHeight="8" refX="16" refY="4" orient="auto">
+                  <path d="M 0 0 L 8 4 L 0 8 z" fill="#10B981" />
+                </marker>
+                <marker id="arrow-conflict" markerWidth="8" markerHeight="8" refX="16" refY="4" orient="auto">
+                  <path d="M 0 0 L 8 4 L 0 8 z" fill="#EF4444" />
+                </marker>
+              </defs>
+
+              {/* Draw Edges */}
+              {visibleEdges.map((edge, i) => {
+                const s = nodesWithPos[edge.source];
+                const t = nodesWithPos[edge.target];
+                if (!s || !t) return null;
+                const isSelected = selectedNode && (selectedNode.id === edge.source || selectedNode.id === edge.target);
+
+                return (
+                  <g key={i}>
+                    <line
+                      x1={s.x}
+                      y1={s.y}
+                      x2={t.x}
+                      y2={t.y}
+                      stroke={edge.is_conflict ? '#EF4444' : '#10B981'}
+                      strokeWidth={isSelected ? 3 : (edge.is_conflict ? 2 : 1.2)}
+                      strokeDasharray={edge.is_conflict ? '4 3' : 'none'}
+                      opacity={isSelected ? 1 : 0.7}
+                      markerEnd={edge.is_conflict ? 'url(#arrow-conflict)' : 'url(#arrow-clean)'}
+                    />
+                    {/* Edge Label */}
+                    <text
+                      x={(s.x + t.x) / 2}
+                      y={(s.y + t.y) / 2 - 4}
+                      fill={edge.is_conflict ? '#FCA5A5' : '#6EE7B7'}
+                      fontSize="8"
+                      fontWeight="bold"
+                      textAnchor="middle"
+                      className="font-mono bg-slate-900"
+                    >
+                      {edge.relationship.replace(/_/g, ' ')}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Draw Nodes */}
+              {Object.values(nodesWithPos).map((node) => {
+                const colors = getNodeColor(node);
+                const isSelected = selectedNode?.id === node.id;
+                const isMatchActive = activeBidderId && (node.id === activeBidderId || node.details?.bidder_id === activeBidderId);
+
+                return (
+                  <g
+                    key={node.id}
+                    transform={`translate(${node.x}, ${node.y})`}
+                    onClick={() => setSelectedNode(selectedNode?.id === node.id ? null : node)}
+                    className="cursor-pointer transition-all hover:scale-110"
+                  >
+                    <circle
+                      r={node.type === 'BIDDER' ? 22 : 17}
+                      fill={colors.fill}
+                      stroke={isMatchActive ? '#38BDF8' : colors.stroke}
+                      strokeWidth={isMatchActive ? 4 : (isSelected ? 3 : 2)}
+                      className={node.risk_level === 'CRITICAL' ? 'animate-pulse' : ''}
+                    />
+                    <text
+                      textAnchor="middle"
+                      dy="5"
+                      fontSize={node.type === 'BIDDER' ? '15' : '12'}
+                    >
+                      {getNodeIcon(node.type)}
+                    </text>
+                    {/* Node Label Below */}
+                    <text
+                      y={node.type === 'BIDDER' ? 34 : 28}
+                      textAnchor="middle"
+                      fill="#E2E8F0"
+                      fontSize="9"
+                      fontWeight="bold"
+                      className="font-sans"
+                    >
+                      {node.label.length > 20 ? node.label.substring(0, 18) + '…' : node.label}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+
+          {/* Node Inspector Drawer / Legend */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            
+            {/* Selected Node Details */}
+            <div className="md:col-span-2 bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700 text-xs space-y-1.5">
+              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">
+                Node Inspector (Click any node above to inspect)
+              </span>
+              {selectedNode ? (
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-base">{getNodeIcon(selectedNode.type)}</span>
+                    <strong className="text-white text-sm">{selectedNode.label}</strong>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${getNodeColor(selectedNode).badge}`}>
+                      {selectedNode.risk_level} RISK
+                    </span>
+                  </div>
+                  <p className="text-slate-300 font-mono text-[11px]">Type: {selectedNode.type} • ID: {selectedNode.id}</p>
+                  {selectedNode.details && (
+                    <div className="text-[11px] text-slate-400 font-mono">
+                      {Object.entries(selectedNode.details).map(([k, v]) => (
+                        <span key={k} className="mr-3">{k}: <strong className="text-slate-200">{String(v)}</strong></span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-slate-400 italic">Click on any vendor, director, or address node above to view interconnected linkages and cartel findings.</p>
+              )}
+            </div>
+
+            {/* Legend & Stats */}
+            <div className="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700 text-xs space-y-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Network Legend</span>
+              <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                <span className="flex items-center space-x-1.5"><span className="text-sm">🏢</span><span>Bidder</span></span>
+                <span className="flex items-center space-x-1.5"><span className="text-sm">👤</span><span>Director (DIN)</span></span>
+                <span className="flex items-center space-x-1.5"><span className="text-sm">📍</span><span>Registered Premise</span></span>
+                <span className="flex items-center space-x-1.5"><span className="text-sm">🚫</span><span>Debarred Entity</span></span>
+              </div>
+              <div className="pt-2 border-t border-slate-700 flex justify-between text-[10px] font-mono">
+                <span className="text-emerald-400">─ Green: Clean Link</span>
+                <span className="text-rose-400">--- Red: Cartel / Debarred</span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Cartel Risk Summary Banner */}
+          <div className="p-3 bg-rose-950/60 border border-rose-800 rounded-2xl text-xs flex items-start space-x-2 text-rose-200">
+            <span className="text-base flex-shrink-0">🚨</span>
+            <div>
+              <strong className="text-rose-400 uppercase text-[10px] block">Entity Linkage Intelligence Summary:</strong>
+              <span>{entityGraph.risk_summary}</span>
+            </div>
+          </div>
+
+        </div>
+      );
+    }
 
     function App() {
       // Screen View Mode: 'SELECT_TENDER' (Initial 3 Bids) vs 'EVALUATION_COCKPIT' (Deep Dive)
@@ -89,6 +378,7 @@
       const [isAuditOpen, setIsAuditOpen] = useState(false);
       const [isChatOpen, setIsChatOpen] = useState(false);
       const [isForensicLabOpen, setIsForensicLabOpen] = useState(false);
+      const [isFullGraphOpen, setIsFullGraphOpen] = useState(false);
       
       // Document Viewer & Official 30-Page Proposal Dossier Modal
       const [previewBidder, setPreviewBidder] = useState(null);
@@ -102,13 +392,21 @@
 
       const [loading, setLoading] = useState(true);
       const [notification, setNotification] = useState(null);
-      const [searchQuery, setSearchQuery] = useState('');
 
-      // Simple Constraints & Filters
+      // MAIN PAGE (SELECT_TENDER) FILTERS & SEARCH
+      const [tenderSearchQuery, setTenderSearchQuery] = useState('');
+      const [tenderBidTypeFilter, setTenderBidTypeFilter] = useState('ALL');
+      const [tenderMinistryFilter, setTenderMinistryFilter] = useState('ALL');
+      const [tenderValueFilter, setTenderValueFilter] = useState('ALL');
+
+      // VENDOR EVALUATION FILTERS
+      const [vendorSearchQuery, setVendorSearchQuery] = useState('');
       const [filterRiskProfile, setFilterRiskProfile] = useState('ALL');
+      const [filterPriorityStatus, setFilterPriorityStatus] = useState('ALL');
       const [filterMsmeOnly, setFilterMsmeOnly] = useState(false);
       const [filterTamperedOnly, setFilterTamperedOnly] = useState(false);
       const [filterExcludeConflicts, setFilterExcludeConflicts] = useState(false);
+      const [vendorSortBy, setVendorSortBy] = useState('DEFAULT');
 
       // Live Forensic Upload Sandbox State
       const [forensicFile, setForensicFile] = useState(null);
@@ -121,7 +419,7 @@
       const [chatMessages, setChatMessages] = useState([
         {
           sender: 'ai',
-          text: 'Namaste Officer! I am your GeM ProcureShield AI Assistant.\n\nI have loaded all 3 active Government Tenders and 45 participating vendor dossiers. Ask me anything about vendor names, comparisons, ELA tamper flags, or GFR 2017 rules.'
+          text: 'Namaste Officer! I am your GeM ProcureShield AI Assistant.\n\nI have loaded all 3 active Government Tenders and 45 participating vendor dossiers. Ask me anything about vendor names, comparisons, ELA tamper flags, cartel links, or GFR 2017 rules.'
         }
       ]);
       const [chatInput, setChatInput] = useState('');
@@ -190,7 +488,6 @@
               award_status: newPriority === 'PRIORITY_1_L1' ? 'CONFIRMED_L1' : (newPriority ? 'CONTINGENCY_STANDBY' : 'UNASSIGNED')
             };
           }
-          // If another vendor had this priority, clear it
           if (newPriority && b.award_priority === newPriority) {
             return { ...b, award_priority: null, award_status: 'UNASSIGNED' };
           }
@@ -204,7 +501,6 @@
             body: JSON.stringify({ bidder_id: bidderId, priority: newPriority })
           });
 
-          // Refresh contingency deck
           const cRes = await fetch(`/api/bidders/contingency-roster/${encodeURIComponent(selectedTenderId)}`).then(r => r.json());
           setContingencyRoster(cRes);
           showNotice(`Priority updated to ${newPriority ? newPriority.replace(/_/g, ' ') : 'None'}!`);
@@ -235,7 +531,7 @@
           const data = await res.json();
           setGemDossierData(data);
         } catch (e) {
-          console.error(e);
+          console.error('Error loading GeM Proposal Dossier:', e);
         }
       };
 
@@ -321,18 +617,40 @@
       };
       const getBidderTab = (bidderId) => bidderTabMap[bidderId] || 'overview';
 
-      // Reactive Filtered Bidders List
+      // FILTERED TENDERS FOR MAIN PAGE
+      const filteredTenders = useMemo(() => {
+        return tenders.filter(t => {
+          if (tenderSearchQuery.trim()) {
+            const q = tenderSearchQuery.toLowerCase();
+            const matchTitle = t.title?.toLowerCase().includes(q);
+            const matchId = t.tender_id?.toLowerCase().includes(q);
+            const matchMin = t.ministry?.toLowerCase().includes(q);
+            const matchCat = t.category?.toLowerCase().includes(q);
+            if (!matchTitle && !matchId && !matchMin && !matchCat) return false;
+          }
+          if (tenderBidTypeFilter !== 'ALL' && t.bid_type !== tenderBidTypeFilter) return false;
+          if (tenderMinistryFilter !== 'ALL' && t.ministry !== tenderMinistryFilter) return false;
+          if (tenderValueFilter === 'HIGH' && t.estimated_value_cr < 10) return false;
+          if (tenderValueFilter === 'STANDARD' && t.estimated_value_cr >= 10) return false;
+          return true;
+        });
+      }, [tenders, tenderSearchQuery, tenderBidTypeFilter, tenderMinistryFilter, tenderValueFilter]);
+
+      // FILTERED VENDORS FOR EVALUATION COCKPIT
       const filteredBidders = useMemo(() => {
-        return bidders.filter(b => {
-          if (searchQuery.trim()) {
-            const q = searchQuery.toLowerCase();
+        let list = bidders.filter(b => {
+          if (vendorSearchQuery.trim()) {
+            const q = vendorSearchQuery.toLowerCase();
             const matchName = b.company_name?.toLowerCase().includes(q);
             const matchId = b.bidder_id?.toLowerCase().includes(q);
             const matchState = b.registered_state?.toLowerCase().includes(q);
-            if (!matchName && !matchId && !matchState) return false;
+            const matchGst = b.identifiers.gstin?.toLowerCase().includes(q);
+            if (!matchName && !matchId && !matchState && !matchGst) return false;
           }
           const risk = b.compliance_score?.risk_level ?? 'LOW';
           if (filterRiskProfile !== 'ALL' && risk !== filterRiskProfile) return false;
+          if (filterPriorityStatus === 'AWARDED' && !b.award_priority) return false;
+          if (filterPriorityStatus === 'EVALUATION' && b.award_priority) return false;
           if (filterMsmeOnly && !b.identifiers.udyam_registration_number) return false;
           const firstDoc = b.documents?.[0];
           const tamperScore = firstDoc?.forensic_report?.overall_tamper_score ?? 0;
@@ -340,7 +658,20 @@
           if (filterExcludeConflicts && b.conflict_links_count > 0) return false;
           return true;
         });
-      }, [bidders, searchQuery, filterRiskProfile, filterMsmeOnly, filterTamperedOnly, filterExcludeConflicts]);
+
+        // Sorting
+        if (vendorSortBy === 'TRUST_DESC') {
+          list.sort((a, b) => (b.longitudinal_trust_score?.score || 0) - (a.longitudinal_trust_score?.score || 0));
+        } else if (vendorSortBy === 'TURNOVER_DESC') {
+          list.sort((a, b) => (b.financials?.annual_turnover_inr || 0) - (a.financials?.annual_turnover_inr || 0));
+        } else if (vendorSortBy === 'COMPLIANCE_DESC') {
+          list.sort((a, b) => (b.compliance_score?.score || 0) - (a.compliance_score?.score || 0));
+        } else if (vendorSortBy === 'NAME_ASC') {
+          list.sort((a, b) => a.company_name.localeCompare(b.company_name));
+        }
+
+        return list;
+      }, [bidders, vendorSearchQuery, filterRiskProfile, filterPriorityStatus, filterMsmeOnly, filterTamperedOnly, filterExcludeConflicts, vendorSortBy]);
 
       const currentTender = tenders.find(t => t.tender_id === selectedTenderId) || tenders[0];
 
@@ -365,7 +696,7 @@
           {/* Main Top Navigation Header */}
           <header className="gem-header-gradient text-white sticky top-0 z-40 px-4 py-3.5 shadow-md no-print">
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setCurrentView('SELECT_TENDER')}>
                 <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-2xl shadow">
                   🏛️
                 </div>
@@ -374,12 +705,19 @@
                     GeM <span className="text-[#FF9933]">Procure</span><span className="text-[#38BDF8]">Shield</span> AI
                   </h1>
                   <p className="text-[11px] text-blue-200/80 font-medium">
-                    Technical Evaluation Committee AI Decision Cockpit
+                    Technical Evaluation Committee AI Decision Cockpit & Forensics
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center space-x-2.5">
+                <button
+                  onClick={() => setIsFullGraphOpen(true)}
+                  className="px-3 py-1.5 text-xs font-bold bg-blue-700 hover:bg-blue-600 text-white rounded-xl shadow transition flex items-center space-x-1"
+                >
+                  <span>🕸️ Cartel Graph</span>
+                </button>
+
                 <button
                   onClick={() => setIsForensicLabOpen(true)}
                   className="px-3 py-1.5 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl shadow transition"
@@ -413,26 +751,126 @@
           )}
 
           {/* ========================================================================= */}
-          {/* SCREEN 1: SIMPLE CLEAN 3 DEMO TENDERS SELECTION SCREEN                    */}
+          {/* SCREEN 1: MAIN LANDING SCREEN — BIDS SEARCH & FILTERING                   */}
           {/* ========================================================================= */}
           {currentView === 'SELECT_TENDER' && (
-            <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-12 space-y-8 animate-fadeIn">
+            <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8 space-y-8 animate-fadeIn">
               
+              {/* Header Title Banner */}
               <div className="text-center space-y-2 max-w-2xl mx-auto">
-                <span className="text-[10px] font-black uppercase tracking-widest text-blue-900 bg-blue-100 px-3 py-1 rounded-full">
-                  STEP 1: SELECT GOVERNMENT TENDER
+                <span className="text-[10px] font-black uppercase tracking-widest text-blue-900 bg-blue-100 px-3.5 py-1 rounded-full">
+                  CENTRAL PROCUREMENT DASHBOARD
                 </span>
                 <h2 className="text-2xl font-black text-slate-900">
-                  Active Central Government Tenders Under Evaluation
+                  Select Active Government Bid for Technical Evaluation
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Please select one of the active tenders below to open the complete 15-vendor technical evaluation roster and contingency priority deck.
+                  Search bids by keywords, filter by procurement type or ministry, and open the 15-vendor evaluation roster with priority award allocation.
                 </p>
               </div>
 
-              {/* 3 Clean, Simple, Prominent Tender Cards */}
+              {/* PROMINENT MAIN PAGE SEARCH & FILTERING BAR */}
+              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+                
+                {/* Search Bar */}
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 text-base">
+                    🔍
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Search bids by Bid Number (e.g. GEM/2026/B/89420), Title, Ministry, or Category..."
+                    value={tenderSearchQuery}
+                    onChange={e => setTenderSearchQuery(e.target.value)}
+                    className="w-full pl-11 pr-10 py-3 bg-slate-50 border border-slate-300 rounded-2xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition"
+                  />
+                  {tenderSearchQuery && (
+                    <button
+                      onClick={() => setTenderSearchQuery('')}
+                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-700 text-xs font-bold"
+                    >
+                      ✕ Clear
+                    </button>
+                  )}
+                </div>
+
+                {/* Filter Chips & Selectors */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs">
+                  
+                  {/* Bid Type Filter Tabs */}
+                  <div className="flex items-center space-x-1.5 flex-wrap">
+                    <span className="font-bold text-slate-500 mr-1 text-[11px] uppercase">Bid Type:</span>
+                    {[
+                      { id: 'ALL', label: 'All Bids' },
+                      { id: 'PRODUCT_BID', label: 'Product Bids' },
+                      { id: 'SERVICE_BID', label: 'Service Bids' },
+                      { id: 'BOQ_BID', label: 'BOQ Bids' },
+                      { id: 'CUSTOM_BID', label: 'Global / Custom' }
+                    ].map(bt => (
+                      <button
+                        key={bt.id}
+                        onClick={() => setTenderBidTypeFilter(bt.id)}
+                        className={`px-3 py-1.5 rounded-xl font-bold transition ${
+                          tenderBidTypeFilter === bt.id
+                            ? 'bg-[#0B2559] text-white shadow-sm'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        {bt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Ministry & Value Dropdowns */}
+                  <div className="flex items-center space-x-2">
+                    <select
+                      value={tenderMinistryFilter}
+                      onChange={e => setTenderMinistryFilter(e.target.value)}
+                      className="bg-slate-100 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-600"
+                    >
+                      <option value="ALL">All Ministries</option>
+                      <option value="Ministry of Defence">Ministry of Defence</option>
+                      <option value="Ministry of Health and Family Welfare">Ministry of Health</option>
+                      <option value="Ministry of Power">Ministry of Power</option>
+                    </select>
+
+                    <select
+                      value={tenderValueFilter}
+                      onChange={e => setTenderValueFilter(e.target.value)}
+                      className="bg-slate-100 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-600"
+                    >
+                      <option value="ALL">All Estimated Values</option>
+                      <option value="HIGH">High Value (&gt; ₹10 Cr)</option>
+                      <option value="STANDARD">Standard Value (&lt; ₹10 Cr)</option>
+                    </select>
+
+                    {(tenderSearchQuery || tenderBidTypeFilter !== 'ALL' || tenderMinistryFilter !== 'ALL' || tenderValueFilter !== 'ALL') && (
+                      <button
+                        onClick={() => {
+                          setTenderSearchQuery('');
+                          setTenderBidTypeFilter('ALL');
+                          setTenderMinistryFilter('ALL');
+                          setTenderValueFilter('ALL');
+                        }}
+                        className="text-xs font-bold text-blue-700 hover:underline px-2"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+
+                </div>
+
+                {/* Results Counter */}
+                <div className="text-[11px] text-slate-500 font-mono pt-1">
+                  Showing <strong className="text-blue-900 font-bold">{filteredTenders.length}</strong> of {tenders.length} Active Government Bids
+                </div>
+
+              </div>
+
+              {/* Tenders Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {tenders.map((t, idx) => (
+                {filteredTenders.map((t) => (
                   <div
                     key={t.tender_id}
                     onClick={() => handleSelectTender(t.tender_id)}
@@ -479,6 +917,26 @@
                   </div>
                 ))}
               </div>
+
+              {filteredTenders.length === 0 && (
+                <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center space-y-3">
+                  <span className="text-4xl block">🔍</span>
+                  <h4 className="text-base font-extrabold text-slate-800">No Bids Matched Your Search Filters</h4>
+                  <p className="text-xs text-slate-500">Try adjusting your search keywords, bid type, or ministry filters.</p>
+                  <button
+                    onClick={() => {
+                      setTenderSearchQuery('');
+                      setTenderBidTypeFilter('ALL');
+                      setTenderMinistryFilter('ALL');
+                      setTenderValueFilter('ALL');
+                    }}
+                    className="px-4 py-2 bg-blue-900 text-white text-xs font-bold rounded-xl"
+                  >
+                    Reset All Filters
+                  </button>
+                </div>
+              )}
+
             </main>
           )}
 
@@ -495,7 +953,7 @@
                     onClick={() => setCurrentView('SELECT_TENDER')}
                     className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 transition flex items-center space-x-1"
                   >
-                    <span>← Back to All 3 Bids</span>
+                    <span>← Back to All Bids</span>
                   </button>
                   <div className="h-5 w-px bg-slate-200"></div>
                   <div>
@@ -634,53 +1092,130 @@
                 </div>
               </section>
 
-              {/* VENDOR ROSTER SECTION */}
+              {/* VENDOR ROSTER SECTION & COMPREHENSIVE FILTER TOOLBAR */}
               <section className="space-y-4">
                 
-                {/* Search & Quick Filter Bar */}
-                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap justify-between items-center gap-3">
-                  <div className="flex items-center space-x-3 flex-1 min-w-[280px]">
-                    <span className="text-xs font-bold text-slate-500">Filter 15 Vendors:</span>
-                    <input
-                      type="text"
-                      placeholder="Type Company Name, State, or ID..."
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                      className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-blue-600"
-                    />
+                {/* PROMINENT VENDOR FILTER TOOLBAR */}
+                <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    
+                    {/* Search Input */}
+                    <div className="relative flex-1 min-w-[280px]">
+                      <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 text-xs">
+                        🔍
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Search vendors by Name, GSTIN, ID, State..."
+                        value={vendorSearchQuery}
+                        onChange={e => setVendorSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                      />
+                      {vendorSearchQuery && (
+                        <button
+                          onClick={() => setVendorSearchQuery('')}
+                          className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-700 text-xs"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Filter Dropdowns & Sorters */}
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      
+                      <select
+                        value={filterRiskProfile}
+                        onChange={e => setFilterRiskProfile(e.target.value)}
+                        className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-600"
+                      >
+                        <option value="ALL">All Compliance Profiles</option>
+                        <option value="LOW">100% Passed (Low Risk)</option>
+                        <option value="MEDIUM">Medium Risk</option>
+                        <option value="CRITICAL">Disqualified / Critical</option>
+                      </select>
+
+                      <select
+                        value={filterPriorityStatus}
+                        onChange={e => setFilterPriorityStatus(e.target.value)}
+                        className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-600"
+                      >
+                        <option value="ALL">All Submission Stages</option>
+                        <option value="AWARDED">Awarded & Standbys (L1/L2/L3)</option>
+                        <option value="EVALUATION">Under Technical Evaluation</option>
+                      </select>
+
+                      <select
+                        value={vendorSortBy}
+                        onChange={e => setVendorSortBy(e.target.value)}
+                        className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-600"
+                      >
+                        <option value="DEFAULT">Sort: Default</option>
+                        <option value="TRUST_DESC">CIBIL Trust: High to Low</option>
+                        <option value="TURNOVER_DESC">Turnover: High to Low</option>
+                        <option value="COMPLIANCE_DESC">Compliance Score: High to Low</option>
+                        <option value="NAME_ASC">Company Name: A to Z</option>
+                      </select>
+
+                    </div>
+
                   </div>
 
-                  <div className="flex items-center space-x-2 text-xs">
-                    <select
-                      value={filterRiskProfile}
-                      onChange={e => setFilterRiskProfile(e.target.value)}
-                      className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800"
-                    >
-                      <option value="ALL">All Compliance Profiles</option>
-                      <option value="LOW">100% Pass (Low Risk)</option>
-                      <option value="CRITICAL">Debarred / Critical</option>
-                    </select>
+                  {/* Filter Checkboxes */}
+                  <div className="flex flex-wrap items-center justify-between pt-2 border-t border-slate-100 text-xs gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="flex items-center space-x-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 font-bold text-slate-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filterMsmeOnly}
+                          onChange={e => setFilterMsmeOnly(e.target.checked)}
+                          className="rounded accent-blue-700"
+                        />
+                        <span>MSME Exemption Only</span>
+                      </label>
 
-                    <label className="flex items-center space-x-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 font-bold text-slate-700 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filterMsmeOnly}
-                        onChange={e => setFilterMsmeOnly(e.target.checked)}
-                        className="rounded accent-blue-700"
-                      />
-                      <span>MSME Only</span>
-                    </label>
+                      <label className="flex items-center space-x-1.5 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 font-bold text-amber-900 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filterTamperedOnly}
+                          onChange={e => setFilterTamperedOnly(e.target.checked)}
+                          className="rounded accent-amber-600"
+                        />
+                        <span>ELA Tamper Flags Only</span>
+                      </label>
 
-                    <label className="flex items-center space-x-1.5 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 font-bold text-amber-900 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filterTamperedOnly}
-                        onChange={e => setFilterTamperedOnly(e.target.checked)}
-                        className="rounded accent-amber-600"
-                      />
-                      <span>Tampered Only</span>
-                    </label>
+                      <label className="flex items-center space-x-1.5 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-200 font-bold text-rose-900 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filterExcludeConflicts}
+                          onChange={e => setFilterExcludeConflicts(e.target.checked)}
+                          className="rounded accent-rose-600"
+                        />
+                        <span>Cartel / Conflict Flags Only</span>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center space-x-3 text-[11px] font-mono text-slate-500">
+                      <span>Showing <strong className="text-blue-900 font-bold">{filteredBidders.length}</strong> of {bidders.length} Proposals</span>
+                      {(vendorSearchQuery || filterRiskProfile !== 'ALL' || filterPriorityStatus !== 'ALL' || filterMsmeOnly || filterTamperedOnly || filterExcludeConflicts || vendorSortBy !== 'DEFAULT') && (
+                        <button
+                          onClick={() => {
+                            setVendorSearchQuery('');
+                            setFilterRiskProfile('ALL');
+                            setFilterPriorityStatus('ALL');
+                            setFilterMsmeOnly(false);
+                            setFilterTamperedOnly(false);
+                            setFilterExcludeConflicts(false);
+                            setVendorSortBy('DEFAULT');
+                          }}
+                          className="text-blue-700 hover:underline font-bold"
+                        >
+                          Clear Filters
+                        </button>
+                      )}
+                    </div>
                   </div>
+
                 </div>
 
                 {/* 15 Vendor Cards */}
@@ -841,7 +1376,7 @@
                                   { id: 'overview', label: `🔍 Cross-Check (${b.cross_check_mismatches?.length || 0} Flags)` },
                                   { id: 'forensics', label: `🔬 Forensic ELA (${tamperScore}% Tamper)` },
                                   { id: 'vault', label: `🗄️ Vault (${b.vault_documents?.length || 0} Docs)` },
-                                  { id: 'graph', label: `🕸️ Cartel Graph` },
+                                  { id: 'graph', label: `🕸️ Interactive Cartel Graph` },
                                   { id: 'rules', label: `⚙️ YAML Rules (${b.rule_results?.length || 0})` }
                                 ].map(tab => (
                                   <button
@@ -857,8 +1392,6 @@
                                   </button>
                                 ))}
                               </div>
-
-                              {/* ONE-LINE EXECUTIVE VERDICT ON EVERY FEATURE TAB */}
 
                               {/* Tab 1: Cross Check */}
                               {currentTab === 'overview' && (
@@ -948,9 +1481,9 @@
                                 </div>
                               )}
 
-                              {/* Tab 4: Graph */}
+                              {/* Tab 4: Interactive Cartel Graph */}
                               {currentTab === 'graph' && (
-                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                                <div className="space-y-4">
                                   <div className={`p-3 rounded-xl border text-xs font-bold flex items-center space-x-2 ${
                                     b.conflict_links_count === 0
                                       ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
@@ -964,10 +1497,12 @@
                                     </span>
                                   </div>
 
-                                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs space-y-1">
-                                    <span className="font-extrabold text-rose-900 uppercase text-[10px] block">🚨 Graph Summary:</span>
-                                    <p className="text-slate-700">{entityGraph?.risk_summary}</p>
-                                  </div>
+                                  {/* RENDER INTERACTIVE VISUAL GRAPH */}
+                                  <InteractiveEntityGraph
+                                    entityGraph={entityGraph}
+                                    tenderId={selectedTenderId}
+                                    activeBidderId={b.bidder_id}
+                                  />
                                 </div>
                               )}
 
@@ -1005,6 +1540,36 @@
               </section>
 
             </main>
+          )}
+
+          {/* FULL TENDER CARTEL GRAPH EXPLORER MODAL */}
+          {isFullGraphOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex justify-center items-center p-4">
+              <div className="w-full max-w-5xl bg-slate-900 rounded-3xl shadow-2xl border border-slate-800 overflow-hidden flex flex-col max-h-[92vh]">
+                <div className="p-4 bg-[#0B2559] text-white flex justify-between items-center">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">🕸️</span>
+                    <div>
+                      <h3 className="text-sm font-extrabold uppercase">Full Tender Cartel & Entity Linkage Explorer</h3>
+                      <p className="text-xs text-blue-200">Interactive visual network of corporate directors, premises, and shell linkages</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setIsFullGraphOpen(false)} className="text-white hover:text-amber-400 font-bold text-xl p-1">✕</button>
+                </div>
+                <div className="p-6 overflow-y-auto">
+                  <InteractiveEntityGraph
+                    entityGraph={entityGraph}
+                    tenderId={selectedTenderId}
+                    activeBidderId={expandedBidderId}
+                  />
+                </div>
+                <div className="p-4 bg-slate-950 border-t border-slate-800 text-right">
+                  <button onClick={() => setIsFullGraphOpen(false)} className="px-5 py-2 bg-blue-700 text-white text-xs font-bold rounded-xl shadow">
+                    Close Graph Explorer
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* OFFICIAL 30-PAGE GeM BID PROPOSAL DOSSIER MODAL */}
