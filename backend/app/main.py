@@ -2,6 +2,7 @@ import asyncio
 import os
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, BackgroundTasks, Depends
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -524,7 +525,7 @@ async def record_officer_decision(payload: OfficerDecisionPayload):
     )
     return {"success": True, "bidder": bidder}
 
-@app.get("/api/bidders/contingency-roster/{tender_id}", tags=["Contingency"])
+@app.get("/api/bidders/contingency-roster/{tender_id:path}", tags=["Contingency"])
 async def get_tender_contingency_roster(tender_id: str):
     """
     Retrieves the confirmed Priority 1 (L1) Awardee and Priority 2 (L2) & Priority 3 (L3)
@@ -544,6 +545,57 @@ async def get_tender_contingency_roster(tender_id: str):
         "is_awarded": primary_l1 is not None,
         "contingency_sla_hours": 72
     }
+
+class SetPriorityPayload(BaseModel):
+    bidder_id: str
+    priority: Optional[str] = None # "PRIORITY_1_L1", "PRIORITY_2_L2", "PRIORITY_3_L3", or None
+
+@app.post("/api/bidders/set-priority", tags=["Contingency"])
+async def set_bidder_priority(payload: SetPriorityPayload):
+    """
+    Allows the procurement officer to manually assign or change the priority
+    (Priority 1 L1, Priority 2 L2, Priority 3 L3) for any vendor with immediate effect.
+    """
+    if payload.bidder_id not in BIDDERS_DB:
+        raise HTTPException(status_code=404, detail="Bidder not found")
+    
+    bidder = BIDDERS_DB[payload.bidder_id]
+    tender_id = bidder.tender_id
+    new_priority = payload.priority if payload.priority in ["PRIORITY_1_L1", "PRIORITY_2_L2", "PRIORITY_3_L3"] else None
+    
+    # If assigning a priority that was already held by another vendor in this tender, clear it from that vendor
+    if new_priority:
+        for ob in BIDDERS_DB.values():
+            if ob.tender_id == tender_id and ob.bidder_id != bidder.bidder_id and ob.award_priority == new_priority:
+                ob.award_priority = None
+                ob.award_status = "UNASSIGNED"
+                ob.officer_status = "PENDING_REVIEW"
+
+    bidder.award_priority = new_priority
+    if new_priority == "PRIORITY_1_L1":
+        bidder.award_status = "CONFIRMED_L1"
+        bidder.officer_status = "APPROVED"
+    elif new_priority in ["PRIORITY_2_L2", "PRIORITY_3_L3"]:
+        bidder.award_status = "CONTINGENCY_STANDBY"
+        bidder.officer_status = "CONTINGENCY_STANDBY"
+    else:
+        bidder.award_status = "UNASSIGNED"
+        bidder.officer_status = "PENDING_REVIEW"
+
+    audit_trail.log_event(
+        bidder_id=bidder.bidder_id,
+        step="MANUAL_PRIORITY_ASSIGNMENT",
+        actor="OFFICER",
+        action_type=f"SET_{new_priority or 'CLEAR'}",
+        details={
+            "bidder_name": bidder.company_name,
+            "assigned_priority": new_priority,
+            "award_status": bidder.award_status
+        },
+        notes=f"Officer manually updated award priority to {new_priority or 'None'} for {bidder.company_name}."
+    )
+
+    return {"success": True, "bidder": bidder}
 
 @app.get("/api/audit")
 async def get_audit_logs(bidder_id: Optional[str] = None):

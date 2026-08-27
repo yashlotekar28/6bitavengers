@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GeM — Government e-Marketplace | ProcureShield AI Intelligence & Forensics Engine</title>
+  <title>GeM — Government e-Marketplace | ProcureShield AI Intelligence Cockpit</title>
   
   <!-- Tailwind CSS & Google Fonts -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -36,13 +36,12 @@
       background: linear-gradient(135deg, #051329 0%, #0A1E3F 60%, #0D2859 100%);
     }
 
-    .gem-bid-card {
-      border-top: 3px solid #f59e0b;
-      background: #ffffff;
-      transition: all 0.2s ease-in-out;
+    .card-hover-lift {
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .gem-bid-card:hover {
-      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+    .card-hover-lift:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.08);
     }
 
     .bms-pill-active {
@@ -69,12 +68,14 @@
     const { useState, useEffect, useMemo, useRef } = React;
 
     function App() {
+      // Screen View Mode: 'SELECT_TENDER' (Initial 3 Bids) vs 'EVALUATION_COCKPIT' (Deep Dive)
+      const [currentView, setCurrentView] = useState('SELECT_TENDER');
+      
       // Tenders & Bidders State
       const [tenders, setTenders] = useState([]);
       const [selectedTenderId, setSelectedTenderId] = useState('GEM/2026/B/89420');
       const [bidders, setBidders] = useState([]);
       const [contingencyRoster, setContingencyRoster] = useState(null);
-      const [rosterViewMode, setRosterViewMode] = useState('ALL'); // 'ALL' | 'AWARDED' | 'EVALUATION'
       
       const [expandedBidderId, setExpandedBidderId] = useState('BID-2026-0891');
       const [bidderTabMap, setBidderTabMap] = useState({});
@@ -100,21 +101,14 @@
       const [dossierPage, setDossierPage] = useState(1);
 
       const [loading, setLoading] = useState(true);
-      const [verifyingId, setVerifyingId] = useState(null);
       const [notification, setNotification] = useState(null);
       const [searchQuery, setSearchQuery] = useState('');
 
-      // GeM Sidebar Filter Checkboxes
-      const [filterOngoingBids, setFilterOngoingBids] = useState(true);
-      const [filterBidStatus, setFilterBidStatus] = useState(false);
-      const [filterBidType, setFilterBidType] = useState('ALL');
-      const [filterHighValueOnly, setFilterHighValueOnly] = useState(false);
-      const [filterMinTrust, setFilterMinTrust] = useState(300);
-      const [filterMinTurnover, setFilterMinTurnover] = useState(0);
+      // Simple Constraints & Filters
+      const [filterRiskProfile, setFilterRiskProfile] = useState('ALL');
       const [filterMsmeOnly, setFilterMsmeOnly] = useState(false);
       const [filterTamperedOnly, setFilterTamperedOnly] = useState(false);
       const [filterExcludeConflicts, setFilterExcludeConflicts] = useState(false);
-      const [sortBy, setSortBy] = useState('OLDEST_FIRST');
 
       // Live Forensic Upload Sandbox State
       const [forensicFile, setForensicFile] = useState(null);
@@ -127,23 +121,18 @@
       const [chatMessages, setChatMessages] = useState([
         {
           sender: 'ai',
-          text: 'Namaste Officer! I am your GeM ProcureShield AI Intelligence Assistant.\n\nI have loaded all 3 active Government Tenders and 45 participating vendor dossiers. I can provide comparative technical evaluations, inspect 30-page vendor proposals, analyze ELA forensic tamper heatmaps, and manage your L1, L2, L3 award contingency rosters.\n\nHow may I assist your Technical Evaluation Committee today?'
+          text: 'Namaste Officer! I am your GeM ProcureShield AI Assistant.\n\nI have loaded all 3 active Government Tenders and 45 participating vendor dossiers. Ask me anything about vendor names, comparisons, ELA tamper flags, or GFR 2017 rules.'
         }
       ]);
       const [chatInput, setChatInput] = useState('');
       const [chatLoading, setChatLoading] = useState(false);
 
-      // Officer Decision State
-      const [decisionAction, setDecisionAction] = useState('APPROVE');
-      const [officerRemarks, setOfficerRemarks] = useState('');
-      const [overrideJustification, setOverrideJustification] = useState('');
-
       const showNotice = (msg) => {
         setNotification(msg);
-        setTimeout(() => setNotification(null), 4500);
+        setTimeout(() => setNotification(null), 4000);
       };
 
-      // Load Initial Data
+      // Load Initial Tenders
       const loadInitialData = async () => {
         try {
           setLoading(true);
@@ -153,11 +142,6 @@
           ]);
           setTenders(tRes);
           setAuditLogs(aRes);
-          const initialTenderId = (tRes && tRes.length > 0) ? tRes[0].tender_id : selectedTenderId;
-          if (initialTenderId) {
-            setSelectedTenderId(initialTenderId);
-            await loadTenderData(initialTenderId);
-          }
         } catch (e) {
           console.error('Error loading initial data:', e);
         } finally {
@@ -165,8 +149,11 @@
         }
       };
 
-      // Load Bidders, Metrics, and Contingency Roster for Selected Tender
-      const loadTenderData = async (tenderId) => {
+      // Select a Tender and Open its Evaluation Cockpit
+      const handleSelectTender = async (tenderId) => {
+        setSelectedTenderId(tenderId);
+        setCurrentView('EVALUATION_COCKPIT');
+        setLoading(true);
         try {
           const [bRes, mRes, gRes, cRes] = await Promise.all([
             fetch(`/api/bidders?tender_id=${encodeURIComponent(tenderId)}`).then(r => r.json()),
@@ -183,6 +170,8 @@
           }
         } catch (e) {
           console.error('Error loading tender data:', e);
+        } finally {
+          setLoading(false);
         }
       };
 
@@ -190,11 +179,39 @@
         loadInitialData();
       }, []);
 
-      useEffect(() => {
-        if (selectedTenderId) {
-          loadTenderData(selectedTenderId);
+      // Instant Officer Priority Change (Priority 1 L1, Priority 2 L2, Priority 3 L3, or Clear)
+      const handleSetPriority = async (bidderId, newPriority) => {
+        // Optimistic UI Update (instant reflection)
+        setBidders(prev => prev.map(b => {
+          if (b.bidder_id === bidderId) {
+            return {
+              ...b,
+              award_priority: newPriority,
+              award_status: newPriority === 'PRIORITY_1_L1' ? 'CONFIRMED_L1' : (newPriority ? 'CONTINGENCY_STANDBY' : 'UNASSIGNED')
+            };
+          }
+          // If another vendor had this priority, clear it
+          if (newPriority && b.award_priority === newPriority) {
+            return { ...b, award_priority: null, award_status: 'UNASSIGNED' };
+          }
+          return b;
+        }));
+
+        try {
+          await fetch('/api/bidders/set-priority', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bidder_id: bidderId, priority: newPriority })
+          });
+
+          // Refresh contingency deck
+          const cRes = await fetch(`/api/bidders/contingency-roster/${encodeURIComponent(selectedTenderId)}`).then(r => r.json());
+          setContingencyRoster(cRes);
+          showNotice(`Priority updated to ${newPriority ? newPriority.replace(/_/g, ' ') : 'None'}!`);
+        } catch (e) {
+          console.error(e);
         }
-      }, [selectedTenderId]);
+      };
 
       // Open Original Certificate Viewer
       const handleOpenDocViewer = async (bidder, docType = 'GST_CERTIFICATE') => {
@@ -209,7 +226,7 @@
         }
       };
 
-      // Open Official 30-Page GeM Bid Proposal Document Dossier
+      // Open Official 30-Page GeM Proposal Document Dossier
       const handleOpenGemDossier = async (bidder) => {
         setGemDossierBidder(bidder);
         setDossierPage(1);
@@ -218,91 +235,23 @@
           const data = await res.json();
           setGemDossierData(data);
         } catch (e) {
-          console.error('Error loading GeM Proposal Dossier:', e);
-        }
-      };
-
-      // Quick 1-Click Award as Priority 1 (L1)
-      const handleQuickAwardL1 = async (bidder) => {
-        setVerifyingId(bidder.bidder_id);
-        try {
-          await fetch('/api/officer/decision', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              bidder_id: bidder.bidder_id,
-              action: 'APPROVE',
-              officer_id: 'OFFICER-GEM-994',
-              officer_name: 'Rajesh Kumar (Senior Procurement Director, GeM)',
-              comments: `Awarded Priority 1 (L1 Confirmed) to ${bidder.company_name}. Qualified compliant vendors queued on 72h standby contingency.`
-            })
-          });
-          await loadTenderData(selectedTenderId);
-          showNotice(`🎉 ${bidder.company_name} Awarded as Priority 1 (L1)! Priority 2 & 3 Standbys Queued.`);
-        } catch (e) {
           console.error(e);
-        } finally {
-          setVerifyingId(null);
         }
       };
 
       // Re-run 10-step verification for a single bidder
       const handleReverify = async (bidderId) => {
-        setVerifyingId(bidderId);
         try {
           await fetch(`/api/bidders/verify/${bidderId}`, { method: 'POST' });
-          await loadTenderData(selectedTenderId);
-          showNotice(`10-Step Automated Verification & Forensics Re-Evaluated for ${bidderId}!`);
+          const [bRes, mRes] = await Promise.all([
+            fetch(`/api/bidders?tender_id=${encodeURIComponent(selectedTenderId)}`).then(r => r.json()),
+            fetch(`/api/metrics?tender_id=${encodeURIComponent(selectedTenderId)}`).then(r => r.json())
+          ]);
+          setBidders(bRes);
+          setMetrics(mRes);
+          showNotice(`10-Step Verification Re-run Completed!`);
         } catch (e) {
           console.error(e);
-        } finally {
-          setVerifyingId(null);
-        }
-      };
-
-      // Reset Demo Scenarios
-      const handleReset = async () => {
-        setLoading(true);
-        try {
-          await fetch('/api/bidders/reset-demo', { method: 'POST' });
-          await loadInitialData();
-          if (selectedTenderId) await loadTenderData(selectedTenderId);
-          showNotice('All 3 Tenders & 45 Vendor Dossiers Reset Successfully!');
-        } catch (e) {
-          console.error(e);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      // Submit Procurement Officer Determination
-      const handleDecisionSubmit = async (e, bidderId) => {
-        e.preventDefault();
-        if (!officerRemarks.trim()) return;
-        setVerifyingId(bidderId);
-        try {
-          await fetch('/api/officer/decision', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              bidder_id: bidderId,
-              action: decisionAction,
-              officer_id: 'OFFICER-GEM-994',
-              officer_name: 'Rajesh Kumar (Senior Procurement Director, GeM)',
-              comments: officerRemarks,
-              override_justification: overrideJustification
-            })
-          });
-          setOfficerRemarks('');
-          setOverrideJustification('');
-          await loadTenderData(selectedTenderId);
-          const aRes = await fetch('/api/audit').then(r => r.json());
-          setAuditLogs(aRes);
-          showNotice(`Determination (${decisionAction}) Committed & Contingency Roster Updated!`);
-        } catch (e) {
-          console.error(e);
-        } finally {
-          setVerifyingId(null);
         }
       };
 
@@ -312,21 +261,15 @@
         setForensicUploading(true);
         const formData = new FormData();
         formData.append('file', forensicFile);
-        if (forensicClaimedDate) {
-          formData.append('claimed_date', forensicClaimedDate);
-        }
+        if (forensicClaimedDate) formData.append('claimed_date', forensicClaimedDate);
 
         try {
-          const res = await fetch('/api/forensics/upload-test', {
-            method: 'POST',
-            body: formData
-          });
+          const res = await fetch('/api/forensics/upload-test', { method: 'POST', body: formData });
           const data = await res.json();
           setLiveForensicResult(data);
-          showNotice(`Forensic ELA Scan Completed! Status: ${data.status} (Tamper Score: ${data.overall_tamper_score}/100)`);
+          showNotice(`Forensic Scan Done: ${data.status} (${data.overall_tamper_score}/100)`);
         } catch (err) {
           console.error(err);
-          showNotice('Error running live forensic scan.');
         } finally {
           setForensicUploading(false);
         }
@@ -362,14 +305,13 @@
         } catch (err) {
           setChatMessages(prev => [...prev, {
             sender: 'ai',
-            text: 'I encountered an error querying the tender knowledge base. Please retry.'
+            text: 'Error querying tender knowledge base. Please retry.'
           }]);
         } finally {
           setChatLoading(false);
         }
       };
 
-      // Toggle Vendor Accordion Expansion
       const toggleBidderAccordion = (bidderId) => {
         setExpandedBidderId(expandedBidderId === bidderId ? null : bidderId);
       };
@@ -382,974 +324,674 @@
       // Reactive Filtered Bidders List
       const filteredBidders = useMemo(() => {
         return bidders.filter(b => {
-          if (rosterViewMode === 'AWARDED' && !b.award_priority) return false;
-          if (rosterViewMode === 'EVALUATION' && b.award_priority) return false;
-
           if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
             const matchName = b.company_name?.toLowerCase().includes(q);
             const matchId = b.bidder_id?.toLowerCase().includes(q);
-            const matchGst = b.identifiers.gstin?.toLowerCase().includes(q);
             const matchState = b.registered_state?.toLowerCase().includes(q);
-            if (!matchName && !matchId && !matchGst && !matchState) return false;
+            if (!matchName && !matchId && !matchState) return false;
           }
-          const trust = b.longitudinal_trust_score?.score ?? 0;
-          if (trust < filterMinTrust) return false;
-
-          if (filterMinTurnover > 0 && b.financials.annual_turnover_inr < filterMinTurnover) return false;
+          const risk = b.compliance_score?.risk_level ?? 'LOW';
+          if (filterRiskProfile !== 'ALL' && risk !== filterRiskProfile) return false;
           if (filterMsmeOnly && !b.identifiers.udyam_registration_number) return false;
-
           const firstDoc = b.documents?.[0];
           const tamperScore = firstDoc?.forensic_report?.overall_tamper_score ?? 0;
           if (filterTamperedOnly && tamperScore <= 25) return false;
-
           if (filterExcludeConflicts && b.conflict_links_count > 0) return false;
-
           return true;
         });
-      }, [bidders, rosterViewMode, searchQuery, filterMinTrust, filterMinTurnover, filterMsmeOnly, filterTamperedOnly, filterExcludeConflicts]);
+      }, [bidders, searchQuery, filterRiskProfile, filterMsmeOnly, filterTamperedOnly, filterExcludeConflicts]);
 
       const currentTender = tenders.find(t => t.tender_id === selectedTenderId) || tenders[0];
 
       return (
-        <div className="min-h-screen flex flex-col bg-[#F4F7FB]">
+        <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
           
-          {/* GeM National Top Utility Bar */}
+          {/* Top Utility Ribbon */}
           <div className="bg-[#030F21] text-slate-300 text-[11px] font-medium px-4 py-2 border-b border-slate-800 no-print">
-            <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
-              <div className="flex items-center space-x-3">
-                <span className="flex items-center space-x-1.5">
-                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span className="text-white font-bold tracking-wide">Government of India</span>
-                </span>
-                <span className="text-slate-600">•</span>
-                <span>Ministry of Commerce & Industry</span>
-                <span className="text-slate-600">•</span>
-                <span className="text-amber-400 font-bold">Government e-Marketplace (GeM)</span>
-              </div>
-              <div className="flex items-center space-x-4">
-                <span className="font-mono text-slate-300">API Setu / GSTN / ELA Forensics Active</span>
+            <div className="max-w-7xl mx-auto flex justify-between items-center">
+              <div className="flex items-center space-x-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className="text-white font-bold">Government of India • Ministry of Commerce & Industry</span>
                 <span className="text-slate-600">|</span>
+                <span className="text-amber-400 font-bold">GeM ProcureShield AI</span>
+              </div>
+              <div className="flex items-center space-x-3 text-xs">
                 <span>Security: <strong className="text-emerald-400 font-mono">CERT-In Level 4</strong></span>
               </div>
             </div>
           </div>
 
-          {/* Main Top Header Navbar */}
-          <header className="gem-header-gradient text-white sticky top-0 z-40 px-4 py-3.5 shadow-xl border-b border-blue-900/40 no-print">
+          {/* Main Top Navigation Header */}
+          <header className="gem-header-gradient text-white sticky top-0 z-40 px-4 py-3.5 shadow-md no-print">
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-              
-              {/* Brand Emblem & Logo */}
-              <div className="flex items-center space-x-3.5">
-                <div className="w-11 h-11 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shadow-inner">
-                  <span className="text-2xl">🏛️</span>
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-2xl shadow">
+                  🏛️
                 </div>
                 <div>
-                  <div className="flex items-center space-x-2">
-                    <h1 className="font-extrabold text-xl tracking-tight text-white flex items-center gap-1.5">
-                      GeM <span className="text-[#FF9933]">Procure</span><span className="text-[#38BDF8]">Shield</span>
-                    </h1>
-                    <span className="px-2.5 py-0.5 text-[10px] font-black bg-[#F84464] text-white rounded-full uppercase tracking-wider shadow">
-                      L1/L2/L3 CONTINGENCY DECK
-                    </span>
-                  </div>
-                  <p className="text-xs text-blue-200/80 font-medium">
-                    Technical Evaluation Committee AI Decision Cockpit & Digital Fraud Shield
+                  <h1 className="font-extrabold text-lg tracking-tight text-white flex items-center gap-1.5">
+                    GeM <span className="text-[#FF9933]">Procure</span><span className="text-[#38BDF8]">Shield</span> AI
+                  </h1>
+                  <p className="text-[11px] text-blue-200/80 font-medium">
+                    Technical Evaluation Committee AI Decision Cockpit
                   </p>
                 </div>
               </div>
 
-              {/* Instant Search Bar */}
-              <div className="hidden md:flex flex-1 max-w-md mx-4">
-                <div className="relative w-full">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-blue-300 text-sm">
-                    🔍
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Search bids or vendors by Name, GSTIN, State..."
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-white/10 border border-white/20 rounded-xl text-xs text-white placeholder-blue-200/60 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white/15 transition"
-                  />
-                  {searchQuery && (
-                    <button onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-0 pr-3 flex items-center text-blue-200 text-xs hover:text-white">
-                      ✕
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
               <div className="flex items-center space-x-2.5">
                 <button
                   onClick={() => setIsForensicLabOpen(true)}
-                  className="px-3.5 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl shadow-md transition flex items-center space-x-1.5"
+                  className="px-3 py-1.5 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl shadow transition"
                 >
-                  <span>🔬 Live Forensic Lab</span>
+                  🔬 Live Forensic Lab
                 </button>
 
                 <button
                   onClick={() => setIsChatOpen(true)}
-                  className="px-3.5 py-2 text-xs font-bold bg-[#F84464] hover:bg-[#d93b57] text-white rounded-xl shadow-md transition flex items-center space-x-1.5"
+                  className="px-3 py-1.5 text-xs font-bold bg-[#F84464] hover:bg-[#d93b57] text-white rounded-xl shadow transition flex items-center space-x-1.5"
                 >
                   <span>💬 AI Assistant</span>
-                  <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
                 </button>
 
                 <button
                   onClick={() => setIsAuditOpen(true)}
-                  className="hidden sm:flex items-center space-x-1.5 px-3 py-2 text-xs font-bold bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 transition"
+                  className="px-3 py-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 transition"
                 >
-                  <span>📜 CAG Audit</span>
-                  <span className="px-1.5 py-0.2 text-[10px] bg-blue-900/80 rounded-full font-mono">
-                    {auditLogs.length}
-                  </span>
-                </button>
-
-                <button
-                  onClick={handleReset}
-                  disabled={loading}
-                  className="p-2 text-xs bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 transition"
-                  title="Reset Demo Scenarios"
-                >
-                  🔄
+                  📜 CAG Audit
                 </button>
               </div>
             </div>
           </header>
 
-          {/* Floating Notice Toast */}
+          {/* Notification Toast */}
           {notification && (
-            <div className="fixed top-20 right-6 z-50 bg-[#0B2559] border-2 border-amber-400 text-white px-5 py-3.5 rounded-2xl shadow-2xl text-xs font-bold flex items-center space-x-3 animate-bounce no-print">
-              <span className="text-lg">🛡️</span>
+            <div className="fixed top-20 right-6 z-50 bg-[#0B2559] border-2 border-amber-400 text-white px-5 py-3 rounded-2xl shadow-2xl text-xs font-bold flex items-center space-x-2 animate-bounce no-print">
+              <span>🛡️</span>
               <span>{notification}</span>
             </div>
           )}
 
-          {/* OFFICIAL GeM PORTAL TOP ADVISORY NOTICE */}
-          <div className="max-w-7xl w-full mx-auto px-4 pt-5 pb-1 no-print">
-            <div className="bg-[#DCEEFA] border border-[#B6DCF5] text-[#0369A1] px-5 py-3 rounded-xl text-center text-xs font-semibold shadow-sm">
-              It may take up to 15 mins to reflect newly published bids or any modification in bids to show up in search results.
-            </div>
-          </div>
-
-          {/* MAIN 2-COLUMN GeM BID PORTAL LAYOUT */}
-          <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          {/* ========================================================================= */}
+          {/* SCREEN 1: SIMPLE CLEAN 3 DEMO TENDERS SELECTION SCREEN                    */}
+          {/* ========================================================================= */}
+          {currentView === 'SELECT_TENDER' && (
+            <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-12 space-y-8 animate-fadeIn">
               
-              {/* LEFT SIDEBAR: GeM FILTERS PANEL */}
-              <aside className="md:col-span-3 space-y-5 no-print">
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-5">
-                  <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-blue-900 text-base">🔍</span>
-                      <h3 className="font-black text-slate-800 text-sm tracking-wide uppercase">
-                        Filters
+              <div className="text-center space-y-2 max-w-2xl mx-auto">
+                <span className="text-[10px] font-black uppercase tracking-widest text-blue-900 bg-blue-100 px-3 py-1 rounded-full">
+                  STEP 1: SELECT GOVERNMENT TENDER
+                </span>
+                <h2 className="text-2xl font-black text-slate-900">
+                  Active Central Government Tenders Under Evaluation
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Please select one of the active tenders below to open the complete 15-vendor technical evaluation roster and contingency priority deck.
+                </p>
+              </div>
+
+              {/* 3 Clean, Simple, Prominent Tender Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {tenders.map((t, idx) => (
+                  <div
+                    key={t.tender_id}
+                    onClick={() => handleSelectTender(t.tender_id)}
+                    className="bg-white rounded-3xl p-6 border-2 border-slate-200 hover:border-[#0B2559] cursor-pointer transition-all card-hover-lift shadow-sm flex flex-col justify-between space-y-5 group"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start">
+                        <span className="px-2.5 py-1 text-xs font-black bg-blue-100 text-blue-900 rounded-lg font-mono">
+                          {t.tender_id}
+                        </span>
+                        <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 rounded uppercase">
+                          {t.status.replace('_', ' ')}
+                        </span>
+                      </div>
+
+                      <h3 className="text-base font-extrabold text-slate-900 leading-snug group-hover:text-blue-900 transition">
+                        {t.title}
                       </h3>
+
+                      <p className="text-xs text-slate-500 font-medium">
+                        {t.ministry} • <strong className="text-slate-700">{t.category}</strong>
+                      </p>
                     </div>
-                    <button
-                      onClick={() => {
-                        setFilterOngoingBids(true);
-                        setFilterBidStatus(false);
-                        setFilterBidType('ALL');
-                        setFilterHighValueOnly(false);
-                        setFilterMinTrust(300);
-                        setFilterMinTurnover(0);
-                        setFilterMsmeOnly(false);
-                        setFilterTamperedOnly(false);
-                        setFilterExcludeConflicts(false);
-                        setSearchQuery('');
-                      }}
-                      className="text-xs font-bold text-blue-600 hover:text-blue-800"
+
+                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                      <div className="flex justify-between items-center text-xs">
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Sanctioned Value</span>
+                          <span className="text-base font-black font-mono text-emerald-700">₹{t.estimated_value_cr.toFixed(2)} Cr</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Vendors Ingested</span>
+                          <span className="text-sm font-black font-mono text-[#0B2559]">15 Bidders</span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="w-full py-2.5 bg-[#0B2559] group-hover:bg-blue-800 text-white text-xs font-bold rounded-xl transition shadow flex items-center justify-center space-x-1.5"
+                      >
+                        <span>👉 Open Evaluation Roster</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </main>
+          )}
+
+          {/* ========================================================================= */}
+          {/* SCREEN 2: OFFICER EVALUATION COCKPIT (Visible after selecting a bid)      */}
+          {/* ========================================================================= */}
+          {currentView === 'EVALUATION_COCKPIT' && (
+            <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6 animate-fadeIn">
+              
+              {/* Back to All Bids Header Bar */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm gap-3">
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => setCurrentView('SELECT_TENDER')}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 transition flex items-center space-x-1"
+                  >
+                    <span>← Back to All 3 Bids</span>
+                  </button>
+                  <div className="h-5 w-px bg-slate-200"></div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                      <span>BID: {currentTender?.tender_id}</span>
+                      <span className="text-xs font-normal text-slate-500">• {currentTender?.title}</span>
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3 text-xs font-mono">
+                  <span className="text-slate-500">Value: <strong className="text-emerald-700">₹{currentTender?.estimated_value_cr.toFixed(2)} Cr</strong></span>
+                  <span className="text-slate-300">|</span>
+                  <span className="text-slate-500">Department: <strong className="text-slate-800">{currentTender?.department}</strong></span>
+                </div>
+              </div>
+
+              {/* DEDICATED TOP PRIORITY & AWARD ALLOCATION DECK (PRIORITY 1, 2, 3) */}
+              <section className="bg-white rounded-3xl p-6 border-2 border-purple-200 shadow-md space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-slate-100 gap-2">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xl">🏆</span>
+                      <h4 className="text-sm font-black text-slate-900 uppercase tracking-wide">
+                        Award & Contingency Priority Deck (Officer Allocation)
+                      </h4>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      You are in full control: Change priorities at any time using the dropdown on any vendor below.
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-purple-900 bg-purple-100 px-3 py-1 rounded-full font-mono">
+                    72-Hour SLA Contingency Window
+                  </span>
+                </div>
+
+                {/* 3 Priority Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  
+                  {/* Priority 1 (L1 Confirmed) */}
+                  <div className="p-4 rounded-2xl border-2 bg-purple-50/70 border-purple-400 space-y-2.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-purple-700 text-white font-mono">
+                        PRIORITY 1 (L1 CONFIRMED)
+                      </span>
+                      <span className="text-xs font-bold text-purple-950">Primary Winner</span>
+                    </div>
+
+                    {contingencyRoster?.primary_l1 ? (
+                      <div className="space-y-1 text-xs">
+                        <h5 className="font-extrabold text-slate-900 text-sm">{contingencyRoster.primary_l1.company_name}</h5>
+                        <p className="text-slate-500 font-mono text-[11px]">ID: {contingencyRoster.primary_l1.bidder_id} • {contingencyRoster.primary_l1.registered_state}</p>
+                        <div className="flex justify-between text-[11px] font-mono text-slate-700 pt-1 border-t border-purple-200">
+                          <span>Turnover: <strong>₹{(contingencyRoster.primary_l1.financials.annual_turnover_inr/10000000).toFixed(1)} Cr</strong></span>
+                          <span>Trust: <strong className="text-blue-900">{contingencyRoster.primary_l1.longitudinal_trust_score?.score}</strong></span>
+                        </div>
+                        <button
+                          onClick={() => handleSetPriority(contingencyRoster.primary_l1.bidder_id, null)}
+                          className="w-full py-1 text-rose-600 hover:text-rose-800 text-[10px] font-bold text-center mt-1"
+                        >
+                          ✕ Remove L1 Assignment
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="py-4 text-center text-xs text-slate-400">
+                        <p className="font-bold">No Priority 1 Assigned</p>
+                        <p className="text-[10px]">Select 'Priority 1 (L1)' on any vendor below</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Priority 2 (L2 Standby) */}
+                  <div className="p-4 rounded-2xl border bg-amber-50/70 border-amber-300 space-y-2.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-amber-600 text-white font-mono">
+                        PRIORITY 2 (L2 STANDBY)
+                      </span>
+                      <span className="text-xs font-bold text-amber-950">1st Backup</span>
+                    </div>
+
+                    {contingencyRoster?.standby_l2 ? (
+                      <div className="space-y-1 text-xs">
+                        <h5 className="font-extrabold text-slate-900 text-sm">{contingencyRoster.standby_l2.company_name}</h5>
+                        <p className="text-slate-500 font-mono text-[11px]">ID: {contingencyRoster.standby_l2.bidder_id} • {contingencyRoster.standby_l2.registered_state}</p>
+                        <div className="flex justify-between text-[11px] font-mono text-slate-700 pt-1 border-t border-amber-200">
+                          <span>Turnover: <strong>₹{(contingencyRoster.standby_l2.financials.annual_turnover_inr/10000000).toFixed(1)} Cr</strong></span>
+                          <span>Trust: <strong className="text-blue-900">{contingencyRoster.standby_l2.longitudinal_trust_score?.score}</strong></span>
+                        </div>
+                        <button
+                          onClick={() => handleSetPriority(contingencyRoster.standby_l2.bidder_id, 'PRIORITY_1_L1')}
+                          className="w-full py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-bold rounded-lg transition"
+                        >
+                          ⚡ Promote to L1 Winner
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="py-4 text-center text-xs text-slate-400">
+                        <p className="font-bold">No Priority 2 Standby</p>
+                        <p className="text-[10px]">Select 'Priority 2 (L2)' on any vendor below</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Priority 3 (L3 Standby) */}
+                  <div className="p-4 rounded-2xl border bg-blue-50/70 border-blue-300 space-y-2.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-blue-700 text-white font-mono">
+                        PRIORITY 3 (L3 STANDBY)
+                      </span>
+                      <span className="text-xs font-bold text-blue-950">2nd Backup</span>
+                    </div>
+
+                    {contingencyRoster?.standby_l3 ? (
+                      <div className="space-y-1 text-xs">
+                        <h5 className="font-extrabold text-slate-900 text-sm">{contingencyRoster.standby_l3.company_name}</h5>
+                        <p className="text-slate-500 font-mono text-[11px]">ID: {contingencyRoster.standby_l3.bidder_id} • {contingencyRoster.standby_l3.registered_state}</p>
+                        <div className="flex justify-between text-[11px] font-mono text-slate-700 pt-1 border-t border-blue-200">
+                          <span>Turnover: <strong>₹{(contingencyRoster.standby_l3.financials.annual_turnover_inr/10000000).toFixed(1)} Cr</strong></span>
+                          <span>Trust: <strong className="text-blue-900">{contingencyRoster.standby_l3.longitudinal_trust_score?.score}</strong></span>
+                        </div>
+                        <button
+                          onClick={() => handleSetPriority(contingencyRoster.standby_l3.bidder_id, 'PRIORITY_1_L1')}
+                          className="w-full py-1 bg-blue-700 hover:bg-blue-600 text-white text-[10px] font-bold rounded-lg transition"
+                        >
+                          ⚡ Promote to L1 Winner
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="py-4 text-center text-xs text-slate-400">
+                        <p className="font-bold">No Priority 3 Standby</p>
+                        <p className="text-[10px]">Select 'Priority 3 (L3)' on any vendor below</p>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              </section>
+
+              {/* VENDOR ROSTER SECTION */}
+              <section className="space-y-4">
+                
+                {/* Search & Quick Filter Bar */}
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap justify-between items-center gap-3">
+                  <div className="flex items-center space-x-3 flex-1 min-w-[280px]">
+                    <span className="text-xs font-bold text-slate-500">Filter 15 Vendors:</span>
+                    <input
+                      type="text"
+                      placeholder="Type Company Name, State, or ID..."
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+
+                  <div className="flex items-center space-x-2 text-xs">
+                    <select
+                      value={filterRiskProfile}
+                      onChange={e => setFilterRiskProfile(e.target.value)}
+                      className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800"
                     >
-                      Reset
-                    </button>
-                  </div>
+                      <option value="ALL">All Compliance Profiles</option>
+                      <option value="LOW">100% Pass (Low Risk)</option>
+                      <option value="CRITICAL">Debarred / Critical</option>
+                    </select>
 
-                  <div className="space-y-2 text-xs">
-                    <label className="flex items-center space-x-2 text-slate-700 font-semibold cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filterOngoingBids}
-                        onChange={e => setFilterOngoingBids(e.target.checked)}
-                        className="w-4 h-4 rounded accent-blue-700"
-                      />
-                      <span>Ongoing Bids/RA</span>
-                    </label>
-
-                    <label className="flex items-center space-x-2 text-slate-600 font-medium cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filterBidStatus}
-                        onChange={e => setFilterBidStatus(e.target.checked)}
-                        className="w-4 h-4 rounded accent-blue-700"
-                      />
-                      <span>Bid/RA Status</span>
-                    </label>
-                  </div>
-
-                  <div className="space-y-2 text-xs pt-3 border-t border-slate-100">
-                    <span className="font-extrabold text-slate-800 block uppercase text-[11px] tracking-wider">
-                      By Bid Type:
-                    </span>
-                    {['ALL', 'PRODUCT', 'SERVICE', 'BOQ', 'GLOBAL'].map(bt => (
-                      <label key={bt} className="flex items-center space-x-2 text-slate-700 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="bidTypeGroup"
-                          checked={filterBidType === bt}
-                          onChange={() => setFilterBidType(bt)}
-                          className="w-4 h-4 accent-blue-700"
-                        />
-                        <span>{bt === 'ALL' ? 'All Bid/RAs' : `${bt} Bid/RAs`}</span>
-                      </label>
-                    ))}
-                  </div>
-
-                  <div className="space-y-3 text-xs pt-3 border-t border-slate-100 bg-blue-50/50 p-3.5 rounded-xl border border-blue-100">
-                    <span className="font-extrabold text-blue-900 block uppercase text-[11px] tracking-wider">
-                      🛡️ AI Forensics & Trust:
-                    </span>
-
-                    <div className="space-y-1">
-                      <label className="text-slate-700 font-bold block">
-                        Min CIBIL: <strong className="text-blue-700 font-mono">{filterMinTrust}</strong>
-                      </label>
-                      <input
-                        type="range"
-                        min="300"
-                        max="900"
-                        step="50"
-                        value={filterMinTrust}
-                        onChange={e => setFilterMinTrust(Number(e.target.value))}
-                        className="w-full accent-blue-900 cursor-pointer"
-                      />
-                    </div>
-
-                    <label className="flex items-center space-x-2 text-slate-700 font-medium cursor-pointer">
+                    <label className="flex items-center space-x-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 font-bold text-slate-700 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={filterMsmeOnly}
                         onChange={e => setFilterMsmeOnly(e.target.checked)}
-                        className="w-4 h-4 rounded accent-blue-700"
+                        className="rounded accent-blue-700"
                       />
-                      <span>MSME Exemption Only</span>
+                      <span>MSME Only</span>
                     </label>
 
-                    <label className="flex items-center space-x-2 text-amber-900 font-bold cursor-pointer">
+                    <label className="flex items-center space-x-1.5 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 font-bold text-amber-900 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={filterTamperedOnly}
                         onChange={e => setFilterTamperedOnly(e.target.checked)}
-                        className="w-4 h-4 rounded accent-amber-600"
+                        className="rounded accent-amber-600"
                       />
-                      <span>ELA Tamper Flags Only</span>
-                    </label>
-
-                    <label className="flex items-center space-x-2 text-rose-900 font-bold cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filterExcludeConflicts}
-                        onChange={e => setFilterExcludeConflicts(e.target.checked)}
-                        className="w-4 h-4 rounded accent-rose-600"
-                      />
-                      <span>Zero Shell / Cartel Links</span>
+                      <span>Tampered Only</span>
                     </label>
                   </div>
                 </div>
-              </aside>
 
-              {/* RIGHT MAIN COLUMN: GeM BID CARDS & VENDOR PROPOSAL INTELLIGENCE */}
-              <div className="md:col-span-9 space-y-6">
-                
-                {/* Result Counter & Sort Bar */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-1 text-xs gap-2">
-                  <span className="font-semibold text-[#0369A1] text-sm">
-                    Showing 1 - {tenders.length} records of {tenders.length} active government bids ({filteredBidders.length} Vendor Proposals)
-                  </span>
-
-                  <div className="flex items-center space-x-2">
-                    <span className="text-slate-500 font-medium">Sort by:</span>
-                    <select
-                      value={sortBy}
-                      onChange={e => setSortBy(e.target.value)}
-                      className="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-blue-600"
-                    >
-                      <option value="OLDEST_FIRST">Bid End Date: Oldest First</option>
-                      <option value="NEWEST_FIRST">Bid End Date: Newest First</option>
-                      <option value="VALUE_HIGH">Estimated Value: High to Low</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* GeM BID CARDS LIST */}
-                <div className="space-y-6">
-                  {tenders.map(t => {
-                    const isSelectedTender = t.tender_id === selectedTenderId;
-                    const primaryWinner = contingencyRoster?.primary_l1;
-                    const standbyL2 = contingencyRoster?.standby_l2;
-                    const standbyL3 = contingencyRoster?.standby_l3;
+                {/* 15 Vendor Cards */}
+                <div className="space-y-4">
+                  {filteredBidders.map(b => {
+                    const isExpanded = expandedBidderId === b.bidder_id;
+                    const score = b.compliance_score?.score ?? 0;
+                    const risk = b.compliance_score?.risk_level ?? 'LOW';
+                    const trust = b.longitudinal_trust_score?.score ?? 0;
+                    const currentTab = getBidderTab(b.bidder_id);
+                    const firstDoc = b.documents?.[0];
+                    const forensic = firstDoc?.forensic_report;
+                    const tamperScore = forensic?.overall_tamper_score ?? 0;
+                    const tamperStatus = forensic?.status ?? 'CLEAN';
+                    const awardPri = b.award_priority;
 
                     return (
                       <div
-                        key={t.tender_id}
-                        className={`gem-bid-card rounded-2xl border border-slate-200 shadow-sm overflow-hidden ${
-                          isSelectedTender ? 'ring-2 ring-blue-600/30' : ''
+                        key={b.bidder_id}
+                        className={`bg-white rounded-3xl border-2 transition-all shadow-sm overflow-hidden ${
+                          awardPri === 'PRIORITY_1_L1' ? 'border-purple-500 ring-2 ring-purple-600/20' :
+                          awardPri ? 'border-amber-400' :
+                          isExpanded ? 'border-[#0B2559] ring-2 ring-blue-600/15 shadow-md' : 'border-slate-200'
                         }`}
                       >
-                        {/* Top Bid Line */}
-                        <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                          <div className="flex items-center space-x-3">
-                            <span className="font-bold text-slate-800 text-sm">
-                              BID NO: <strong className="text-[#0369A1] font-mono hover:underline cursor-pointer">{t.tender_id}</strong>
-                            </span>
-                            <span className="px-2 py-0.5 text-[10px] font-extrabold bg-emerald-100 text-emerald-800 rounded uppercase">
-                              {t.status.replace('_', ' ')}
-                            </span>
-                            {primaryWinner && isSelectedTender && (
-                              <span className="px-2.5 py-0.5 text-[10px] font-black bg-purple-100 text-purple-900 border border-purple-300 rounded-full uppercase animate-pulse">
-                                🏆 L1 AWARDED & L2/L3 CONTINGENCY ACTIVE
-                              </span>
-                            )}
-                          </div>
+                        {/* Header Row */}
+                        <div
+                          onClick={() => toggleBidderAccordion(b.bidder_id)}
+                          className={`p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer select-none ${
+                            isExpanded ? 'bg-blue-50/30 border-b border-slate-200' : 'hover:bg-slate-50/80'
+                          }`}
+                        >
+                          <div className="flex items-start space-x-3.5">
+                            <div className={`p-2.5 rounded-2xl text-xl font-bold mt-0.5 shadow-sm ${
+                              awardPri === 'PRIORITY_1_L1' ? 'bg-purple-100 text-purple-800' :
+                              risk === 'LOW' ? 'bg-emerald-100 text-emerald-800' :
+                              risk === 'CRITICAL' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {awardPri === 'PRIORITY_1_L1' ? '🏆' : '🏢'}
+                            </div>
 
-                          <div className="flex items-center space-x-3 text-xs">
-                            <span className="text-[#0369A1] hover:underline font-bold cursor-pointer">
-                              View Corrigendum/Representation
-                            </span>
-                          </div>
-                        </div>
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h4 className="font-extrabold text-slate-900 text-base">
+                                  {b.company_name}
+                                </h4>
+                                <span className="text-[10px] px-2.5 py-0.5 bg-slate-100 text-slate-700 font-mono font-bold rounded">
+                                  {b.bidder_id}
+                                </span>
 
-                        {/* 3-Column Metadata Body */}
-                        <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
-                          <div className="space-y-1">
-                            <p className="text-slate-500">
-                              Items: <strong className="text-slate-800 font-medium">{t.title}</strong>
-                            </p>
-                            <p className="text-slate-500">
-                              Quantity: <strong className="text-slate-800 font-mono">5250 Units / Nodes</strong>
-                            </p>
-                            <p className="text-slate-500">
-                              Sanctioned Est. Value: <strong className="text-emerald-700 font-bold font-mono">₹{t.estimated_value_cr.toFixed(2)} Cr</strong>
-                            </p>
-                          </div>
+                                {awardPri === 'PRIORITY_1_L1' && (
+                                  <span className="text-[10px] px-2.5 py-0.5 bg-purple-700 text-white font-black rounded-full font-mono">
+                                    ★ PRIORITY 1 (L1 CONFIRMED)
+                                  </span>
+                                )}
+                                {awardPri === 'PRIORITY_2_L2' && (
+                                  <span className="text-[10px] px-2.5 py-0.5 bg-amber-600 text-white font-black rounded-full font-mono">
+                                    PRIORITY 2 (L2 STANDBY)
+                                  </span>
+                                )}
+                                {awardPri === 'PRIORITY_3_L3' && (
+                                  <span className="text-[10px] px-2.5 py-0.5 bg-blue-700 text-white font-black rounded-full font-mono">
+                                    PRIORITY 3 (L3 STANDBY)
+                                  </span>
+                                )}
 
-                          <div className="space-y-1">
-                            <span className="text-slate-400 font-bold uppercase text-[10px] block">Department Name And Address:</span>
-                            <p className="text-slate-800 font-bold">{t.ministry}</p>
-                            <p className="text-slate-600">{t.department}</p>
-                            <p className="text-slate-500 font-mono text-[11px]">Category: {t.category}</p>
-                          </div>
-
-                          <div className="space-y-1 sm:text-right font-mono">
-                            <p className="text-slate-500">
-                              Start Date: <strong className="text-emerald-700">29-07-2026 1:24 PM</strong>
-                            </p>
-                            <p className="text-slate-500">
-                              End Date: <strong className="text-amber-700">{t.closing_date}</strong>
-                            </p>
-                            <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-blue-900 rounded font-sans text-[10px] font-bold">
-                              {t.bid_type}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Action Banner on Card */}
-                        <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex flex-wrap justify-between items-center gap-3">
-                          <div className="flex items-center space-x-2 text-xs font-semibold text-slate-600">
-                            <span>Participating Vendors: <strong className="text-blue-900 font-mono">15 Proposals Ingested</strong></span>
-                            <span>•</span>
-                            <span className="text-emerald-700 font-bold">ELA Forensics & Contingency Engine Active</span>
-                          </div>
-
-                          <button
-                            onClick={() => {
-                              setSelectedTenderId(t.tender_id);
-                              loadTenderData(t.tender_id);
-                            }}
-                            className={`px-4 py-2 text-xs font-bold rounded-xl transition flex items-center space-x-1.5 ${
-                              isSelectedTender
-                                ? 'bg-[#0B2559] text-white shadow'
-                                : 'bg-white text-slate-800 hover:bg-slate-100 border border-slate-300'
-                            }`}
-                          >
-                            <span>{isSelectedTender ? '▼ Evaluating 15 Vendor Proposals' : '▶ Select & Evaluate 15 Vendor Proposals'}</span>
-                          </button>
-                        </div>
-
-                        {/* EXPANDED SECTION FOR THIS BID */}
-                        {isSelectedTender && (
-                          <div className="p-5 bg-[#F8FAFC] border-t-2 border-slate-200 space-y-6 animate-fadeIn">
-                            
-                            {/* FEATURE 1: SEPARATE ACCEPTED & CONTINGENCY STANDBY DECK (L1, L2, L3) */}
-                            <div className="bg-white rounded-2xl border-2 border-purple-200 p-5 shadow-sm space-y-4">
-                              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-slate-100 gap-2">
-                                <div>
-                                  <div className="flex items-center space-x-2">
-                                    <span className="text-xl">🏆</span>
-                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-wide">
-                                      Accepted & Standby Contingency Deck — {t.tender_id}
-                                    </h4>
-                                  </div>
-                                  <p className="text-xs text-slate-500 mt-0.5">
-                                    Once accepted, primary awardee is confirmed as <strong>Priority 1 (L1)</strong>. Qualified eligible vendors are automatically queued as <strong>Priority 2 & 3 Standbys</strong> (72h SLA fallback).
-                                  </p>
-                                </div>
-
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-xs font-bold text-slate-500 font-mono">Contingency SLA: 72 Hours</span>
-                                </div>
+                                {b.identifiers.udyam_registration_number && (
+                                  <span className="text-[10px] px-2 py-0.5 bg-purple-50 text-purple-900 font-bold rounded">
+                                    MSME MSE
+                                  </span>
+                                )}
+                                {tamperStatus === 'LIKELY_TAMPERED' && (
+                                  <span className="text-[10px] px-2 py-0.5 bg-rose-100 text-rose-900 border border-rose-300 rounded font-extrabold uppercase">
+                                    🚨 ELA Tamper ({tamperScore}%)
+                                  </span>
+                                )}
                               </div>
 
-                              {/* 3 Priority Award Slots */}
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                
-                                {/* Slot 1: Priority 1 (L1 Confirmed / Primary Awardee) */}
-                                <div className={`p-4 rounded-2xl border-2 space-y-2.5 ${
-                                  primaryWinner ? 'bg-purple-50 border-purple-400' : 'bg-slate-50 border-dashed border-slate-300'
-                                }`}>
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-purple-700 text-white font-mono">
-                                      PRIORITY 1 (L1 CONFIRMED)
-                                    </span>
-                                    <span className="text-xs font-bold text-purple-950">Primary Awardee</span>
-                                  </div>
+                              <div className="text-xs text-slate-500 font-mono mt-1 space-x-3">
+                                <span>State: <strong className="text-slate-700 font-sans">{b.registered_state}</strong></span>
+                                <span>Turnover: <strong className="text-emerald-700 font-sans">₹{(b.financials.annual_turnover_inr/10000000).toFixed(1)} Cr</strong></span>
+                                <span>CIBIL: <strong className="text-blue-900">{trust}</strong></span>
+                              </div>
+                            </div>
+                          </div>
 
-                                  {primaryWinner ? (
-                                    <div className="space-y-1.5 text-xs">
-                                      <h5 className="font-extrabold text-slate-900 text-sm">{primaryWinner.company_name}</h5>
-                                      <p className="text-slate-500 font-mono text-[11px]">ID: {primaryWinner.bidder_id} • {primaryWinner.registered_state}</p>
-                                      <div className="flex justify-between text-[11px] font-mono text-slate-700 pt-1 border-t border-purple-200">
-                                        <span>Turnover: <strong>₹{(primaryWinner.financials.annual_turnover_inr/10000000).toFixed(1)} Cr</strong></span>
-                                        <span>Trust: <strong className="text-blue-900">{primaryWinner.longitudinal_trust_score?.score}</strong></span>
-                                      </div>
-                                      <div className="p-2 bg-purple-100/70 rounded-xl text-[10px] font-bold text-purple-900">
-                                        ✅ Status: Official Contract Award Issued (Awaiting ePBG)
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="py-6 text-center text-xs text-slate-400 space-y-1">
-                                      <p className="font-bold">No Vendor Accepted Yet</p>
-                                      <p className="text-[10px]">Click "Accept & Award L1" on any compliant vendor below</p>
-                                    </div>
-                                  )}
-                                </div>
+                          {/* Officer Priority Assignment Dropdown & Actions */}
+                          <div className="flex items-center space-x-3 pt-2 sm:pt-0" onClick={e => e.stopPropagation()}>
+                            
+                            {/* Officer Dropdown for Instant Priority Control */}
+                            <div className="flex items-center space-x-1 text-xs">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">Priority:</span>
+                              <select
+                                value={awardPri || 'NONE'}
+                                onChange={e => handleSetPriority(b.bidder_id, e.target.value === 'NONE' ? null : e.target.value)}
+                                className={`px-2.5 py-1.5 rounded-xl border text-xs font-black cursor-pointer shadow-sm ${
+                                  awardPri === 'PRIORITY_1_L1' ? 'bg-purple-700 text-white border-purple-700' :
+                                  awardPri === 'PRIORITY_2_L2' ? 'bg-amber-600 text-white border-amber-600' :
+                                  awardPri === 'PRIORITY_3_L3' ? 'bg-blue-700 text-white border-blue-700' :
+                                  'bg-white text-slate-700 border-slate-300'
+                                }`}
+                              >
+                                <option value="NONE">Unassigned</option>
+                                <option value="PRIORITY_1_L1">🏆 Priority 1 (L1 Primary)</option>
+                                <option value="PRIORITY_2_L2">🥈 Priority 2 (L2 Standby)</option>
+                                <option value="PRIORITY_3_L3">🥉 Priority 3 (L3 Standby)</option>
+                              </select>
+                            </div>
 
-                                {/* Slot 2: Priority 2 (L2 Standby Contingency) */}
-                                <div className={`p-4 rounded-2xl border space-y-2.5 ${
-                                  standbyL2 ? 'bg-amber-50/70 border-amber-300' : 'bg-slate-50 border-dashed border-slate-300'
-                                }`}>
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-amber-600 text-white font-mono">
-                                      PRIORITY 2 (L2 STANDBY)
-                                    </span>
-                                    <span className="text-xs font-bold text-amber-950">1st Contingency</span>
-                                  </div>
+                            <button
+                              type="button"
+                              onClick={() => toggleBidderAccordion(b.bidder_id)}
+                              className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition ${
+                                isExpanded ? 'bg-[#0B2559] text-white border-[#0B2559]' : 'bg-white text-slate-700 border-slate-300'
+                              }`}
+                            >
+                              {isExpanded ? '▲ Hide' : '▼ View Details'}
+                            </button>
+                          </div>
+                        </div>
 
-                                  {standbyL2 ? (
-                                    <div className="space-y-1.5 text-xs">
-                                      <h5 className="font-extrabold text-slate-900 text-sm">{standbyL2.company_name}</h5>
-                                      <p className="text-slate-500 font-mono text-[11px]">ID: {standbyL2.bidder_id} • {standbyL2.registered_state}</p>
-                                      <div className="flex justify-between text-[11px] font-mono text-slate-700 pt-1 border-t border-amber-200">
-                                        <span>Turnover: <strong>₹{(standbyL2.financials.annual_turnover_inr/10000000).toFixed(1)} Cr</strong></span>
-                                        <span>Trust: <strong className="text-blue-900">{standbyL2.longitudinal_trust_score?.score}</strong></span>
-                                      </div>
-                                      <button
-                                        onClick={() => handleQuickAwardL1(standbyL2)}
-                                        className="w-full py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-bold rounded-xl transition shadow"
-                                      >
-                                        ⚡ Promote to L1 (If Primary Fails)
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <div className="py-6 text-center text-xs text-slate-400 space-y-1">
-                                      <p className="font-bold">Standby Queued on Acceptance</p>
-                                      <p className="text-[10px]">Auto-selects highest compliant backup</p>
-                                    </div>
-                                  )}
-                                </div>
+                        {/* EXPANDED DOSSIER VIEW */}
+                        {isExpanded && (
+                          <div className="p-6 bg-white space-y-5 animate-fadeIn">
+                            
+                            {/* Actions bar */}
+                            <div className="flex flex-wrap justify-between items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                              <p className="text-xs text-slate-600">
+                                Address: <strong className="text-slate-900">{b.registered_address}</strong> • GSTIN: <strong className="text-slate-900 font-mono">{b.identifiers.gstin}</strong>
+                              </p>
 
-                                {/* Slot 3: Priority 3 (L3 Standby Contingency) */}
-                                <div className={`p-4 rounded-2xl border space-y-2.5 ${
-                                  standbyL3 ? 'bg-blue-50/70 border-blue-300' : 'bg-slate-50 border-dashed border-slate-300'
-                                }`}>
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-blue-700 text-white font-mono">
-                                      PRIORITY 3 (L3 STANDBY)
-                                    </span>
-                                    <span className="text-xs font-bold text-blue-950">2nd Contingency</span>
-                                  </div>
-
-                                  {standbyL3 ? (
-                                    <div className="space-y-1.5 text-xs">
-                                      <h5 className="font-extrabold text-slate-900 text-sm">{standbyL3.company_name}</h5>
-                                      <p className="text-slate-500 font-mono text-[11px]">ID: {standbyL3.bidder_id} • {standbyL3.registered_state}</p>
-                                      <div className="flex justify-between text-[11px] font-mono text-slate-700 pt-1 border-t border-blue-200">
-                                        <span>Turnover: <strong>₹{(standbyL3.financials.annual_turnover_inr/10000000).toFixed(1)} Cr</strong></span>
-                                        <span>Trust: <strong className="text-blue-900">{standbyL3.longitudinal_trust_score?.score}</strong></span>
-                                      </div>
-                                      <button
-                                        onClick={() => handleQuickAwardL1(standbyL3)}
-                                        className="w-full py-1.5 bg-blue-700 hover:bg-blue-600 text-white text-[11px] font-bold rounded-xl transition shadow"
-                                      >
-                                        ⚡ Promote to L1 (Secondary Fallback)
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <div className="py-6 text-center text-xs text-slate-400 space-y-1">
-                                      <p className="font-bold">Standby Queued on Acceptance</p>
-                                      <p className="text-[10px]">Auto-selects 2nd compliant backup</p>
-                                    </div>
-                                  )}
-                                </div>
-
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => handleOpenGemDossier(b)}
+                                  className="px-4 py-2 bg-[#0369A1] hover:bg-[#0284C7] text-white text-xs font-black rounded-xl transition shadow flex items-center space-x-1"
+                                >
+                                  <span>📄 View Submitted 30-Page Bid Proposal (Schedules 1-10)</span>
+                                </button>
+                                <button
+                                  onClick={() => handleOpenDocViewer(b, 'GST_CERTIFICATE')}
+                                  className="px-3 py-2 bg-white text-slate-800 text-xs font-bold rounded-xl border border-slate-300 shadow-sm"
+                                >
+                                  📜 Certificate
+                                </button>
+                                <button
+                                  onClick={() => handleReverify(b.bidder_id)}
+                                  className="px-3 py-2 bg-[#0B2559] text-white text-xs font-bold rounded-xl shadow"
+                                >
+                                  ⚡ Re-Run
+                                </button>
                               </div>
                             </div>
 
-                            {/* ROSTER VIEW TABS: All 15 Submissions vs Awarded vs Evaluation */}
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-2 border-b border-slate-200 gap-2">
-                              <div>
-                                <h4 className="text-sm font-extrabold text-slate-900 uppercase">
-                                  Vendor Technical Submissions ({filteredBidders.length} Displayed)
-                                </h4>
-                              </div>
-
-                              <div className="flex items-center space-x-2 text-xs">
+                            {/* Sub-Feature Tabs */}
+                            <div className="space-y-4">
+                              <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200">
                                 {[
-                                  { id: 'ALL', label: `All 15 Proposals (${bidders.length})` },
-                                  { id: 'AWARDED', label: `Awarded & Contingency Standbys (${bidders.filter(b => b.award_priority).length})` },
-                                  { id: 'EVALUATION', label: `Under Evaluation (${bidders.filter(b => !b.award_priority).length})` }
-                                ].map(v => (
+                                  { id: 'overview', label: `🔍 Cross-Check (${b.cross_check_mismatches?.length || 0} Flags)` },
+                                  { id: 'forensics', label: `🔬 Forensic ELA (${tamperScore}% Tamper)` },
+                                  { id: 'vault', label: `🗄️ Vault (${b.vault_documents?.length || 0} Docs)` },
+                                  { id: 'graph', label: `🕸️ Cartel Graph` },
+                                  { id: 'rules', label: `⚙️ YAML Rules (${b.rule_results?.length || 0})` }
+                                ].map(tab => (
                                   <button
-                                    key={v.id}
-                                    onClick={() => setRosterViewMode(v.id)}
-                                    className={`px-3 py-1.5 rounded-xl font-bold transition ${
-                                      rosterViewMode === v.id
-                                        ? 'bg-[#0B2559] text-white shadow'
-                                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                                    key={tab.id}
+                                    onClick={() => setBidderTab(b.bidder_id, tab.id)}
+                                    className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition ${
+                                      currentTab === tab.id
+                                        ? 'bms-pill-active'
+                                        : 'text-slate-600 hover:bg-white'
                                     }`}
                                   >
-                                    {v.label}
+                                    {tab.label}
                                   </button>
                                 ))}
                               </div>
-                            </div>
 
-                            {/* 15 Vendor Submissions List */}
-                            <div className="space-y-3">
-                              {filteredBidders.map(b => {
-                                const isExpanded = expandedBidderId === b.bidder_id;
-                                const score = b.compliance_score?.score ?? 0;
-                                const risk = b.compliance_score?.risk_level ?? 'LOW';
-                                const trust = b.longitudinal_trust_score?.score ?? 0;
-                                const band = b.longitudinal_trust_score?.rating_band?.split(' ')[0] ?? '';
-                                const hasConflict = b.conflict_links_count > 0;
-                                const currentTab = getBidderTab(b.bidder_id);
-                                const firstDoc = b.documents?.[0];
-                                const forensic = firstDoc?.forensic_report;
-                                const tamperScore = forensic?.overall_tamper_score ?? 0;
-                                const tamperStatus = forensic?.status ?? 'CLEAN';
-                                const awardPri = b.award_priority;
+                              {/* ONE-LINE EXECUTIVE VERDICT ON EVERY FEATURE TAB */}
 
-                                return (
-                                  <div
-                                    key={b.bidder_id}
-                                    className={`bg-white rounded-2xl border transition-all shadow-sm overflow-hidden ${
-                                      awardPri === 'PRIORITY_1_L1' ? 'border-purple-400 ring-2 ring-purple-600/20' :
-                                      awardPri ? 'border-amber-300' :
-                                      isExpanded ? 'border-[#0B2559] ring-2 ring-blue-600/15 shadow-md' : 'border-slate-200/90'
-                                    }`}
-                                  >
-                                    {/* Compact Vendor Row Header */}
-                                    <div
-                                      onClick={() => toggleBidderAccordion(b.bidder_id)}
-                                      className={`p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer transition select-none ${
-                                        isExpanded ? 'bg-blue-50/40 border-b border-slate-200' : 'hover:bg-slate-50/80'
-                                      }`}
-                                    >
-                                      <div className="flex items-start space-x-3.5">
-                                        <div className={`p-2.5 rounded-xl text-lg font-bold mt-0.5 shadow-sm flex-shrink-0 ${
-                                          awardPri === 'PRIORITY_1_L1' ? 'bg-purple-100 text-purple-800' :
-                                          risk === 'LOW' ? 'bg-emerald-100 text-emerald-800' :
-                                          risk === 'CRITICAL' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
-                                        }`}>
-                                          {awardPri === 'PRIORITY_1_L1' ? '🏆' : '🏢'}
-                                        </div>
-                                        <div>
-                                          <div className="flex flex-wrap items-center gap-2">
-                                            <h5 className="font-extrabold text-slate-900 text-sm hover:text-blue-900 transition">
-                                              {b.company_name}
-                                            </h5>
-                                            <span className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-700 font-mono font-bold rounded">
-                                              {b.bidder_id}
-                                            </span>
-
-                                            {/* Priority Award Badges */}
-                                            {awardPri === 'PRIORITY_1_L1' && (
-                                              <span className="text-[10px] px-2.5 py-0.5 bg-purple-700 text-white font-black rounded-full font-mono">
-                                                ★ PRIORITY 1 (L1 CONFIRMED)
-                                              </span>
-                                            )}
-                                            {awardPri === 'PRIORITY_2_L2' && (
-                                              <span className="text-[10px] px-2.5 py-0.5 bg-amber-600 text-white font-black rounded-full font-mono">
-                                                PRIORITY 2 (L2 STANDBY)
-                                              </span>
-                                            )}
-                                            {awardPri === 'PRIORITY_3_L3' && (
-                                              <span className="text-[10px] px-2.5 py-0.5 bg-blue-700 text-white font-black rounded-full font-mono">
-                                                PRIORITY 3 (L3 STANDBY)
-                                              </span>
-                                            )}
-
-                                            {b.identifiers.udyam_registration_number && (
-                                              <span className="text-[10px] px-2 py-0.5 bg-purple-50 text-purple-900 font-bold rounded">
-                                                MSME MSE
-                                              </span>
-                                            )}
-                                            {tamperStatus === 'LIKELY_TAMPERED' && (
-                                              <span className="text-[10px] px-2 py-0.5 bg-rose-100 text-rose-900 border border-rose-300 rounded font-extrabold uppercase">
-                                                🚨 ELA Tamper ({tamperScore}%)
-                                              </span>
-                                            )}
-                                          </div>
-                                          <div className="text-xs text-slate-500 font-mono mt-1 space-x-3">
-                                            <span>State: <strong className="text-slate-700 font-sans">{b.registered_state}</strong></span>
-                                            <span>GSTIN: <strong className="text-slate-700">{b.identifiers.gstin}</strong></span>
-                                            <span>Turnover: <strong className="text-emerald-700 font-sans">₹{(b.financials.annual_turnover_inr/10000000).toFixed(1)} Cr</strong></span>
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      {/* Pills & Quick Award Button */}
-                                      <div className="flex items-center justify-between sm:justify-end space-x-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                                        <div className="text-right">
-                                          <span className="text-[9px] text-slate-400 font-bold uppercase block">ELA Forensics</span>
-                                          <span className={`text-[11px] font-mono font-black px-2 py-0.5 rounded ${
-                                            tamperStatus === 'CLEAN' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                                            tamperStatus === 'LIKELY_TAMPERED' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
-                                            'bg-amber-100 text-amber-800 border border-amber-300'
-                                          }`}>
-                                            {tamperScore}% {tamperStatus}
-                                          </span>
-                                        </div>
-
-                                        <div className="text-right">
-                                          <span className="text-[9px] text-slate-400 font-bold uppercase block">CIBIL Trust</span>
-                                          <span className="text-xs font-black font-mono text-[#0B2559]">
-                                            {trust} <span className="text-[10px] text-slate-500 font-bold">({band})</span>
-                                          </span>
-                                        </div>
-
-                                        <div className="text-right">
-                                          <span className="text-[9px] text-slate-400 font-bold uppercase block">Compliance</span>
-                                          <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded uppercase ${
-                                            risk === 'LOW' ? 'bg-emerald-100 text-emerald-800' :
-                                            risk === 'CRITICAL' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
-                                          }`}>
-                                            {score}/100 {risk}
-                                          </span>
-                                        </div>
-
-                                        {/* Quick Accept/Award Button */}
-                                        {score === 100 && !awardPri && (
-                                          <button
-                                            type="button"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleQuickAwardL1(b);
-                                            }}
-                                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl shadow transition"
-                                            title="Accept & Confirm as L1 Awardee (Auto-queues L2 & L3 Standbys)"
-                                          >
-                                            ✅ Accept as L1
-                                          </button>
-                                        )}
-
-                                        <button
-                                          type="button"
-                                          className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition flex items-center space-x-1 ${
-                                            isExpanded
-                                              ? 'bg-[#0B2559] text-white border-[#0B2559] shadow-sm'
-                                              : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
-                                          }`}
-                                        >
-                                          <span>{isExpanded ? '▲ Hide' : '▼ Dossier'}</span>
-                                        </button>
-                                      </div>
-                                    </div>
-
-                                    {/* EXPANDABLE DOSSIER (Visible when toggled) */}
-                                    {isExpanded && (
-                                      <div className="p-5 bg-white space-y-5 animate-fadeIn">
-                                        
-                                        {/* Top Action Bar with 30-Page Proposal Button */}
-                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                                          <div>
-                                            <p className="text-xs text-slate-700 font-medium">
-                                              Premises: <strong className="text-slate-900">{b.registered_address}</strong> • Bank: <strong className="text-slate-900">{b.bank_branch_code}</strong>
-                                            </p>
-                                            <p className="text-xs text-slate-500 font-mono mt-0.5">
-                                              Current Award Roster Status: <strong className="text-purple-900 font-sans">{b.award_priority || 'UNDER TECHNICAL EVALUATION'}</strong>
-                                            </p>
-                                          </div>
-
-                                          <div className="flex items-center space-x-2 flex-wrap">
-                                            <button
-                                              onClick={() => handleOpenGemDossier(b)}
-                                              className="px-4 py-2 bg-[#0369A1] hover:bg-[#0284C7] text-white text-xs font-black rounded-xl transition shadow flex items-center space-x-1.5"
-                                            >
-                                              <span>📄 View Submitted 30-Page Bid Proposal (Schedules 1-10)</span>
-                                            </button>
-
-                                            <button
-                                              onClick={() => handleOpenDocViewer(b, 'GST_CERTIFICATE')}
-                                              className="px-3 py-2 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 transition shadow-sm"
-                                            >
-                                              📜 Certificate
-                                            </button>
-
-                                            <button
-                                              onClick={() => handleReverify(b.bidder_id)}
-                                              disabled={verifyingId === b.bidder_id}
-                                              className="px-3 py-2 bg-[#0B2559] hover:bg-[#07183a] text-white text-xs font-bold rounded-xl transition shadow disabled:opacity-50"
-                                            >
-                                              <span>{verifyingId === b.bidder_id ? '⚡ Evaluating...' : '⚡ Re-Run'}</span>
-                                            </button>
-                                          </div>
-                                        </div>
-
-                                        {/* Sub-Reports Tabs */}
-                                        <div className="space-y-4">
-                                          <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200">
-                                            {[
-                                              { id: 'overview', label: `🔍 Cross-Check (${b.cross_check_mismatches?.length || 0} Flags)` },
-                                              { id: 'forensics', label: `🔬 Forensic ELA (${tamperScore}% Tamper)` },
-                                              { id: 'vault', label: `🗄️ Vault (${b.vault_documents?.length || 0} Docs)` },
-                                              { id: 'graph', label: `🕸️ Cartel Graph` },
-                                              { id: 'rules', label: `⚙️ YAML Rules (${b.rule_results?.length || 0})` },
-                                              { id: 'decision', label: `⚖️ Officer Decision & Contingency Award` }
-                                            ].map(tab => (
-                                              <button
-                                                key={tab.id}
-                                                onClick={() => setBidderTab(b.bidder_id, tab.id)}
-                                                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
-                                                  currentTab === tab.id
-                                                    ? 'bms-pill-active'
-                                                    : 'text-slate-600 hover:bg-white'
-                                                }`}
-                                              >
-                                                {tab.label}
-                                              </button>
-                                            ))}
-                                          </div>
-
-                                          {/* FEATURE 2: ONE-LINE EXECUTIVE VERDICT MESSAGE ON EVERY SECTION */}
-
-                                          {/* Tab 1: Cross-Verification Reconciler */}
-                                          {currentTab === 'overview' && (
-                                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                                              
-                                              {/* ONE-LINE VERDICT BANNER */}
-                                              <div className={`p-3 rounded-xl border text-xs font-bold flex items-center space-x-2 ${
-                                                b.cross_check_mismatches?.length === 0
-                                                  ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-                                                  : 'bg-amber-50 border-amber-300 text-amber-900'
-                                              }`}>
-                                                <span>{b.cross_check_mismatches?.length === 0 ? '✅' : '⚠️'}</span>
-                                                <span>
-                                                  <strong>Executive Reconciler Verdict:</strong> {b.cross_check_mismatches?.length === 0
-                                                    ? 'All extracted proposal fields match 100% with live Government master records (GSTN, MCA21, EPFO, CPPP).'
-                                                    : `Statutory discrepancy flagged: ${b.cross_check_mismatches.length} document value(s) differ from live master registers.`}
-                                                </span>
-                                              </div>
-
-                                              {b.cross_check_mismatches?.length > 0 && (
-                                                <div className="space-y-2.5">
-                                                  {b.cross_check_mismatches.map((m, i) => (
-                                                    <div key={i} className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-1.5">
-                                                      <div className="flex justify-between font-bold text-amber-900">
-                                                        <span>⚠️ {m.field_name}</span>
-                                                        <span className="uppercase text-[9px] px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-extrabold">{m.severity} RISK</span>
-                                                      </div>
-                                                      <p className="text-slate-700">{m.discrepancy_explanation}</p>
-                                                    </div>
-                                                  ))}
-                                                </div>
-                                              )}
-                                            </div>
-                                          )}
-
-                                          {/* Tab 2: Document Forensics & ELA */}
-                                          {currentTab === 'forensics' && (
-                                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
-                                              
-                                              {/* ONE-LINE VERDICT BANNER */}
-                                              <div className={`p-3 rounded-xl border text-xs font-bold flex items-center space-x-2 ${
-                                                tamperStatus === 'CLEAN'
-                                                  ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-                                                  : 'bg-rose-50 border-rose-300 text-rose-900'
-                                              }`}>
-                                                <span>{tamperStatus === 'CLEAN' ? '✅' : '🚨'}</span>
-                                                <span>
-                                                  <strong>Executive Forensics Verdict:</strong> {tamperStatus === 'CLEAN'
-                                                    ? 'All submitted statutory certificates are verified authentic with 0% digital tamper residue.'
-                                                    : `Digital tampering detected: ELA compression residue (${tamperScore}%) & software modifications identified in financial certificate.`}
-                                                </span>
-                                              </div>
-
-                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="bg-slate-900 rounded-xl p-3 text-white space-y-2">
-                                                  <span className="text-xs font-bold text-amber-400 uppercase block">🔥 ELA Pixel Heatmap</span>
-                                                  {forensic?.ela_heatmap_base64 && (
-                                                    <div className="rounded-lg overflow-hidden bg-black p-1 border border-slate-700">
-                                                      <img src={forensic.ela_heatmap_base64} alt="ELA Heatmap" className="max-h-56 object-contain w-full" />
-                                                    </div>
-                                                  )}
-                                                </div>
-                                                <div className="space-y-2 text-xs">
-                                                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1">
-                                                    <span className="font-bold text-slate-800 block uppercase text-[10px]">Header & Metadata Findings:</span>
-                                                    <p className="text-slate-600 font-mono">Software: <strong>{forensic?.metadata_analysis?.producing_software || 'Official Statutory Engine'}</strong></p>
-                                                    {forensic?.metadata_analysis?.flags?.map((fl, i) => (
-                                                      <p key={i} className="text-rose-700 bg-rose-50 p-1.5 rounded text-[11px]">⚠️ {fl}</p>
-                                                    ))}
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            </div>
-                                          )}
-
-                                          {/* Tab 3: Document Vault */}
-                                          {currentTab === 'vault' && (
-                                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                                              
-                                              {/* ONE-LINE VERDICT BANNER */}
-                                              <div className="p-3 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 text-xs font-bold flex items-center space-x-2">
-                                                <span>🔐</span>
-                                                <span>
-                                                  <strong>Executive Vault Verdict:</strong> All 4 statutory credentials are cryptographically notarized by DigiLocker and valid across central tenders.
-                                                </span>
-                                              </div>
-
-                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                {b.vault_documents?.map(doc => (
-                                                  <div key={doc.doc_id} className="bg-white border border-slate-200 rounded-xl p-3 space-y-1.5 text-xs">
-                                                    <div className="flex justify-between font-bold text-slate-800">
-                                                      <span>{doc.document_name}</span>
-                                                      <span className="text-[9px] bg-blue-100 text-blue-900 px-2 py-0.5 rounded font-mono">{doc.verification_badge}</span>
-                                                    </div>
-                                                    <p className="text-slate-500 font-mono text-[11px]">Issuer: {doc.issuer} | Expiry: {doc.expiry_date}</p>
-                                                    <button onClick={() => handleOpenDocViewer(b, doc.doc_type)} className="text-blue-700 hover:text-blue-900 font-bold text-[11px]">
-                                                      📄 View Certificate →
-                                                    </button>
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            </div>
-                                          )}
-
-                                          {/* Tab 4: Cartel Graph */}
-                                          {currentTab === 'graph' && (
-                                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                                              
-                                              {/* ONE-LINE VERDICT BANNER */}
-                                              <div className={`p-3 rounded-xl border text-xs font-bold flex items-center space-x-2 ${
-                                                b.conflict_links_count === 0
-                                                  ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-                                                  : 'bg-rose-50 border-rose-300 text-rose-900'
-                                              }`}>
-                                                <span>{b.conflict_links_count === 0 ? '✅' : '🚨'}</span>
-                                                <span>
-                                                  <strong>Executive Cartel Verdict:</strong> {b.conflict_links_count === 0
-                                                    ? 'Zero conflict of interest: No shared directors, common premises, or debarred linkages detected.'
-                                                    : `Cartel risk flagged: ${b.conflict_links_count} shared director DIN or common operational premises with competing bidder.`}
-                                                </span>
-                                              </div>
-
-                                              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs space-y-1">
-                                                <span className="font-extrabold text-rose-900 uppercase text-[10px] block">🚨 Graph Analysis:</span>
-                                                <p className="text-slate-700">{entityGraph?.risk_summary}</p>
-                                              </div>
-                                            </div>
-                                          )}
-
-                                          {/* Tab 5: YAML Rules */}
-                                          {currentTab === 'rules' && (
-                                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                                              
-                                              {/* ONE-LINE VERDICT BANNER */}
-                                              <div className="p-3 rounded-xl border border-blue-300 bg-blue-50 text-blue-900 text-xs font-bold flex items-center space-x-2">
-                                                <span>⚙️</span>
-                                                <span>
-                                                  <strong>Executive Rules Verdict:</strong> All mandatory GFR 2017 statutory rules and tender-specific gates passed with 100% explainability.
-                                                </span>
-                                              </div>
-
-                                              {b.rule_results?.map(r => (
-                                                <div key={r.rule_id} className="p-3 rounded-xl bg-white border border-slate-200 text-xs flex justify-between">
-                                                  <div>
-                                                    <span className="font-bold text-slate-900">{r.passed ? '✅' : '❌'} {r.rule_name}</span>
-                                                    <p className="text-slate-500 font-mono text-[11px] mt-0.5">Condition: {r.expected_condition}</p>
-                                                  </div>
-                                                  <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${r.passed ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
-                                                    {r.passed ? 'PASS' : 'FAIL'}
-                                                  </span>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          )}
-
-                                          {/* Tab 6: Officer Decision & Contingency Award */}
-                                          {currentTab === 'decision' && (
-                                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 text-xs">
-                                              
-                                              {/* ONE-LINE VERDICT BANNER */}
-                                              <div className="p-3 rounded-xl border border-purple-300 bg-purple-50 text-purple-900 text-xs font-bold flex items-center space-x-2">
-                                                <span>⚖️</span>
-                                                <span>
-                                                  <strong>Executive Determination Verdict:</strong> Approving this vendor confirms Priority 1 (L1) award and automatically queues eligible L2 & L3 standbys.
-                                                </span>
-                                              </div>
-
-                                              <form onSubmit={e => handleDecisionSubmit(e, b.bidder_id)} className="space-y-3">
-                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                                  {['APPROVE', 'REJECT', 'REQUEST_INFO', 'OVERRIDE'].map(act => (
-                                                    <button
-                                                      key={act}
-                                                      type="button"
-                                                      onClick={() => setDecisionAction(act)}
-                                                      className={`p-2.5 rounded-xl border font-bold transition ${
-                                                        decisionAction === act ? 'bg-[#0B2559] text-white' : 'bg-white text-slate-700'
-                                                      }`}
-                                                    >
-                                                      {act === 'APPROVE' ? '✅ Accept & Award L1' : act}
-                                                    </button>
-                                                  ))}
-                                                </div>
-                                                <textarea
-                                                  required
-                                                  rows={2}
-                                                  placeholder="Enter officer evaluation remarks..."
-                                                  value={officerRemarks}
-                                                  onChange={e => setOfficerRemarks(e.target.value)}
-                                                  className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs text-slate-800 resize-none"
-                                                />
-                                                <button type="submit" className="px-5 py-2 bg-[#F84464] text-white font-bold rounded-xl shadow">
-                                                  Commit Determination & Update Contingency Roster
-                                                </button>
-                                              </form>
-                                            </div>
-                                          )}
-
-                                        </div>
-
-                                      </div>
-                                    )}
-
+                              {/* Tab 1: Cross Check */}
+                              {currentTab === 'overview' && (
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                                  <div className={`p-3 rounded-xl border text-xs font-bold flex items-center space-x-2 ${
+                                    b.cross_check_mismatches?.length === 0
+                                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                                      : 'bg-amber-50 border-amber-300 text-amber-900'
+                                  }`}>
+                                    <span>{b.cross_check_mismatches?.length === 0 ? '✅' : '⚠️'}</span>
+                                    <span>
+                                      <strong>Executive Reconciler Verdict:</strong> {b.cross_check_mismatches?.length === 0
+                                        ? 'All extracted proposal fields match 100% with live Government master records (GSTN, MCA21, EPFO, CPPP).'
+                                        : `Statutory discrepancy flagged: ${b.cross_check_mismatches.length} document value(s) differ from live master registers.`}
+                                    </span>
                                   </div>
-                                );
-                              })}
+
+                                  {b.cross_check_mismatches?.length > 0 && (
+                                    <div className="space-y-2">
+                                      {b.cross_check_mismatches.map((m, i) => (
+                                        <div key={i} className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs">
+                                          <p className="font-bold text-amber-900">⚠️ {m.field_name}: {m.discrepancy_explanation}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Tab 2: Forensics */}
+                              {currentTab === 'forensics' && (
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                                  <div className={`p-3 rounded-xl border text-xs font-bold flex items-center space-x-2 ${
+                                    tamperStatus === 'CLEAN'
+                                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                                      : 'bg-rose-50 border-rose-300 text-rose-900'
+                                  }`}>
+                                    <span>{tamperStatus === 'CLEAN' ? '✅' : '🚨'}</span>
+                                    <span>
+                                      <strong>Executive Forensics Verdict:</strong> {tamperStatus === 'CLEAN'
+                                        ? 'All submitted statutory certificates are verified authentic with 0% digital tamper residue.'
+                                        : `Digital tampering detected: ELA compression residue (${tamperScore}%) & software modifications identified.`}
+                                    </span>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="bg-slate-900 rounded-xl p-3 text-white space-y-2">
+                                      <span className="text-xs font-bold text-amber-400 uppercase block">🔥 ELA Heatmap</span>
+                                      {forensic?.ela_heatmap_base64 && (
+                                        <div className="rounded-lg overflow-hidden bg-black p-1 border border-slate-700">
+                                          <img src={forensic.ela_heatmap_base64} alt="ELA Heatmap" className="max-h-56 object-contain w-full" />
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 text-xs space-y-1">
+                                      <span className="font-bold text-slate-800 uppercase text-[10px]">Metadata & Software Findings:</span>
+                                      <p className="text-slate-600 font-mono">Software: <strong>{forensic?.metadata_analysis?.producing_software || 'Official Statutory Engine'}</strong></p>
+                                      {forensic?.metadata_analysis?.flags?.map((fl, i) => (
+                                        <p key={i} className="text-rose-700 bg-rose-50 p-1.5 rounded text-[11px]">⚠️ {fl}</p>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Tab 3: Vault */}
+                              {currentTab === 'vault' && (
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                                  <div className="p-3 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 text-xs font-bold flex items-center space-x-2">
+                                    <span>🔐</span>
+                                    <span>
+                                      <strong>Executive Vault Verdict:</strong> All 4 statutory credentials are cryptographically notarized by DigiLocker and valid across central tenders.
+                                    </span>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {b.vault_documents?.map(doc => (
+                                      <div key={doc.doc_id} className="bg-white border border-slate-200 rounded-xl p-3 space-y-1 text-xs">
+                                        <div className="flex justify-between font-bold text-slate-800">
+                                          <span>{doc.document_name}</span>
+                                          <span className="text-[9px] bg-blue-100 text-blue-900 px-2 py-0.5 rounded font-mono">{doc.verification_badge}</span>
+                                        </div>
+                                        <p className="text-slate-500 font-mono text-[11px]">Issuer: {doc.issuer}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Tab 4: Graph */}
+                              {currentTab === 'graph' && (
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                                  <div className={`p-3 rounded-xl border text-xs font-bold flex items-center space-x-2 ${
+                                    b.conflict_links_count === 0
+                                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                                      : 'bg-rose-50 border-rose-300 text-rose-900'
+                                  }`}>
+                                    <span>{b.conflict_links_count === 0 ? '✅' : '🚨'}</span>
+                                    <span>
+                                      <strong>Executive Cartel Verdict:</strong> {b.conflict_links_count === 0
+                                        ? 'Zero conflict of interest: No shared directors, common premises, or debarred linkages detected.'
+                                        : `Cartel risk flagged: ${b.conflict_links_count} shared director DIN or common operational premises with competing bidder.`}
+                                    </span>
+                                  </div>
+
+                                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs space-y-1">
+                                    <span className="font-extrabold text-rose-900 uppercase text-[10px] block">🚨 Graph Summary:</span>
+                                    <p className="text-slate-700">{entityGraph?.risk_summary}</p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Tab 5: YAML Rules */}
+                              {currentTab === 'rules' && (
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                                  <div className="p-3 rounded-xl border border-blue-300 bg-blue-50 text-blue-900 text-xs font-bold flex items-center space-x-2">
+                                    <span>⚙️</span>
+                                    <span>
+                                      <strong>Executive Rules Verdict:</strong> All mandatory GFR 2017 statutory rules and tender-specific gates passed with 100% explainability.
+                                    </span>
+                                  </div>
+
+                                  {b.rule_results?.map(r => (
+                                    <div key={r.rule_id} className="p-3 rounded-xl bg-white border border-slate-200 text-xs flex justify-between">
+                                      <span className="font-bold text-slate-900">{r.passed ? '✅' : '❌'} {r.rule_name}</span>
+                                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${r.passed ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                                        {r.passed ? 'PASS' : 'FAIL'}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
                             </div>
 
                           </div>
@@ -1360,16 +1002,15 @@
                   })}
                 </div>
 
-              </div>
+              </section>
 
-            </div>
-          </main>
+            </main>
+          )}
 
           {/* OFFICIAL 30-PAGE GeM BID PROPOSAL DOSSIER MODAL */}
           {gemDossierBidder && gemDossierData && (
             <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex justify-center items-center p-4">
               <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col h-[94vh] animate-fadeIn">
-                
                 <div className="p-4 bg-[#0B2559] text-white flex justify-between items-center no-print">
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">📄</span>
@@ -1382,13 +1023,9 @@
                       </p>
                     </div>
                   </div>
-
                   <div className="flex items-center space-x-3">
-                    <button
-                      onClick={() => window.print()}
-                      className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow transition"
-                    >
-                      🖨️ Print Full Proposal
+                    <button onClick={() => window.print()} className="px-3.5 py-1.5 bg-amber-500 text-slate-950 text-xs font-bold rounded-xl shadow">
+                      🖨️ Print
                     </button>
                     <button onClick={() => setGemDossierBidder(null)} className="text-white hover:text-amber-400 font-bold text-xl p-1">✕</button>
                   </div>
@@ -1419,7 +1056,7 @@
                     {(() => {
                       const curPage = gemDossierData.pages.find(p => p.page_num === dossierPage) || gemDossierData.pages[0];
                       return (
-                        <div className="max-w-2xl w-full bg-white border-4 border-slate-200 p-8 rounded-2xl shadow-sm space-y-6 min-h-[700px] flex flex-col justify-between relative">
+                        <div className="max-w-2xl w-full bg-white border-4 border-slate-200 p-8 rounded-2xl shadow-sm space-y-6 min-h-[700px] flex flex-col justify-between">
                           <div className="border-b-2 border-slate-800 pb-3 flex justify-between items-start">
                             <div>
                               <span className="text-xl">🇮🇳</span>
@@ -1430,51 +1067,34 @@
                                 BID: <strong>{gemDossierBidder.tender_id}</strong> • VENDOR: <strong>{gemDossierBidder.bidder_id}</strong>
                               </p>
                             </div>
-                            <div className="text-right">
-                              <span className="text-[10px] font-bold bg-slate-100 text-slate-800 px-2.5 py-1 rounded font-mono">
-                                Page {curPage.page_num} of {gemDossierData.total_pages}
-                              </span>
-                            </div>
+                            <span className="text-[10px] font-bold bg-slate-100 text-slate-800 px-2.5 py-1 rounded font-mono">
+                              Page {curPage.page_num} of {gemDossierData.total_pages}
+                            </span>
                           </div>
 
                           <div className="space-y-1 text-center">
-                            <h3 className="text-sm font-black text-slate-900 uppercase">
-                              {curPage.title}
-                            </h3>
-                            <span className="text-[11px] font-bold text-[#0369A1] uppercase tracking-wider">
-                              {curPage.section}
-                            </span>
+                            <h3 className="text-sm font-black text-slate-900 uppercase">{curPage.title}</h3>
+                            <span className="text-[11px] font-bold text-[#0369A1] uppercase tracking-wider">{curPage.section}</span>
                           </div>
 
                           <div className="flex-1 py-4 text-xs font-mono">
                             {curPage.content_type === 'cover' && (
-                              <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                              <div className="space-y-3 bg-slate-50 p-5 rounded-2xl border border-slate-200">
                                 {Object.entries(curPage.body).map(([k, v]) => (
-                                  <div key={k} className="flex justify-between border-b border-slate-200 pb-2">
+                                  <div key={k} className="flex justify-between border-b border-slate-200 pb-1.5">
                                     <span className="text-slate-500 uppercase text-[10px]">{k.replace(/_/g, ' ')}:</span>
-                                    <strong className="text-slate-900 text-right max-w-xs">{String(v)}</strong>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {curPage.content_type === 'toc' && (
-                              <div className="space-y-2">
-                                {curPage.body.schedules.map((s, i) => (
-                                  <div key={i} className="flex justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200">
-                                    <span className="font-bold text-slate-800">{s.no}: {s.desc}</span>
-                                    <strong className="text-blue-900">{s.pages}</strong>
+                                    <strong className="text-slate-900 text-right">{String(v)}</strong>
                                   </div>
                                 ))}
                               </div>
                             )}
 
                             {curPage.content_type === 'key_value_table' && (
-                              <div className="space-y-3">
+                              <div className="space-y-2.5">
                                 {Object.entries(curPage.body).map(([k, v]) => (
                                   <div key={k} className="flex justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200">
                                     <span className="text-slate-500">{k}:</span>
-                                    <strong className="text-slate-900 text-right max-w-sm font-sans">{String(v)}</strong>
+                                    <strong className="text-slate-900 text-right">{String(v)}</strong>
                                   </div>
                                 ))}
                               </div>
@@ -1486,63 +1106,24 @@
                                   <div key={i} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                                     <div className="flex justify-between font-bold text-slate-900">
                                       <span>{p.parameter}</span>
-                                      <span className="text-emerald-700 font-extrabold">{p.compliance}</span>
+                                      <span className="text-emerald-700">{p.compliance}</span>
                                     </div>
                                     <p className="text-[11px] text-slate-600">Requirement: {p.bid_requirement}</p>
-                                    <p className="text-[11px] text-blue-900">Offered Spec: {p.offered_specification}</p>
                                   </div>
                                 ))}
                               </div>
                             )}
 
                             {curPage.content_type === 'financial_table' && (
-                              <div className="space-y-3">
+                              <div className="space-y-2.5">
                                 <div className="p-3 bg-blue-50 rounded-xl border border-blue-200 font-bold text-blue-950 flex justify-between">
-                                  <span>ICAI UDIN Registration:</span>
+                                  <span>ICAI UDIN:</span>
                                   <strong className="text-blue-700">{curPage.body.udin}</strong>
                                 </div>
                                 {curPage.body.financial_years.map((f, i) => (
-                                  <div key={i} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between">
-                                    <span className="font-bold text-slate-800">{f.fy}</span>
+                                  <div key={i} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex justify-between">
+                                    <span className="font-bold">{f.fy}</span>
                                     <span>Turnover: <strong className="text-emerald-700">{f.turnover}</strong></span>
-                                    <span>Net Worth: <strong>{f.net_worth}</strong></span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {curPage.content_type === 'experience_table' && (
-                              <div className="space-y-2.5">
-                                {curPage.body.contracts.map((c, i) => (
-                                  <div key={i} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                                    <div className="flex justify-between font-bold text-slate-900">
-                                      <span>{c.client}</span>
-                                      <strong className="text-emerald-700">{c.value}</strong>
-                                    </div>
-                                    <p className="text-[11px] text-slate-600 font-mono">PO Ref: {c.po_number} | Completed: {c.completion_date}</p>
-                                    <span className="text-[10px] text-amber-600 font-bold">{c.satisfaction_rating}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {curPage.content_type === 'narrative_certificate' && (
-                              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 text-xs leading-relaxed font-sans">
-                                {Object.entries(curPage.body).map(([k, v]) => (
-                                  <div key={k}>
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">{k.replace(/_/g, ' ')}:</span>
-                                    <p className="text-slate-800 mt-0.5">{String(v)}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {curPage.content_type === 'forensics_summary' && (
-                              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                                {Object.entries(curPage.body).map(([k, v]) => (
-                                  <div key={k} className="flex justify-between border-b border-slate-200 pb-2">
-                                    <span className="text-slate-500 uppercase text-[10px]">{k.replace(/_/g, ' ')}:</span>
-                                    <strong className="text-slate-900">{String(v)}</strong>
                                   </div>
                                 ))}
                               </div>
@@ -1551,7 +1132,7 @@
 
                           <div className="border-t-2 border-slate-800 pt-3 flex justify-between items-end text-xs">
                             <div>
-                              <span className="text-[9px] text-slate-400 uppercase font-bold block">Digital Attestation</span>
+                              <span className="text-[9px] text-slate-400 uppercase font-bold block">Digital Seal</span>
                               <span className="text-emerald-700 font-bold font-mono">✅ DigiLocker SHA-256 Verified</span>
                             </div>
                             <div className="text-right">
@@ -1559,12 +1140,10 @@
                               <p className="text-[10px] text-slate-500">{gemDossierBidder.company_name}</p>
                             </div>
                           </div>
-
                         </div>
                       );
                     })()}
                   </div>
-
                 </div>
 
                 <div className="p-4 bg-slate-100 border-t border-slate-200 flex justify-between items-center no-print">
@@ -1572,7 +1151,7 @@
                     <button
                       onClick={() => setDossierPage(Math.max(1, dossierPage - 1))}
                       disabled={dossierPage <= 1}
-                      className="px-4 py-2 bg-white hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 disabled:opacity-40"
+                      className="px-4 py-2 bg-white text-slate-800 text-xs font-bold rounded-xl border border-slate-300 disabled:opacity-40"
                     >
                       ← Previous Page
                     </button>
@@ -1582,7 +1161,7 @@
                     <button
                       onClick={() => setDossierPage(Math.min(gemDossierData.total_pages, dossierPage + 1))}
                       disabled={dossierPage >= gemDossierData.total_pages}
-                      className="px-4 py-2 bg-white hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 disabled:opacity-40"
+                      className="px-4 py-2 bg-white text-slate-800 text-xs font-bold rounded-xl border border-slate-300 disabled:opacity-40"
                     >
                       Next Page →
                     </button>
@@ -1590,12 +1169,11 @@
 
                   <button
                     onClick={() => setGemDossierBidder(null)}
-                    className="px-5 py-2 bg-[#0B2559] hover:bg-[#07183a] text-white text-xs font-bold rounded-xl transition shadow"
+                    className="px-5 py-2 bg-[#0B2559] text-white text-xs font-bold rounded-xl shadow"
                   >
-                    Close Proposal Viewer
+                    Close Viewer
                   </button>
                 </div>
-
               </div>
             </div>
           )}
@@ -1608,107 +1186,70 @@
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">🏛️</span>
                     <div>
-                      <h3 className="text-sm font-extrabold uppercase tracking-wide">
-                        Official Government Document Certificate Viewer
-                      </h3>
-                      <p className="text-xs text-blue-200">
-                        DigiLocker & API Setu Notarized Statutory Copy
-                      </p>
+                      <h3 className="text-sm font-extrabold uppercase">Official Government Document Certificate Viewer</h3>
+                      <p className="text-xs text-blue-200">DigiLocker Notarized Copy</p>
                     </div>
                   </div>
-                  <button onClick={() => { setPreviewBidder(null); setPreviewDocData(null); }} className="text-white hover:text-amber-400 font-bold text-xl p-1">✕</button>
+                  <button onClick={() => { setPreviewBidder(null); setPreviewDocData(null); }} className="text-white font-bold text-xl p-1">✕</button>
                 </div>
 
                 <div className="p-3 bg-slate-100 border-b border-slate-200 flex gap-2 overflow-x-auto">
-                  {[
-                    { id: 'GST_CERTIFICATE', label: 'Form GST REG-06' },
-                    { id: 'UDYAM_CERTIFICATE', label: 'Udyam MSME Certificate' },
-                    { id: 'CA_TURNOVER_CERTIFICATE', label: 'CA Turnover UDIN Statement' },
-                    { id: 'DEBARMENT_RECORD', label: 'CPPP Debarment Record' }
-                  ].map(dt => (
+                  {['GST_CERTIFICATE', 'UDYAM_CERTIFICATE', 'CA_TURNOVER_CERTIFICATE', 'DEBARMENT_RECORD'].map(dt => (
                     <button
-                      key={dt.id}
-                      onClick={() => handleOpenDocViewer(previewBidder, dt.id)}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition flex-shrink-0 ${
-                        previewDocType === dt.id
-                          ? 'bg-[#0B2559] text-white shadow'
-                          : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'
+                      key={dt}
+                      onClick={() => handleOpenDocViewer(previewBidder, dt)}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition ${
+                        previewDocType === dt ? 'bg-[#0B2559] text-white shadow' : 'bg-white text-slate-700 border'
                       }`}
                     >
-                      {dt.label}
+                      {dt.replace(/_/g, ' ')}
                     </button>
                   ))}
                 </div>
 
-                <div className="p-8 overflow-y-auto space-y-6 bg-amber-50/20 border-8 border-double border-slate-300 m-4 rounded-2xl relative shadow-inner">
-                  <div className="text-center space-y-1 pb-4 border-b-2 border-slate-800">
-                    <div className="text-3xl mx-auto">🇮🇳</div>
-                    <h3 className="text-sm font-black tracking-widest text-slate-900 uppercase">
-                      {previewDocData.title}
-                    </h3>
-                    <h4 className="text-xs font-bold text-slate-700 uppercase">
-                      {previewDocData.subtitle}
-                    </h4>
-                    <p className="text-[10px] text-slate-500 font-mono">{previewDocData.form_code} • {previewDocData.issuing_authority}</p>
+                <div className="p-8 overflow-y-auto space-y-5 bg-amber-50/20 border-8 border-double border-slate-300 m-4 rounded-2xl text-xs font-mono">
+                  <div className="text-center space-y-1 pb-3 border-b-2 border-slate-800">
+                    <div className="text-2xl">🇮🇳</div>
+                    <h3 className="text-sm font-black uppercase text-slate-900">{previewDocData.title}</h3>
+                    <h4 className="text-xs font-bold text-slate-700">{previewDocData.subtitle}</h4>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 text-xs font-mono">
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="bg-white p-3 rounded-xl border border-slate-200">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Registration / Doc Number</span>
-                      <strong className="text-slate-900 text-sm">{previewDocData.registration_number}</strong>
+                      <span className="text-[10px] text-slate-400 font-bold block">REGISTRATION NO</span>
+                      <strong className="text-slate-900">{previewDocData.registration_number}</strong>
                     </div>
-
                     <div className="bg-white p-3 rounded-xl border border-slate-200">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Constitution / Structure</span>
+                      <span className="text-[10px] text-slate-400 font-bold block">LEGAL STRUCTURE</span>
                       <strong className="text-slate-900">{previewDocData.constitution}</strong>
                     </div>
-
                     <div className="col-span-2 bg-white p-3 rounded-xl border border-slate-200">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Legal Name of Enterprise</span>
-                      <strong className="text-slate-900 text-sm font-sans">{previewDocData.legal_name}</strong>
-                    </div>
-
-                    <div className="col-span-2 bg-white p-3 rounded-xl border border-slate-200">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Principal Place of Business</span>
-                      <span className="text-slate-800">{previewDocData.principal_address}</span>
-                    </div>
-
-                    <div className="bg-white p-3 rounded-xl border border-slate-200">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Date of Validity / Period</span>
-                      <span className="text-slate-800">{previewDocData.date_of_validity}</span>
-                    </div>
-
-                    <div className="bg-white p-3 rounded-xl border border-slate-200">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Jurisdiction / Officer</span>
-                      <span className="text-slate-800">{previewDocData.jurisdiction}</span>
+                      <span className="text-[10px] text-slate-400 font-bold block">ENTERPRISE NAME</span>
+                      <strong className="text-slate-900 font-sans text-sm">{previewDocData.legal_name}</strong>
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t-2 border-slate-800 flex justify-between items-center text-xs">
+                  <div className="pt-3 border-t-2 border-slate-800 flex justify-between items-center">
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Digital Seal / Token</span>
-                      <span className="text-emerald-700 font-bold font-mono">✅ {previewDocData.udin_or_auth}</span>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{previewDocData.verification_status}</p>
+                      <span className="text-[10px] text-slate-400 font-bold block">DIGITAL SEAL</span>
+                      <span className="text-emerald-700 font-bold">✅ {previewDocData.udin_or_auth}</span>
                     </div>
-                    <div className="w-14 h-14 bg-slate-900 rounded-lg flex items-center justify-center text-white text-2xl font-mono shadow">
+                    <div className="w-12 h-12 bg-slate-900 text-white rounded-lg flex items-center justify-center font-mono font-bold">
                       QR
                     </div>
                   </div>
                 </div>
 
                 <div className="p-4 bg-slate-100 border-t border-slate-200 text-right">
-                  <button
-                    onClick={() => { setPreviewBidder(null); setPreviewDocData(null); }}
-                    className="px-5 py-2 bg-[#0B2559] hover:bg-[#07183a] text-white text-xs font-bold rounded-xl transition shadow"
-                  >
-                    Close Document Viewer
+                  <button onClick={() => { setPreviewBidder(null); setPreviewDocData(null); }} className="px-5 py-2 bg-[#0B2559] text-white text-xs font-bold rounded-xl">
+                    Close Viewer
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* LIVE FORENSIC LAB INTERACTIVE MODAL */}
+          {/* LIVE FORENSIC LAB MODAL */}
           {isForensicLabOpen && (
             <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex justify-center items-center p-4">
               <div className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
@@ -1716,95 +1257,60 @@
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">🔬</span>
                     <div>
-                      <h3 className="text-base font-extrabold uppercase tracking-wide">
-                        Live ELA Forensic Lab & Tamper Analysis Sandbox
-                      </h3>
-                      <p className="text-xs text-blue-200">
-                        Upload any real document/image to execute live Error Level Analysis (Q90) & EXIF verification
-                      </p>
+                      <h3 className="text-base font-extrabold uppercase">Live ELA Forensic Lab</h3>
+                      <p className="text-xs text-blue-200">Test any certificate image for digital tampering & pixel residue</p>
                     </div>
                   </div>
-                  <button onClick={() => setIsForensicLabOpen(false)} className="text-white hover:text-amber-400 font-bold text-xl p-1">✕</button>
+                  <button onClick={() => setIsForensicLabOpen(false)} className="text-white font-bold text-xl p-1">✕</button>
                 </div>
 
-                <div className="p-6 overflow-y-auto space-y-5 bg-[#F8FAFC]">
-                  <div className="bg-white p-6 rounded-2xl border-2 border-dashed border-blue-200 space-y-4 text-center">
+                <div className="p-6 overflow-y-auto space-y-4 bg-[#F8FAFC]">
+                  <div className="bg-white p-6 rounded-2xl border-2 border-dashed border-blue-200 space-y-3 text-center">
                     <input
                       type="file"
                       ref={fileInputRef}
-                      onChange={e => {
-                        const file = e.target.files[0];
-                        if (file) setForensicFile(file);
-                      }}
+                      onChange={e => { if (e.target.files[0]) setForensicFile(e.target.files[0]); }}
                       accept="image/*,.pdf"
                       className="hidden"
                     />
-
-                    <div className="space-y-2">
-                      <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-900 mx-auto flex items-center justify-center text-xl font-bold">
-                        📁
-                      </div>
-                      <h4 className="text-sm font-bold text-slate-800">
-                        {forensicFile ? forensicFile.name : 'Select or Drop any Certificate Image (PNG, JPG, WEBP)'}
-                      </h4>
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 transition"
-                      >
-                        📂 Browse Local Image...
+                    <p className="text-sm font-bold text-slate-800">{forensicFile ? forensicFile.name : 'Select or Drop any Certificate Image'}</p>
+                    <div className="flex justify-center gap-3">
+                      <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border">
+                        📂 Browse File...
                       </button>
-
-                      <button
-                        type="button"
-                        onClick={handleRunLiveForensicScan}
-                        disabled={!forensicFile || forensicUploading}
-                        className="px-5 py-2 bg-[#F84464] hover:bg-[#d93b57] text-white text-xs font-bold rounded-xl shadow disabled:opacity-50"
-                      >
-                        <span>{forensicUploading ? '⚡ Computing ELA Matrix...' : '⚡ Run Live ELA Forensic Scan'}</span>
+                      <button onClick={handleRunLiveForensicScan} disabled={!forensicFile || forensicUploading} className="px-5 py-2 bg-[#F84464] text-white text-xs font-bold rounded-xl shadow disabled:opacity-50">
+                        {forensicUploading ? '⚡ Analyzing...' : '⚡ Run ELA Scan'}
                       </button>
                     </div>
                   </div>
 
                   {liveForensicResult && (
-                    <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4 animate-fadeIn">
-                      <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                        <div>
-                          <span className="text-xs font-bold text-slate-400 uppercase">Live Forensic Scan Result</span>
-                          <h4 className="text-base font-extrabold text-slate-900">{liveForensicResult.file_name}</h4>
-                        </div>
-                        <span className={`text-xs font-black px-3 py-1 rounded-full uppercase ${
-                          liveForensicResult.status === 'CLEAN' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800 border border-rose-300'
-                        }`}>
+                    <div className="bg-white p-4 rounded-2xl border space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-extrabold text-slate-900 text-sm">{liveForensicResult.file_name}</h4>
+                        <span className="text-xs font-black px-3 py-1 rounded-full bg-slate-100 font-mono">
                           {liveForensicResult.status} ({liveForensicResult.overall_tamper_score}/100)
                         </span>
                       </div>
-
-                      <div className="bg-slate-900 p-4 rounded-2xl text-white space-y-2">
-                        <span className="text-xs font-bold text-amber-400 uppercase">🔥 Live Generated Error Level Analysis (ELA) Heatmap</span>
-                        {liveForensicResult.ela_heatmap_base64 && (
-                          <div className="rounded-xl overflow-hidden bg-black flex items-center justify-center p-2 border border-slate-700">
-                            <img src={liveForensicResult.ela_heatmap_base64} alt="Live ELA Heatmap" className="max-h-72 object-contain rounded w-full" />
-                          </div>
-                        )}
-                      </div>
+                      {liveForensicResult.ela_heatmap_base64 && (
+                        <div className="bg-slate-900 rounded-xl p-2 flex justify-center">
+                          <img src={liveForensicResult.ela_heatmap_base64} alt="ELA" className="max-h-64 object-contain rounded" />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
-                <div className="p-4 bg-slate-100 border-t border-slate-200 text-right">
+                <div className="p-4 bg-slate-100 border-t text-right">
                   <button onClick={() => setIsForensicLabOpen(false)} className="px-5 py-2 bg-[#0B2559] text-white text-xs font-bold rounded-xl">
-                    Close Forensic Lab
+                    Close Lab
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* AI Officer Chat Assistant Drawer */}
+          {/* AI CHAT ASSISTANT DRAWER */}
           {isChatOpen && (
             <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex justify-end no-print">
               <div className="w-full max-w-xl bg-white h-full flex flex-col shadow-2xl border-l border-slate-200 animate-slideLeft">
@@ -1813,10 +1319,10 @@
                     <span className="text-2xl">🤖</span>
                     <div>
                       <h3 className="text-sm font-extrabold uppercase">GeM AI Intelligence Officer Assistant</h3>
-                      <p className="text-[11px] text-blue-200">Dynamic Multi-Vendor Reasoning & GFR 2017 Advisory</p>
+                      <p className="text-[11px] text-blue-200">Multi-Vendor Reasoning & GFR 2017 Guidance</p>
                     </div>
                   </div>
-                  <button onClick={() => setIsChatOpen(false)} className="text-white hover:text-amber-400 font-bold text-lg p-1">✕</button>
+                  <button onClick={() => setIsChatOpen(false)} className="text-white font-bold text-lg p-1">✕</button>
                 </div>
 
                 <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-[#F8FAFC]">
@@ -1828,16 +1334,11 @@
                           : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none shadow-sm'
                       }`}>
                         <div className="whitespace-pre-wrap">{msg.text}</div>
-
                         {msg.suggested && (
                           <div className="mt-3 pt-2 border-t border-slate-200 space-y-1">
-                            <span className="text-[10px] text-slate-500 uppercase font-bold block">Recommended Next Actions:</span>
+                            <span className="text-[10px] text-slate-500 uppercase font-bold block">Suggestions:</span>
                             {msg.suggested.map((s, i) => (
-                              <button
-                                key={i}
-                                onClick={() => { setChatInput(s); }}
-                                className="block text-left text-xs text-blue-700 hover:text-blue-900 font-semibold"
-                              >
+                              <button key={i} onClick={() => setChatInput(s)} className="block text-left text-xs text-blue-700 font-semibold">
                                 → {s}
                               </button>
                             ))}
@@ -1847,9 +1348,8 @@
                     </div>
                   ))}
                   {chatLoading && (
-                    <div className="text-xs text-slate-500 flex items-center space-x-2 p-3 bg-white rounded-xl border border-slate-200 w-fit">
-                      <span className="animate-spin">⚡</span>
-                      <span>AI Procurement Engine is analyzing tender dossiers & statutory registers...</span>
+                    <div className="text-xs text-slate-500 p-3 bg-white rounded-xl border border-slate-200">
+                      ⚡ AI Procurement Assistant is thinking...
                     </div>
                   )}
                 </div>
@@ -1857,16 +1357,12 @@
                 <form onSubmit={handleSendChat} className="p-4 bg-white border-t border-slate-200 flex gap-2">
                   <input
                     type="text"
-                    placeholder="Ask comparative questions, ELA forensic flags, cartel links, or GFR rules..."
+                    placeholder="Ask questions (e.g. 'give me the names of all vendors', 'who is disqualified?')..."
                     value={chatInput}
                     onChange={e => setChatInput(e.target.value)}
-                    className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-blue-600"
+                    className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-blue-600"
                   />
-                  <button
-                    type="submit"
-                    disabled={chatLoading || !chatInput.trim()}
-                    className="px-5 py-2.5 bg-[#F84464] hover:bg-[#d93b57] text-white text-xs font-bold rounded-xl disabled:opacity-50 shadow-sm"
-                  >
+                  <button type="submit" disabled={chatLoading || !chatInput.trim()} className="px-5 py-2 bg-[#F84464] text-white text-xs font-bold rounded-xl">
                     Send
                   </button>
                 </form>
@@ -1874,26 +1370,23 @@
             </div>
           )}
 
-          {/* CAG Compliance Audit Trail Modal */}
+          {/* CAG Audit Log Modal */}
           {isAuditOpen && (
             <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex justify-end no-print">
               <div className="w-full max-w-xl bg-white h-full p-6 overflow-y-auto space-y-4 border-l border-slate-200 shadow-2xl">
                 <div className="flex justify-between items-center pb-3 border-b border-slate-200">
-                  <div>
-                    <span className="font-black text-slate-800 text-sm uppercase">📜 GFR 2017 & CAG Compliance Audit Trail</span>
-                    <p className="text-xs text-slate-500">Immutable SHA-256 state tracking across all tenders</p>
-                  </div>
-                  <button onClick={() => setIsAuditOpen(false)} className="text-slate-400 hover:text-slate-800 font-bold text-lg">✕</button>
+                  <span className="font-black text-slate-800 text-sm uppercase">📜 CAG Compliance Audit Trail</span>
+                  <button onClick={() => setIsAuditOpen(false)} className="text-slate-400 font-bold text-lg">✕</button>
                 </div>
                 <div className="space-y-3">
                   {auditLogs.map(l => (
-                    <div key={l.log_id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-1.5">
+                    <div key={l.log_id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-1">
                       <div className="flex justify-between font-bold text-slate-700">
                         <span className="text-[#0B2559]">{l.actor}</span>
                         <span className="text-slate-400 font-mono text-[11px]">{new Date(l.timestamp).toLocaleTimeString()}</span>
                       </div>
                       <p className="font-extrabold text-slate-900">{l.step}: {l.action_type}</p>
-                      {l.notes && <p className="text-blue-900 bg-blue-50 p-2 rounded-lg border border-blue-100 font-medium">📝 {l.notes}</p>}
+                      {l.notes && <p className="text-blue-900 bg-blue-50 p-2 rounded-lg border border-blue-100">📝 {l.notes}</p>}
                     </div>
                   ))}
                 </div>
@@ -1903,18 +1396,9 @@
 
           {/* Footer */}
           <footer className="bg-[#030F21] text-slate-400 text-xs py-6 border-t border-slate-800 mt-12 no-print">
-            <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <div className="flex items-center space-x-2">
-                <span className="text-lg">🇮🇳</span>
-                <span>Government e-Marketplace (GeM) • Multi-Bid ProcureShield AI Engine</span>
-              </div>
-              <div className="flex items-center space-x-4 text-[11px]">
-                <span>GFR 2017 Verified</span>
-                <span>•</span>
-                <span>L1/L2/L3 Contingency Active</span>
-                <span>•</span>
-                <span>CAG Audit Ready</span>
-              </div>
+            <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
+              <span>🇮🇳 Government e-Marketplace (GeM) • ProcureShield AI</span>
+              <span className="text-[11px]">GFR 2017 Verified • L1/L2/L3 Contingency Active • CAG Audit Ready</span>
             </div>
           </footer>
 
