@@ -155,6 +155,57 @@ class BidderFinancials(BaseModel):
     last_financial_year: str = "2024-25"
     itr_filed_years: List[str] = []
 
+# --- Document Forensics & ELA Tamper Analysis Schemas ---
+
+class TamperStatus(str, Enum):
+    CLEAN = "CLEAN"                     # Low suspicion (score 0-25)
+    SUSPICIOUS = "SUSPICIOUS"           # Moderate suspicion (score 26-65)
+    LIKELY_TAMPERED = "LIKELY_TAMPERED" # High suspicion (score >65)
+
+class ForensicRegionBox(BaseModel):
+    x: int
+    y: int
+    width: int
+    height: int
+    anomaly_intensity: float            # 0.0 to 1.0
+    description: str
+
+class MetadataForensicCheck(BaseModel):
+    creation_date: Optional[str] = None
+    modification_date: Optional[str] = None
+    producing_software: Optional[str] = None
+    last_saved_by: Optional[str] = None
+    has_exif: bool = False
+    is_software_suspicious: bool = False
+    is_date_inconsistent: bool = False
+    flags: List[str] = []
+
+class CopyMoveMatch(BaseModel):
+    source_box: Dict[str, int]
+    target_box: Dict[str, int]
+    match_confidence: float
+    explanation: str
+
+class DocumentForensicReport(BaseModel):
+    doc_id: str
+    file_name: str
+    overall_tamper_score: int                     # 0 to 100 weighted score
+    status: TamperStatus                          # CLEAN / SUSPICIOUS / LIKELY_TAMPERED
+    
+    # 3 Detection Layer Scores
+    ela_score: int                                # Layer 1: ELA Score (0-100)
+    metadata_score: int                           # Layer 2: Metadata Score (0-100)
+    copy_move_score: int                          # Layer 3: Copy-Move Score (0-100)
+    
+    # Evidence & Overlays
+    ela_heatmap_base64: Optional[str] = None      # Data URI PNG for inline inspection
+    flagged_regions: List[ForensicRegionBox] = []
+    metadata_analysis: MetadataForensicCheck
+    copy_move_matches: List[CopyMoveMatch] = []
+    
+    forensic_summary: str
+    analyzed_at: datetime = Field(default_factory=datetime.utcnow)
+
 # Uploaded Document Schema
 class UploadedDocument(BaseModel):
     doc_id: str
@@ -166,6 +217,9 @@ class UploadedDocument(BaseModel):
     extracted_fields: Dict[str, Any] = {}
     ocr_raw_text: Optional[str] = None
     confidence: float = 0.98
+    
+    # Document Forensics & ELA Tamper Analysis Result
+    forensic_report: Optional[DocumentForensicReport] = None
 
 # Portal Verification Output
 class PortalVerificationResult(BaseModel):

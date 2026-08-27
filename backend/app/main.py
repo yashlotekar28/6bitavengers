@@ -22,7 +22,9 @@ from app.models.schemas import (
     EntityGraph,
     OfficerChatRequest,
     OfficerChatResponse,
-    DirectorInfo
+    DirectorInfo,
+    DocumentForensicReport,
+    TamperStatus
 )
 from app.adapters.gst_adapter import GSTAdapter
 from app.adapters.pan_adapter import PANAdapter
@@ -39,6 +41,7 @@ from app.services.vault_service import VendorDocumentVaultService
 from app.services.trust_scoring_service import LongitudinalTrustScoringService
 from app.services.entity_graph_service import EntityGraphLinkingService
 from app.services.chat_service import OfficerChatAssistantService
+from app.services.document_forensics_service import DocumentForensicsService
 from app.data.demo_scenarios import DEMO_BIDDERS_SEED, DEMO_TENDERS_SEED
 try:
     from app.core.auth import authenticate_user, create_access_token, require_officer, require_auditor, TokenData
@@ -336,6 +339,76 @@ async def get_vendor_trust_score(bidder_id: str):
 @app.get("/api/graph/tender/{tender_id:path}", response_model=EntityGraph)
 async def get_tender_entity_graph(tender_id: str):
     return EntityGraphLinkingService.build_tender_graph(tender_id)
+
+# --- Feature: Document Forensics & ELA Tamper Analysis Endpoints ---
+
+@app.post("/api/forensics/analyze/{bidder_id}/{doc_id}", response_model=DocumentForensicReport, tags=["Forensics"])
+async def analyze_document_forensics(bidder_id: str, doc_id: str):
+    """
+    Retrieves or executes 3-layer forensic tamper analysis (ELA + Metadata + Splice)
+    for a specific uploaded document in a bidder dossier.
+    """
+    if bidder_id not in BIDDERS_DB:
+        raise HTTPException(status_code=404, detail="Bidder not found")
+    
+    bidder = BIDDERS_DB[bidder_id]
+    doc = next((d for d in bidder.documents if d.doc_id == doc_id), None)
+    if not doc:
+        if bidder.documents:
+            doc = bidder.documents[0]
+        else:
+            raise HTTPException(status_code=404, detail="Document not found")
+    
+    if not doc.forensic_report:
+        scenario_hint = next((s["scenario_type"] for s in DEMO_BIDDERS_SEED if s["bidder_id"] == bidder_id), "")
+        doc.forensic_report = DocumentForensicsService.analyze_document_scenario(
+            doc_id=doc.doc_id,
+            doc_type=doc.doc_type,
+            file_name=doc.file_name,
+            scenario_hint=scenario_hint
+        )
+    
+    return doc.forensic_report
+
+@app.post("/api/forensics/upload-test", response_model=DocumentForensicReport, tags=["Forensics"])
+async def upload_and_analyze_forensics(
+    file: UploadFile = File(...),
+    claimed_date: Optional[str] = Form(None)
+):
+    """
+    LIVE DEMO FORENSIC LAB:
+    Accepts real user-uploaded image/certificate (JPEG, PNG, etc.)
+    and executes real Error Level Analysis (ELA), EXIF/metadata inspection,
+    and copy-move splice detection in real-time.
+    """
+    content = await file.read()
+    doc_id = f"TEST-FORENSIC-{datetime.utcnow().strftime('%M%S')}"
+    
+    report = DocumentForensicsService.analyze_document_bytes(
+        image_bytes=content,
+        file_name=file.filename or "uploaded_certificate.jpg",
+        doc_id=doc_id,
+        claimed_issue_date=claimed_date
+    )
+    
+    # Append event to CAG Audit Trail
+    audit_trail.log_event(
+        bidder_id="LIVE_USER_UPLOAD",
+        step="FORENSIC_TAMPER_ANALYSIS",
+        actor="FORENSIC_ENGINE",
+        action_type=f"SCAN_{report.status.value}",
+        details={
+            "file_name": file.filename,
+            "overall_tamper_score": report.overall_tamper_score,
+            "ela_score": report.ela_score,
+            "metadata_score": report.metadata_score,
+            "copy_move_score": report.copy_move_score,
+            "flagged_regions": len(report.flagged_regions)
+        },
+        notes=report.forensic_summary
+    )
+    
+    return report
 
 # Feature 5 Endpoint: Natural Language Officer Assistant (Chat)
 @app.post("/api/chat/officer", response_model=OfficerChatResponse)

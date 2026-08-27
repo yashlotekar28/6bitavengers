@@ -1,12 +1,14 @@
 import uuid
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 from app.models.schemas import UploadedDocument, DocumentType, ExtractionStatus
+from app.services.document_forensics_service import DocumentForensicsService
 
 class DocumentIntelligenceEngine:
     """
     Simulates / Executes OCR extraction + LLM structured JSON normalization
     from uploaded PDFs and image certificates.
+    Runs Document Forensics & ELA Tamper Analysis as an automated PRE-STEP.
     """
 
     @staticmethod
@@ -19,6 +21,15 @@ class DocumentIntelligenceEngine:
     ) -> UploadedDocument:
         doc_id = f"DOC-{uuid.uuid4().hex[:8].upper()}"
         
+        # PRE-STEP: Automated Document Forensics & ELA Tamper Analysis
+        forensic_report = DocumentForensicsService.analyze_document_scenario(
+            doc_id=doc_id,
+            doc_type=doc_type,
+            file_name=file_name,
+            scenario_hint=scenario_hint,
+            custom_fields=custom_fields
+        )
+
         extracted_fields = {}
         raw_ocr_text = ""
         
@@ -110,5 +121,6 @@ class DocumentIntelligenceEngine:
             extraction_status=ExtractionStatus.COMPLETED,
             extracted_fields=extracted_fields,
             ocr_raw_text=raw_ocr_text.strip(),
-            confidence=0.98
+            confidence=0.98,
+            forensic_report=forensic_report
         )

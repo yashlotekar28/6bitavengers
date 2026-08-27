@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GeM ProcureShield AI — Multi-Bid Government Procurement Intelligence Engine</title>
+  <title>GeM ProcureShield AI — Multi-Bid Government Procurement Intelligence & Forensics</title>
   
   <!-- Tailwind CSS & Google Fonts -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -49,10 +49,6 @@
       transform: translateY(-2px);
       box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.08);
     }
-
-    .accordion-transition {
-      transition: max-height 0.35s ease-in-out, opacity 0.25s ease-in-out;
-    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-blue-900 selection:text-white">
@@ -63,7 +59,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
+    const { useState, useEffect, useMemo, useRef } = React;
 
     function App() {
       // Tenders & Bidders State
@@ -71,7 +67,7 @@
       const [selectedTenderId, setSelectedTenderId] = useState('GEM/2026/B/89420');
       const [bidders, setBidders] = useState([]);
       const [expandedBidderId, setExpandedBidderId] = useState('BID-2026-0891');
-      const [bidderTabMap, setBidderTabMap] = useState({}); // { [bidderId]: 'overview' | 'vault' | 'graph' | 'rules' | 'decision' }
+      const [bidderTabMap, setBidderTabMap] = useState({}); // { [bidderId]: tab }
 
       // Analytics & Logs State
       const [metrics, setMetrics] = useState(null);
@@ -82,6 +78,7 @@
       const [isAuditOpen, setIsAuditOpen] = useState(false);
       const [isChatOpen, setIsChatOpen] = useState(false);
       const [isFilterOpen, setIsFilterOpen] = useState(false);
+      const [isForensicLabOpen, setIsForensicLabOpen] = useState(false);
       const [loading, setLoading] = useState(true);
       const [verifyingId, setVerifyingId] = useState(null);
       const [notification, setNotification] = useState(null);
@@ -93,11 +90,19 @@
       const [filterMinTurnover, setFilterMinTurnover] = useState(0);
       const [filterExcludeConflicts, setFilterExcludeConflicts] = useState(false);
 
+      // Live Forensic Upload State
+      const [forensicFile, setForensicFile] = useState(null);
+      const [forensicClaimedDate, setForensicClaimedDate] = useState('2025-06-15');
+      const [forensicUploading, setForensicUploading] = useState(false);
+      const [liveForensicResult, setLiveForensicResult] = useState(null);
+      const [forensicPreviewUrl, setForensicPreviewUrl] = useState(null);
+      const fileInputRef = useRef(null);
+
       // AI Chat State
       const [chatMessages, setChatMessages] = useState([
         {
           sender: 'ai',
-          text: 'Namaste Officer! I am your GeM ProcureShield AI Intelligence Assistant.\n\nI have evaluated all 3 active Government Tenders and 45 participating vendor dossiers. Select any tender and vendor to inspect AI risk scores, cross-check discrepancies, and shell network topologies.\n\nHow may I assist your Technical Evaluation Committee today?'
+          text: 'Namaste Officer! I am your GeM ProcureShield AI Intelligence Assistant.\n\nI have evaluated all 3 active Government Tenders and 45 participating vendor dossiers. In addition to statutory cross-checks and cartel networks, I now execute automated Document Forensics & ELA Tamper Analysis on all uploaded certificates.\n\nHow may I assist your Technical Evaluation Committee today?'
         }
       ]);
       const [chatInput, setChatInput] = useState('');
@@ -224,6 +229,39 @@
         }
       };
 
+      // Handle Live File Upload for Real ELA Forensic Scan
+      const handleForensicFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setForensicFile(file);
+        setForensicPreviewUrl(URL.createObjectURL(file));
+      };
+
+      const handleRunLiveForensicScan = async () => {
+        if (!forensicFile) return;
+        setForensicUploading(true);
+        const formData = new FormData();
+        formData.append('file', forensicFile);
+        if (forensicClaimedDate) {
+          formData.append('claimed_date', forensicClaimedDate);
+        }
+
+        try {
+          const res = await fetch('/api/forensics/upload-test', {
+            method: 'POST',
+            body: formData
+          });
+          const data = await res.json();
+          setLiveForensicResult(data);
+          showNotice(`Forensic ELA Scan Completed! Status: ${data.status} (Tamper Score: ${data.overall_tamper_score}/100)`);
+        } catch (err) {
+          console.error(err);
+          showNotice('Error running live forensic scan.');
+        } finally {
+          setForensicUploading(false);
+        }
+      };
+
       // Handle AI Chat
       const handleSendChat = async (e) => {
         if (e) e.preventDefault();
@@ -264,9 +302,9 @@
       // Toggle Vendor Accordion Expansion
       const toggleBidderAccordion = (bidderId) => {
         if (expandedBidderId === bidderId) {
-          setExpandedBidderId(null); // Collapse if clicking same
+          setExpandedBidderId(null);
         } else {
-          setExpandedBidderId(bidderId); // Expand new vendor
+          setExpandedBidderId(bidderId);
         }
       };
 
@@ -315,7 +353,7 @@
                 <span className="text-amber-400 font-bold">Government e-Marketplace (GeM AI)</span>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="font-mono text-slate-300">API Setu / GSTN / MCA21 Online</span>
+                <span className="font-mono text-slate-300">API Setu / GSTN / ELA Forensics Online</span>
                 <span className="text-slate-600">|</span>
                 <span>Security: <strong className="text-emerald-400">CERT-In Level 4</strong></span>
               </div>
@@ -337,11 +375,11 @@
                       GeM <span className="text-[#FF9933]">Procure</span><span className="text-[#38BDF8]">Shield</span>
                     </h1>
                     <span className="px-2 py-0.5 text-[10px] font-extrabold bg-[#F84464] text-white rounded-full uppercase tracking-wider shadow-sm">
-                      3 BIDS • 45 VENDORS
+                      3 BIDS • 45 VENDORS • ELA FORENSICS
                     </span>
                   </div>
                   <p className="text-xs text-blue-200/80 font-medium">
-                    Technical Evaluation Committee AI Decision Cockpit & Fraud Shield
+                    Technical Evaluation Committee AI Decision Cockpit & Digital Fraud Shield
                   </p>
                 </div>
               </div>
@@ -370,6 +408,16 @@
               {/* Action Buttons */}
               <div className="flex items-center space-x-2.5">
                 
+                {/* Forensic Lab Live Upload Button */}
+                <button
+                  onClick={() => setIsForensicLabOpen(true)}
+                  className="px-3.5 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl shadow-md transition flex items-center space-x-1.5 card-hover-lift"
+                  title="Upload any real certificate to test ELA tamper detection"
+                >
+                  <span>🔬 Live Forensic Lab</span>
+                  <span className="px-1.5 py-0.2 text-[9px] bg-black/20 text-slate-950 rounded font-black uppercase">Test</span>
+                </button>
+
                 {/* AI Assistant Button */}
                 <button
                   onClick={() => setIsChatOpen(true)}
@@ -515,6 +563,9 @@
                     <span className="px-2.5 py-1 text-[10px] font-bold bg-amber-100 text-amber-900 rounded font-mono">
                       Closing: {currentTender.closing_date}
                     </span>
+                    <span className="px-2.5 py-1 text-[10px] font-bold bg-rose-100 text-rose-900 rounded">
+                      🔬 ELA Forensics Active
+                    </span>
                   </div>
                   <h3 className="text-base font-black text-slate-800">
                     {currentTender.title}
@@ -525,9 +576,9 @@
                 </div>
 
                 <div className="text-right">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Evaluation Mode</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Evaluation Engine</span>
                   <span className="text-xs font-extrabold text-[#0B2559] bg-blue-50 px-3 py-1 rounded-lg border border-blue-200 inline-block mt-0.5">
-                    ⚡ 10-Step AI Automated
+                    ⚡ 10-Step AI + ELA Tamper Analysis
                   </span>
                 </div>
               </div>
@@ -545,7 +596,7 @@
                 <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm border-t-4 border-t-emerald-500">
                   <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">100% Compliant (Pass)</p>
                   <p className="text-2xl font-black text-emerald-600 mt-1">{metrics.compliant_count}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Statutory Clear</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Statutory & ELA Clear</p>
                 </div>
 
                 <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm border-t-4 border-t-amber-500">
@@ -666,7 +717,7 @@
                   <h3 className="text-base font-extrabold text-slate-800 mt-1">
                     Participating Vendors ({filteredBidders.length} Displayed)
                   </h3>
-                  <p className="text-xs text-slate-500">Click any vendor row or name to expand complete verification reports, trust metrics & cartel map</p>
+                  <p className="text-xs text-slate-500">Click any vendor row or name to expand complete verification reports, ELA tamper forensics & cartel map</p>
                 </div>
                 <span className="text-xs font-semibold text-slate-400">Click vendor to expand/collapse</span>
               </div>
@@ -681,6 +732,10 @@
                   const band = b.longitudinal_trust_score?.rating_band?.split(' ')[0] ?? '';
                   const hasConflict = b.conflict_links_count > 0;
                   const currentTab = getBidderTab(b.bidder_id);
+                  const firstDoc = b.documents?.[0];
+                  const forensic = firstDoc?.forensic_report;
+                  const tamperScore = forensic?.overall_tamper_score ?? 0;
+                  const tamperStatus = forensic?.status ?? 'CLEAN';
 
                   return (
                     <div
@@ -717,6 +772,11 @@
                               <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-900 rounded font-semibold">
                                 {b.legal_structure}
                               </span>
+                              {tamperStatus === 'LIKELY_TAMPERED' && (
+                                <span className="text-[10px] px-2 py-0.5 bg-rose-100 text-rose-900 border border-rose-300 rounded font-extrabold uppercase">
+                                  🚨 ELA Tamper Flag ({tamperScore}%)
+                                </span>
+                              )}
                               {hasConflict && (
                                 <span className="text-[10px] px-2 py-0.5 bg-rose-100 text-rose-800 rounded font-extrabold uppercase">
                                   ⚠️ {b.conflict_links_count} Shell Links
@@ -733,6 +793,18 @@
 
                         {/* Scores, Status, and Expand/Collapse Button */}
                         <div className="flex items-center justify-between sm:justify-end space-x-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                          {/* Forensics ELA Pill */}
+                          <div className="text-right">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase block">ELA Forensics</span>
+                            <span className={`text-xs font-mono font-black px-2 py-0.5 rounded ${
+                              tamperStatus === 'CLEAN' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                              tamperStatus === 'LIKELY_TAMPERED' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
+                              'bg-amber-100 text-amber-800 border border-amber-300'
+                            }`}>
+                              {tamperScore}% {tamperStatus}
+                            </span>
+                          </div>
+
                           {/* CIBIL Trust Score Pill */}
                           <div className="text-right">
                             <span className="text-[10px] text-slate-400 font-bold uppercase block">CIBIL Trust</span>
@@ -786,7 +858,7 @@
                               disabled={verifyingId === b.bidder_id}
                               className="px-4 py-2 bg-[#0B2559] hover:bg-[#07183a] text-white text-xs font-bold rounded-xl transition shadow disabled:opacity-50 flex items-center space-x-1.5"
                             >
-                              <span>{verifyingId === b.bidder_id ? '⚡ Evaluating 10 Steps...' : '⚡ Re-Run Verification Engine'}</span>
+                              <span>{verifyingId === b.bidder_id ? '⚡ Evaluating 10 Steps...' : '⚡ Re-Run Verification & ELA Engine'}</span>
                             </button>
                           </div>
 
@@ -881,6 +953,7 @@
                             <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200">
                               {[
                                 { id: 'overview', label: `🔍 Cross-Check (${b.cross_check_mismatches?.length || 0} Flags)` },
+                                { id: 'forensics', label: `🔬 Forensic ELA (${tamperScore}% Tamper Risk)` },
                                 { id: 'vault', label: `🗄️ Document Vault (${b.vault_documents?.length || 0} Credentials)` },
                                 { id: 'graph', label: `🕸️ Cartel Network Graph` },
                                 { id: 'rules', label: `⚙️ YAML Rule Evaluator (${b.rule_results?.length || 0})` },
@@ -957,7 +1030,206 @@
                               </div>
                             )}
 
-                            {/* Tab 2: Document Vault */}
+                            {/* Tab 2: Document Forensics & ELA Tamper Analysis (NEW) */}
+                            {currentTab === 'forensics' && (
+                              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                                
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-slate-200 gap-2">
+                                  <div>
+                                    <div className="flex items-center space-x-2">
+                                      <h4 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">
+                                        🔬 3-Layer Document Forensics & ELA Tamper Analysis
+                                      </h4>
+                                      <span className={`px-2.5 py-0.5 text-[10px] font-black rounded-full uppercase ${
+                                        tamperStatus === 'CLEAN' ? 'bg-emerald-100 text-emerald-800' :
+                                        tamperStatus === 'LIKELY_TAMPERED' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
+                                        'bg-amber-100 text-amber-800'
+                                      }`}>
+                                        {tamperStatus} STATUS
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-slate-500">
+                                      Pre-OCR forensic scan analyzing pixel compression residue (ELA Q90), file metadata, and copy-move splices
+                                    </p>
+                                  </div>
+
+                                  <div className="flex items-center space-x-3 bg-white px-3.5 py-2 rounded-xl border border-slate-200">
+                                    <span className="text-xs font-bold text-slate-500 uppercase">Tamper Suspicion:</span>
+                                    <span className={`text-base font-black font-mono ${
+                                      tamperScore > 65 ? 'text-rose-600' : tamperScore > 25 ? 'text-amber-600' : 'text-emerald-600'
+                                    }`}>
+                                      {tamperScore} / 100
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* 3 Forensic Detection Layer Gauges */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                  
+                                  {/* Layer 1: ELA */}
+                                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1">
+                                    <div className="flex justify-between items-center text-xs">
+                                      <span className="font-bold text-slate-700">1. Error Level Analysis (ELA)</span>
+                                      <span className="font-mono font-extrabold text-blue-900">{forensic?.ela_score ?? 0}%</span>
+                                    </div>
+                                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full ${
+                                          (forensic?.ela_score ?? 0) > 60 ? 'bg-rose-500' : (forensic?.ela_score ?? 0) > 25 ? 'bg-amber-500' : 'bg-emerald-500'
+                                        }`}
+                                        style={{ width: `${forensic?.ela_score ?? 0}%` }}
+                                      />
+                                    </div>
+                                    <p className="text-[10px] text-slate-400">Pixel compression residue variance</p>
+                                  </div>
+
+                                  {/* Layer 2: Metadata */}
+                                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1">
+                                    <div className="flex justify-between items-center text-xs">
+                                      <span className="font-bold text-slate-700">2. Metadata Consistency</span>
+                                      <span className="font-mono font-extrabold text-blue-900">{forensic?.metadata_score ?? 0}%</span>
+                                    </div>
+                                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full ${
+                                          (forensic?.metadata_score ?? 0) > 60 ? 'bg-rose-500' : (forensic?.metadata_score ?? 0) > 25 ? 'bg-amber-500' : 'bg-emerald-500'
+                                        }`}
+                                        style={{ width: `${forensic?.metadata_score ?? 0}%` }}
+                                      />
+                                    </div>
+                                    <p className="text-[10px] text-slate-400">Photoshop/Canva & date postdating</p>
+                                  </div>
+
+                                  {/* Layer 3: Copy-Move */}
+                                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1">
+                                    <div className="flex justify-between items-center text-xs">
+                                      <span className="font-bold text-slate-700">3. Stamp/Signature Splice</span>
+                                      <span className="font-mono font-extrabold text-blue-900">{forensic?.copy_move_score ?? 0}%</span>
+                                    </div>
+                                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full ${
+                                          (forensic?.copy_move_score ?? 0) > 60 ? 'bg-rose-500' : (forensic?.copy_move_score ?? 0) > 25 ? 'bg-amber-500' : 'bg-emerald-500'
+                                        }`}
+                                        style={{ width: `${forensic?.copy_move_score ?? 0}%` }}
+                                      />
+                                    </div>
+                                    <p className="text-[10px] text-slate-400">Duplicated feature block matching</p>
+                                  </div>
+
+                                </div>
+
+                                {/* Forensic Summary Callout */}
+                                <div className={`p-4 rounded-xl text-xs space-y-1.5 border ${
+                                  tamperStatus === 'LIKELY_TAMPERED' ? 'bg-rose-50 border-rose-200 text-rose-900' :
+                                  tamperStatus === 'SUSPICIOUS' ? 'bg-amber-50 border-amber-200 text-amber-900' :
+                                  'bg-emerald-50 border-emerald-200 text-emerald-900'
+                                }`}>
+                                  <span className="font-extrabold uppercase text-[10px] tracking-wider block">
+                                    🛡️ Forensic Investigation Brief:
+                                  </span>
+                                  <p className="leading-relaxed">{forensic?.forensic_summary}</p>
+                                </div>
+
+                                {/* Side-by-Side ELA Heatmap and Metadata Analysis */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  
+                                  {/* ELA Heatmap Visualizer */}
+                                  <div className="bg-slate-900 text-white rounded-2xl p-4 border border-slate-800 space-y-3 shadow-inner">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-xs font-black text-amber-400 uppercase tracking-wider">
+                                        🔥 ELA Pixel Heatmap (Quality 90 Residue)
+                                      </span>
+                                      <span className="text-[9px] bg-white/10 px-2 py-0.5 rounded text-slate-300 font-mono">
+                                        JPEG Diff Matrix
+                                      </span>
+                                    </div>
+
+                                    {forensic?.ela_heatmap_base64 ? (
+                                      <div className="rounded-xl overflow-hidden border border-slate-700 bg-black flex items-center justify-center p-1">
+                                        <img
+                                          src={forensic.ela_heatmap_base64}
+                                          alt="ELA Heatmap"
+                                          className="max-h-64 object-contain rounded-lg w-full"
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="h-48 rounded-xl bg-slate-800/80 flex items-center justify-center text-xs text-slate-400">
+                                        Generating ELA Heatmap...
+                                      </div>
+                                    )}
+
+                                    <div className="space-y-1.5 text-xs text-slate-300">
+                                      <span className="text-[10px] font-bold text-slate-400 uppercase">Flagged Coordinate Anomaly Zones:</span>
+                                      {forensic?.flagged_regions?.length > 0 ? (
+                                        forensic.flagged_regions.map((reg, idx) => (
+                                          <div key={idx} className="p-2 bg-slate-800/90 rounded-lg border border-rose-500/40 text-[11px] font-mono flex items-start space-x-2">
+                                            <span className="text-rose-400 font-bold">⚠️ [{reg.x},{reg.y}]</span>
+                                            <span className="text-slate-200">{reg.description}</span>
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <p className="text-[11px] text-emerald-400 font-mono">Zero anomalous residue clusters detected.</p>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Metadata & Splice Evidence */}
+                                  <div className="space-y-3">
+                                    
+                                    {/* Metadata Box */}
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2.5">
+                                      <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                                        <span className="text-xs font-bold text-slate-800 uppercase">📄 File Header & Metadata Inspection</span>
+                                        <span className={`text-[9px] px-2 py-0.5 rounded font-mono font-bold ${
+                                          forensic?.metadata_analysis?.is_software_suspicious ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
+                                        }`}>
+                                          {forensic?.metadata_analysis?.is_software_suspicious ? 'SUSPICIOUS EDITOR' : 'GENUINE CREATOR'}
+                                        </span>
+                                      </div>
+
+                                      <div className="text-xs font-mono space-y-1 text-slate-600">
+                                        <p>Producing Software: <strong className="text-slate-900">{forensic?.metadata_analysis?.producing_software || 'Official Engine'}</strong></p>
+                                        <p>Created: <strong>{forensic?.metadata_analysis?.creation_date || 'N/A'}</strong></p>
+                                        <p>Modified: <strong>{forensic?.metadata_analysis?.modification_date || 'N/A'}</strong></p>
+                                      </div>
+
+                                      <div className="space-y-1 pt-1">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase block">Observations:</span>
+                                        {forensic?.metadata_analysis?.flags?.map((fl, i) => (
+                                          <div key={i} className="text-[11px] text-slate-700 bg-slate-50 p-2 rounded border border-slate-200">
+                                            • {fl}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+
+                                    {/* Copy-Move Splice Evidence */}
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
+                                      <div className="flex justify-between items-center pb-1 border-b border-slate-100">
+                                        <span className="text-xs font-bold text-slate-800 uppercase">🧩 Copy-Move / Stamp Splice Detection</span>
+                                        <span className="text-[10px] font-mono text-slate-400">Block Matching</span>
+                                      </div>
+                                      {forensic?.copy_move_matches?.length > 0 ? (
+                                        forensic.copy_move_matches.map((cm, i) => (
+                                          <div key={i} className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900">
+                                            <p className="font-bold">⚠️ Duplicate Cluster Detected (Confidence: {(cm.match_confidence*100).toFixed(0)}%)</p>
+                                            <p className="text-[11px] text-slate-700 mt-0.5">{cm.explanation}</p>
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <p className="text-xs text-emerald-700 font-medium">✅ No cloned stamp or signature duplication detected.</p>
+                                      )}
+                                    </div>
+
+                                  </div>
+
+                                </div>
+
+                              </div>
+                            )}
+
+                            {/* Tab 3: Document Vault */}
                             {currentTab === 'vault' && (
                               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
                                 <div className="flex justify-between items-center pb-2 border-b border-slate-200">
@@ -996,7 +1268,7 @@
                               </div>
                             )}
 
-                            {/* Tab 3: Cartel Network Graph */}
+                            {/* Tab 4: Cartel Network Graph */}
                             {currentTab === 'graph' && (
                               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
                                 <div className="flex justify-between items-center pb-2 border-b border-slate-200">
@@ -1068,7 +1340,7 @@
                               </div>
                             )}
 
-                            {/* Tab 4: Deterministic Rules Engine */}
+                            {/* Tab 5: Deterministic Rules Engine */}
                             {currentTab === 'rules' && (
                               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
                                 <div className="flex justify-between items-center pb-2 border-b border-slate-200">
@@ -1098,7 +1370,7 @@
                               </div>
                             )}
 
-                            {/* Tab 5: Officer Determination & CAG Signing */}
+                            {/* Tab 6: Officer Determination & CAG Signing */}
                             {currentTab === 'decision' && (
                               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
                                 <div className="flex justify-between items-center border-b border-slate-200 pb-2">
@@ -1181,6 +1453,164 @@
 
           </main>
 
+          {/* LIVE FORENSIC LAB INTERACTIVE MODAL / SANDBOX */}
+          {isForensicLabOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex justify-center items-center p-4">
+              <div className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+                
+                {/* Header */}
+                <div className="p-5 bg-[#0B2559] text-white flex justify-between items-center">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">🔬</span>
+                    <div>
+                      <h3 className="text-base font-extrabold uppercase tracking-wide">
+                        Live ELA Forensic Lab & Tamper Analysis Sandbox
+                      </h3>
+                      <p className="text-xs text-blue-200">
+                        Upload any real document/image to execute live Error Level Analysis (Q90) & EXIF verification
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={() => setIsForensicLabOpen(false)} className="text-white hover:text-amber-400 font-bold text-xl p-1">✕</button>
+                </div>
+
+                {/* Body */}
+                <div className="p-6 overflow-y-auto space-y-5 bg-[#F8FAFC]">
+                  
+                  {/* Upload Controls */}
+                  <div className="bg-white p-5 rounded-2xl border-2 border-dashed border-blue-200 space-y-4 text-center">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleForensicFileSelect}
+                      accept="image/*,.pdf"
+                      className="hidden"
+                    />
+
+                    <div className="space-y-2">
+                      <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-900 mx-auto flex items-center justify-center text-xl font-bold">
+                        📁
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-800">
+                        {forensicFile ? forensicFile.name : 'Select or Drop any Certificate Image (PNG, JPG, WEBP)'}
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        Try taking any certificate, edit a turnover number or date in Photoshop/Paint, and upload it!
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 transition"
+                      >
+                        📂 Browse Local Image...
+                      </button>
+
+                      <div className="flex items-center space-x-2 text-xs">
+                        <span className="text-slate-500 font-semibold">Claimed Issue Date:</span>
+                        <input
+                          type="date"
+                          value={forensicClaimedDate}
+                          onChange={e => setForensicClaimedDate(e.target.value)}
+                          className="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs text-slate-800 font-mono"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleRunLiveForensicScan}
+                        disabled={!forensicFile || forensicUploading}
+                        className="px-5 py-2 bg-[#F84464] hover:bg-[#d93b57] text-white text-xs font-bold rounded-xl shadow disabled:opacity-50 flex items-center space-x-1.5"
+                      >
+                        <span>{forensicUploading ? '⚡ Computing ELA Matrix...' : '⚡ Run Live ELA Forensic Scan'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Results Section */}
+                  {liveForensicResult && (
+                    <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4 animate-fadeIn">
+                      
+                      <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                        <div>
+                          <span className="text-xs font-bold text-slate-400 uppercase">Live Forensic Scan Result</span>
+                          <h4 className="text-base font-extrabold text-slate-900">{liveForensicResult.file_name}</h4>
+                        </div>
+                        <div className="text-right">
+                          <span className={`text-xs font-black px-3 py-1 rounded-full uppercase ${
+                            liveForensicResult.status === 'CLEAN' ? 'bg-emerald-100 text-emerald-800' :
+                            liveForensicResult.status === 'LIKELY_TAMPERED' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
+                            'bg-amber-100 text-amber-800'
+                          }`}>
+                            {liveForensicResult.status} ({liveForensicResult.overall_tamper_score}/100)
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 3 Scores */}
+                      <div className="grid grid-cols-3 gap-3 text-center">
+                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase block">1. ELA Residue Score</span>
+                          <span className="text-lg font-black font-mono text-blue-900">{liveForensicResult.ela_score}%</span>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase block">2. Metadata Score</span>
+                          <span className="text-lg font-black font-mono text-purple-900">{liveForensicResult.metadata_score}%</span>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase block">3. Splice Score</span>
+                          <span className="text-lg font-black font-mono text-amber-900">{liveForensicResult.copy_move_score}%</span>
+                        </div>
+                      </div>
+
+                      {/* Heatmap Display */}
+                      <div className="bg-slate-900 p-4 rounded-2xl text-white space-y-2">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-bold text-amber-400 uppercase">🔥 Live Generated Error Level Analysis (ELA) Heatmap</span>
+                          <span className="text-[10px] text-slate-400 font-mono">Q90 Compression Delta</span>
+                        </div>
+                        {liveForensicResult.ela_heatmap_base64 && (
+                          <div className="rounded-xl overflow-hidden bg-black flex items-center justify-center p-2 border border-slate-700">
+                            <img
+                              src={liveForensicResult.ela_heatmap_base64}
+                              alt="Live ELA Heatmap"
+                              className="max-h-72 object-contain rounded w-full"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Metadata flags */}
+                      <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
+                        <span className="font-bold text-slate-700 uppercase text-[10px]">Metadata & EXIF Observations:</span>
+                        {liveForensicResult.metadata_analysis?.flags?.map((fl, idx) => (
+                          <div key={idx} className="text-slate-600 bg-white p-2 rounded border border-slate-200">
+                            • {fl}
+                          </div>
+                        ))}
+                      </div>
+
+                    </div>
+                  )}
+
+                </div>
+
+                {/* Footer */}
+                <div className="p-4 bg-slate-100 border-t border-slate-200 text-right">
+                  <button
+                    onClick={() => setIsForensicLabOpen(false)}
+                    className="px-5 py-2 bg-[#0B2559] hover:bg-[#07183a] text-white text-xs font-bold rounded-xl transition shadow"
+                  >
+                    Close Forensic Lab
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
+
           {/* AI Officer Chat Assistant Slide-Over Drawer */}
           {isChatOpen && (
             <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex justify-end">
@@ -1238,7 +1668,7 @@
                 <form onSubmit={handleSendChat} className="p-3.5 bg-white border-t border-slate-200 flex gap-2">
                   <input
                     type="text"
-                    placeholder="Ask about cartel risks, CIBIL scores, turnover, or GFR rules..."
+                    placeholder="Ask about ELA tamper flags, cartel risks, CIBIL scores, or GFR rules..."
                     value={chatInput}
                     onChange={e => setChatInput(e.target.value)}
                     className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
@@ -1295,6 +1725,8 @@
               </div>
               <div className="flex items-center space-x-4 text-[11px]">
                 <span>GFR 2017 Verified</span>
+                <span>•</span>
+                <span>ELA Forensics Active</span>
                 <span>•</span>
                 <span>CVC Guidelines Adherent</span>
                 <span>•</span>
