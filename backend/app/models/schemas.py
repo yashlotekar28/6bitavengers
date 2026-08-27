@@ -39,6 +39,23 @@ class OfficerActionType(str, Enum):
     REQUEST_INFO = "REQUEST_INFO"
     OVERRIDE = "OVERRIDE"
 
+# Tender Overview Schema
+class Tender(BaseModel):
+    tender_id: str
+    title: str
+    category: str
+    ministry: str
+    department: str
+    estimated_value_cr: float
+    bid_type: str
+    closing_date: str
+    status: str = "TECHNICAL_EVALUATION"
+    total_bidders: int = 15
+    compliant_bidders: int = 0
+    flagged_bidders: int = 0
+    debarred_bidders: int = 0
+    description: str = ""
+
 # Feature 1: Unified Document Vault Schemas
 class VaultDocument(BaseModel):
     doc_id: str

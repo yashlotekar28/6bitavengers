@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.models.schemas import (
+    Tender,
     Bidder,
     BidderIdentifiers,
     BidderFinancials,
@@ -38,7 +39,7 @@ from app.services.vault_service import VendorDocumentVaultService
 from app.services.trust_scoring_service import LongitudinalTrustScoringService
 from app.services.entity_graph_service import EntityGraphLinkingService
 from app.services.chat_service import OfficerChatAssistantService
-from app.data.demo_scenarios import DEMO_BIDDERS_SEED
+from app.data.demo_scenarios import DEMO_BIDDERS_SEED, DEMO_TENDERS_SEED
 try:
     from app.core.auth import authenticate_user, create_access_token, require_officer, require_auditor, TokenData
     AUTH_AVAILABLE = True
@@ -65,8 +66,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory database of bidders for prototype
+# In-memory databases
 BIDDERS_DB: Dict[str, Bidder] = {}
+TENDERS_DB: Dict[str, Tender] = {}
 
 # Initialize Adapters & Services
 gst_adapter = GSTAdapter()
@@ -123,7 +125,7 @@ async def run_full_pipeline_for_bidder(bidder: Bidder, scenario_type: str = "") 
     )
 
     results = await asyncio.gather(gst_task, pan_task, udyam_task, epfo_task, debarment_task)
-    
+
     bidder.portal_verifications = {
         "GST_PORTAL": results[0],
         "PAN_REGISTRY": results[1],
@@ -170,16 +172,24 @@ async def run_full_pipeline_for_bidder(bidder: Bidder, scenario_type: str = "") 
         details={
             "compliance_score": compliance_score.score,
             "trust_score": trust_score.score,
-            "risk_level": compliance_score.risk_level,
-            "vault_docs_count": len(bidder.vault_documents)
+            "risk_level": compliance_score.risk_level.value,
+            "vault_docs_count": len(bidder.vault_documents),
+            "conflict_links": bidder.conflict_links_count
         }
     )
 
     return bidder
 
 def populate_seed_scenarios():
-    """Initializes the 3 Judge-Ready Demo Bidder profiles."""
+    """Initializes the 3 GeM Bids and 15 Vendors per Bid (45 Vendors Total)."""
     BIDDERS_DB.clear()
+    TENDERS_DB.clear()
+
+    # Seed Tenders
+    for t_seed in DEMO_TENDERS_SEED:
+        TENDERS_DB[t_seed["tender_id"]] = Tender(**t_seed)
+
+    # Seed Bidders
     for seed in DEMO_BIDDERS_SEED:
         bidder_id = seed["bidder_id"]
         identifiers = BidderIdentifiers(**seed["identifiers"])
@@ -220,12 +230,22 @@ def populate_seed_scenarios():
         )
         BIDDERS_DB[bidder_id] = bidder
 
+def refresh_tender_statistics():
+    """Recalculates dynamic compliance counts for each tender."""
+    for t_id, tender in TENDERS_DB.items():
+        tender_bidders = [b for b in BIDDERS_DB.values() if b.tender_id == t_id]
+        tender.total_bidders = len(tender_bidders)
+        tender.compliant_bidders = sum(1 for b in tender_bidders if b.compliance_score and b.compliance_score.risk_level == RiskLevel.LOW)
+        tender.flagged_bidders = sum(1 for b in tender_bidders if b.compliance_score and b.compliance_score.risk_level in (RiskLevel.MEDIUM, RiskLevel.HIGH))
+        tender.debarred_bidders = sum(1 for b in tender_bidders if b.compliance_score and b.compliance_score.risk_level == RiskLevel.CRITICAL)
+
 @app.on_event("startup")
 async def startup_event():
     populate_seed_scenarios()
     for bidder in list(BIDDERS_DB.values()):
         scenario_hint = next((s["scenario_type"] for s in DEMO_BIDDERS_SEED if s["bidder_id"] == bidder.bidder_id), "")
         await run_full_pipeline_for_bidder(bidder, scenario_type=scenario_hint)
+    refresh_tender_statistics()
 
 # --- Routes ---
 
@@ -241,8 +261,27 @@ async def serve_dashboard_alias():
     static_file = os.path.join(os.path.dirname(__file__), "static", "index.html")
     return FileResponse(static_file)
 
+# Tender Endpoints
+@app.get("/api/tenders", response_model=List[Tender])
+async def list_tenders():
+    refresh_tender_statistics()
+    return list(TENDERS_DB.values())
+
+@app.get("/api/tenders/{tender_id:path}", response_model=Tender)
+async def get_tender(tender_id: str):
+    refresh_tender_statistics()
+    if tender_id not in TENDERS_DB:
+        raise HTTPException(status_code=404, detail="Tender not found")
+    return TENDERS_DB[tender_id]
+
+@app.get("/api/tenders/{tender_id:path}/bidders", response_model=List[Bidder])
+async def get_tender_bidders(tender_id: str):
+    return [b for b in BIDDERS_DB.values() if b.tender_id == tender_id]
+
 @app.get("/api/bidders", response_model=List[Bidder])
-async def list_bidders():
+async def list_bidders(tender_id: Optional[str] = None):
+    if tender_id:
+        return [b for b in BIDDERS_DB.values() if b.tender_id == tender_id]
     return list(BIDDERS_DB.values())
 
 @app.get("/api/bidders/{bidder_id}", response_model=Bidder)
@@ -340,8 +379,11 @@ async def get_audit_logs(bidder_id: Optional[str] = None):
     return audit_trail.get_all_logs()
 
 @app.get("/api/metrics")
-async def get_dashboard_metrics():
-    bidders = list(BIDDERS_DB.values())
+async def get_dashboard_metrics(tender_id: Optional[str] = None):
+    if tender_id:
+        bidders = [b for b in BIDDERS_DB.values() if b.tender_id == tender_id]
+    else:
+        bidders = list(BIDDERS_DB.values())
     total = len(bidders)
     compliant_count = sum(1 for b in bidders if b.compliance_score and b.compliance_score.risk_level == RiskLevel.LOW)
     flagged_count = sum(1 for b in bidders if b.compliance_score and b.compliance_score.risk_level in (RiskLevel.MEDIUM, RiskLevel.HIGH))
