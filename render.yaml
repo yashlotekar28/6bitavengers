@@ -1,0 +1,16 @@
+services:
+  # ProcureShield AI Web Service (FastAPI + Dashboard)
+  - type: web
+    name: procureshield-ai
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
+    region: oregon
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
