@@ -5,6 +5,17 @@ import threading
 import time
 import uvicorn
 
+# Auto-load .env file if present
+_env_path = os.path.join(os.path.dirname(__file__), ".env")
+if os.path.exists(_env_path):
+    with open(_env_path) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith("#") and "=" in _line:
+                _k, _v = _line.split("=", 1)
+                os.environ.setdefault(_k.strip(), _v.strip())
+
+
 def open_browser():
     time.sleep(1.5)
     print("\n[INFO] Opening ProcureShield AI Dashboard in your browser: http://localhost:8000")

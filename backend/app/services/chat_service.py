@@ -48,18 +48,24 @@ class OfficerChatAssistantService:
                 client = google_genai.Client(api_key=gemini_key)
                 system_prompt = cls._build_system_prompt(tender_id, tender_bidders)
                 full_prompt = f"{system_prompt}\n\n---\nOfficer Question: {q}"
-                response = client.models.generate_content(
-                    model="gemini-3.7-flash",
-                    contents=full_prompt
-                )
-                reply_text = response.text
-                return OfficerChatResponse(
-                    reply=reply_text,
-                    context_used=[f"Tender: {tender_id}", f"Live Database ({len(tender_bidders)} Bidders)", "🤖 Gemini Flash AI Engine"],
-                    suggested_actions=cls._generate_contextual_suggestions(q_lower, tender_bidders, explicit_target_bidder)
-                )
+                reply_text = None
+                for model_name in ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"]:
+                    try:
+                        response = client.models.generate_content(
+                            model=model_name,
+                            contents=full_prompt
+                        )
+                        reply_text = response.text
+                        break
+                    except Exception:
+                        continue
+                if reply_text:
+                    return OfficerChatResponse(
+                        reply=reply_text,
+                        context_used=[f"Tender: {tender_id}", f"Live Database ({len(tender_bidders)} Bidders)", "🤖 Gemini AI Engine"],
+                        suggested_actions=cls._generate_contextual_suggestions(q_lower, tender_bidders, explicit_target_bidder)
+                    )
             except Exception as e:
-                # Log the error but fall through to rule-based engine
                 import logging
                 logging.getLogger(__name__).warning(f"Gemini API error: {e}")
 
