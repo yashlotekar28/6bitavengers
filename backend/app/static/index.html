@@ -364,8 +364,162 @@
     }
 
     function App() {
+
+      // ── DEMO OFFICER CREDENTIALS ─────────────────────────────────────────────
+      const OFFICERS = {
+        'officer001': { password: 'GeM@2026', name: 'Rajesh Kumar Sharma', rank: 'Senior Procurement Officer', ministry: 'Ministry of Defence', badge: 'IAS-2018-RK' },
+        'officer002': { password: 'Shield@123', name: 'Priya Nair', rank: 'Deputy Secretary', ministry: 'Ministry of Finance', badge: 'IRS-2016-PN' },
+        'officer003': { password: 'Procure@456', name: 'Arjun Mehta', rank: 'Joint Commissioner', ministry: 'Ministry of Railways', badge: 'IRAS-2019-AM' },
+        'admin':      { password: 'Admin@2026', name: 'System Administrator', rank: 'System Admin', ministry: 'GeM PMU', badge: 'ADMIN-001' },
+      };
+
+      // ── LOGIN STATE ──────────────────────────────────────────────────────────
+      const [isLoggedIn, setIsLoggedIn] = useState(false);
+      const [currentOfficer, setCurrentOfficer] = useState(null);
+      const [loginUserId, setLoginUserId] = useState('');
+      const [loginPassword, setLoginPassword] = useState('');
+      const [loginError, setLoginError] = useState('');
+      const [loginLoading, setLoginLoading] = useState(false);
+      const [showPassword, setShowPassword] = useState(false);
+
+      const handleLogin = (e) => {
+        e.preventDefault();
+        setLoginLoading(true);
+        setLoginError('');
+        setTimeout(() => {
+          const officer = OFFICERS[loginUserId.trim().toLowerCase()];
+          if (officer && officer.password === loginPassword) {
+            setCurrentOfficer({ userId: loginUserId, ...officer });
+            setIsLoggedIn(true);
+          } else {
+            setLoginError('Invalid User ID or Password. Please try again.');
+          }
+          setLoginLoading(false);
+        }, 800); // simulate auth check
+      };
+
+      const handleLogout = () => {
+        setIsLoggedIn(false);
+        setCurrentOfficer(null);
+        setLoginUserId('');
+        setLoginPassword('');
+        setLoginError('');
+      };
+
+      // Show login screen if not authenticated
+      if (!isLoggedIn) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-orange-900 via-orange-800 to-amber-900 flex items-center justify-center p-4" style={{backgroundImage:'linear-gradient(135deg,#7c2d12 0%,#9a3412 40%,#c2410c 100%)'}}>
+            {/* Background pattern */}
+            <div className="absolute inset-0 opacity-10" style={{backgroundImage:'repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 50%)',backgroundSize:'20px 20px'}}></div>
+
+            <div className="relative w-full max-w-md">
+              {/* Logo / Header */}
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-white/10 backdrop-blur rounded-2xl border border-white/20 mb-4 shadow-2xl">
+                  <span className="text-4xl">🛡️</span>
+                </div>
+                <h1 className="text-3xl font-black text-white tracking-tight">ProcureShield AI</h1>
+                <p className="text-orange-200 text-sm mt-1">GeM Vendor Verification & Compliance Engine</p>
+                <div className="mt-2 inline-flex items-center px-3 py-1 bg-white/10 rounded-full border border-white/20">
+                  <span className="w-2 h-2 rounded-full bg-green-400 mr-2 animate-pulse"></span>
+                  <span className="text-xs text-orange-100 font-medium">Government of India — Secure Portal</span>
+                </div>
+              </div>
+
+              {/* Login Card */}
+              <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+                <div className="bg-gradient-to-r from-orange-600 to-amber-600 px-8 py-5">
+                  <h2 className="text-white font-bold text-lg">Officer Login</h2>
+                  <p className="text-orange-100 text-xs mt-0.5">Enter your GeM credentials to access the portal</p>
+                </div>
+
+                <form onSubmit={handleLogin} className="p-8 space-y-5">
+                  {/* User ID */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-2">Officer User ID</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">👤</span>
+                      <input
+                        type="text"
+                        value={loginUserId}
+                        onChange={e => setLoginUserId(e.target.value)}
+                        placeholder="Enter your User ID"
+                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-slate-50"
+                        required
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-2">Password</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">🔒</span>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={loginPassword}
+                        onChange={e => setLoginPassword(e.target.value)}
+                        placeholder="Enter your password"
+                        className="w-full pl-10 pr-12 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-slate-50"
+                        required
+                      />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm">
+                        {showPassword ? '🙈' : '👁️'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Error message */}
+                  {loginError && (
+                    <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                      <span className="text-red-500">⚠️</span>
+                      <span className="text-red-700 text-xs font-medium">{loginError}</span>
+                    </div>
+                  )}
+
+                  {/* Login Button */}
+                  <button
+                    type="submit"
+                    disabled={loginLoading || !loginUserId || !loginPassword}
+                    className="w-full py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl text-sm shadow-lg hover:from-orange-700 hover:to-amber-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {loginLoading ? (
+                      <>
+                        <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        Authenticating...
+                      </>
+                    ) : (
+                      <>🔐 Secure Login</>
+                    )}
+                  </button>
+
+                  {/* Demo credentials hint */}
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <p className="text-xs font-bold text-amber-800 mb-2">📋 Demo Credentials:</p>
+                    <div className="space-y-1 text-xs text-amber-700 font-mono">
+                      <div>ID: <strong>officer001</strong> / PW: <strong>GeM@2026</strong></div>
+                      <div>ID: <strong>officer002</strong> / PW: <strong>Shield@123</strong></div>
+                      <div>ID: <strong>admin</strong> &nbsp;&nbsp;&nbsp;&nbsp;/ PW: <strong>Admin@2026</strong></div>
+                    </div>
+                  </div>
+                </form>
+
+                <div className="px-8 pb-6 text-center">
+                  <p className="text-xs text-slate-400">🔐 256-bit encrypted · GeM Secure Network · Unauthorized access is a criminal offence</p>
+                </div>
+              </div>
+
+              <p className="text-center text-orange-300 text-xs mt-6">© 2026 Government e-Marketplace (GeM) · ProcureShield AI v2.0</p>
+            </div>
+          </div>
+        );
+      }
+
       const [currentView, setCurrentView] = useState('SELECT_TENDER');
-      
+
       const [tenders, setTenders] = useState([]);
       const [selectedTenderId, setSelectedTenderId] = useState('GEM/2026/B/89420');
       const [bidders, setBidders] = useState([]);
@@ -735,6 +889,31 @@
                   className="px-3 py-2 text-xs font-bold bg-white/20 hover:bg-white/30 text-white rounded-xl border border-white/30 transition"
                 >
                   📜 CAG Audit
+                </button>
+
+                {currentOfficer && (
+                  <div className="hidden lg:flex items-center space-x-2 bg-black/20 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-1.5 text-left">
+                    <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-sm font-bold text-white">
+                      👤
+                    </div>
+                    <div className="leading-tight">
+                      <div className="text-[11px] font-bold text-white flex items-center gap-1">
+                        {currentOfficer.name}
+                        <span className="text-[9px] bg-amber-400 text-orange-950 px-1.5 py-0.5 rounded font-mono font-bold">{currentOfficer.badge}</span>
+                      </div>
+                      <div className="text-[10px] text-orange-200 truncate max-w-[160px]">
+                        {currentOfficer.rank} · {currentOfficer.ministry}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleLogout}
+                  title="Logout from GeM Cockpit"
+                  className="px-3 py-2 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl border border-red-400/50 transition flex items-center space-x-1 shadow-md"
+                >
+                  <span>🚪 Logout</span>
                 </button>
               </div>
             </div>
