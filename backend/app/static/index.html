@@ -59,6 +59,11 @@
       animation: pulseSlow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
 
+    @keyframes typingBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+
     @media print {
       body { background-color: #ffffff !important; }
       .no-print { display: none !important; }
@@ -391,11 +396,19 @@
       const [chatMessages, setChatMessages] = useState([
         {
           sender: 'ai',
-          text: 'Namaste Officer! I am your GeM ProcureShield AI Assistant.\n\nI have loaded all 3 active Government Tenders and 45 participating vendor dossiers. Ask me anything about vendor names, comparisons, ELA tamper flags, cartel links, or GFR 2017 rules.'
+          text: 'Namaste Officer! 👋 I am your ProcureShield AI Assistant.\n\nI have loaded all 3 active Government Tenders and 45 vendor dossiers. You can say **hi**, ask vendor questions, check compliance scores, or detect fraud.\n\nWhat would you like to know?'
         }
       ]);
       const [chatInput, setChatInput] = useState('');
       const [chatLoading, setChatLoading] = useState(false);
+      const chatBottomRef = useRef(null);
+
+      // Auto-scroll to bottom on new messages or loading indicator
+      useEffect(() => {
+        if (chatBottomRef.current) {
+          chatBottomRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, [chatMessages, chatLoading]);
 
       const showNotice = (msg) => {
         setNotification(msg);
@@ -1872,16 +1885,21 @@
                     </div>
                   ))}
                   {chatLoading && (
-                    <div className="text-xs text-slate-500 p-3 bg-white rounded-xl border border-slate-200">
-                      ⚡ AI Procurement Assistant is thinking...
+                    <div className="flex items-start">
+                      <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-none shadow-sm px-4 py-3 flex items-center space-x-1">
+                        <span style={{display:'inline-block',width:8,height:8,borderRadius:'50%',background:'#EA580C',animation:'typingBounce 1.2s infinite',animationDelay:'0s'}}></span>
+                        <span style={{display:'inline-block',width:8,height:8,borderRadius:'50%',background:'#EA580C',animation:'typingBounce 1.2s infinite',animationDelay:'0.2s'}}></span>
+                        <span style={{display:'inline-block',width:8,height:8,borderRadius:'50%',background:'#EA580C',animation:'typingBounce 1.2s infinite',animationDelay:'0.4s'}}></span>
+                      </div>
                     </div>
                   )}
+                  <div ref={chatBottomRef}></div>
                 </div>
 
                 <form onSubmit={handleSendChat} className="p-4 bg-white border-t border-slate-200 flex gap-2">
                   <input
                     type="text"
-                    placeholder="Ask questions (e.g. 'give me the names of all vendors', 'who is disqualified?')..."
+                    placeholder="Ask me anything — 'hi', 'list vendors', 'who is disqualified?'..."
                     value={chatInput}
                     onChange={e => setChatInput(e.target.value)}
                     className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-orange-500"
