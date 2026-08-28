@@ -266,6 +266,15 @@ async def serve_dashboard_alias():
     static_file = os.path.join(os.path.dirname(__file__), "static", "index.html")
     return FileResponse(static_file)
 
+@app.get("/login-bg.png")
+@app.get("/static/login-bg.png")
+async def serve_login_bg():
+    bg_file = os.path.join(os.path.dirname(__file__), "static", "login-bg.png")
+    if os.path.exists(bg_file):
+        return FileResponse(bg_file, media_type="image/png")
+    raise HTTPException(status_code=404, detail="Background image not found")
+
+
 # Tender Endpoints
 @app.get("/api/tenders", response_model=List[Tender])
 async def list_tenders():
