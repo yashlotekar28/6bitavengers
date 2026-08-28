@@ -10,6 +10,23 @@ class OfficerChatAssistantService:
     all 3 Central Government Tenders and 45 participating vendor dossiers.
     """
 
+    # ── Instant greeting/casual responses (no Gemini call needed) ────────────
+    _GREETINGS = {
+        "hi": "Hello! 👋 I'm **ProcureShield AI**, your procurement intelligence assistant.\n\nYou can ask me anything about the active tender — vendor compliance scores, MSME eligibility, document forensics, cartel risks, and more.\n\nWhat would you like to know?",
+        "hello": "Hello! 👋 I'm **ProcureShield AI**, your procurement intelligence assistant.\n\nYou can ask me anything about the active tender — vendor compliance scores, MSME eligibility, document forensics, cartel risks, and more.\n\nWhat would you like to know?",
+        "hey": "Hey there! 👋 I'm **ProcureShield AI**. Ask me anything about vendors, compliance, or the active tender!",
+        "good morning": "Good morning! ☀️ I'm **ProcureShield AI** — ready to assist with your procurement analysis. What would you like to explore?",
+        "good evening": "Good evening! 🌙 I'm **ProcureShield AI**. How can I assist with your tender evaluation?",
+        "good afternoon": "Good afternoon! ☀️ I'm **ProcureShield AI**. Ready to help with your procurement queries!",
+        "thanks": "You're welcome! 😊 Let me know if you have more questions about the vendors or tender.",
+        "thank you": "You're welcome! 😊 Feel free to ask anything else.",
+        "ok": "Got it! What else can I help you with?",
+        "okay": "Got it! What else can I help you with?",
+        "bye": "Goodbye! 👋 Come back anytime for procurement intelligence support.",
+        "who are you": "I'm **ProcureShield AI** — an AI-powered procurement intelligence assistant built for GeM (Government e-Marketplace) officers.\n\nI can help you analyze vendor bids, detect document fraud, assess compliance scores, identify MSME-eligible vendors, and flag cartel risks.\n\nWhat would you like to investigate?",
+        "what can you do": "I can help you with:\n\n- 📊 **Compliance scores** — who's high/low risk?\n- 🏭 **MSME vendors** — who qualifies for purchase preference?\n- 🔬 **Document forensics** — any tampering detected?\n- 🔗 **Cartel/conflict links** — related vendor networks\n- 💰 **Turnover & financials** — vendor capacity\n- ⚠️ **Disqualified vendors** — who to reject and why\n\nJust ask naturally — I understand plain English!",
+    }
+
     @classmethod
     def process_officer_query(
         cls,
@@ -17,21 +34,33 @@ class OfficerChatAssistantService:
         bidders_db: Dict[str, Any]
     ) -> OfficerChatResponse:
         q = request.query.strip()
-        q_lower = q.lower()
+        q_lower = q.lower().strip("?.!, ")
         tender_id = request.tender_id or "GEM/2026/B/89420"
         active_bidder_id = request.active_bidder_id
 
-        # 1. Collect bidders for the active tender & all tenders
+        # 1. Instant greeting/casual reply — no AI call needed
+        for greeting, response_text in cls._GREETINGS.items():
+            if q_lower == greeting or q_lower.startswith(greeting + " ") or q_lower.endswith(" " + greeting):
+                return OfficerChatResponse(
+                    reply=response_text,
+                    context_used=["ProcureShield AI", "Instant Response"],
+                    suggested_actions=[
+                        "List all vendors and their compliance scores",
+                        "Which vendors are MSME eligible?",
+                        "Who has the highest risk rating?"
+                    ]
+                )
+
+        # 2. Collect bidders for the active tender & all tenders
         tender_bidders = [b for b in bidders_db.values() if b.tender_id == tender_id]
         if not tender_bidders:
             tender_bidders = list(bidders_db.values())[:15]
-        
+
         all_bidders = list(bidders_db.values())
 
-        # 2. Check for explicit company name mentioned in query
+        # 3. Check for explicit company name mentioned in query
         explicit_target_bidder = None
         for b in all_bidders:
-            # Match company name (or primary keywords of company name)
             words = [w for w in b.company_name.lower().split() if len(w) > 3 and w not in ["private", "limited", "technologies", "solutions", "enterprise", "india", "systems"]]
             if b.company_name.lower() in q_lower or b.bidder_id.lower() in q_lower:
                 explicit_target_bidder = b
@@ -40,20 +69,29 @@ class OfficerChatAssistantService:
                 explicit_target_bidder = b
                 break
 
-        # 3. Gemini Flash — primary LLM path (free tier available)
+        # 4. Gemini Flash — primary LLM path
         gemini_key = os.environ.get("GEMINI_API_KEY")
         if gemini_key:
             try:
                 from google import genai as google_genai
-                client = google_genai.Client(api_key=gemini_key)
+                from google.genai import types as genai_types
+                # Use cached client to avoid re-initialization on every request
+                if not hasattr(cls, '_gemini_client') or cls._gemini_client is None:
+                    cls._gemini_client = google_genai.Client(api_key=gemini_key)
+                client = cls._gemini_client
                 system_prompt = cls._build_system_prompt(tender_id, tender_bidders)
                 full_prompt = f"{system_prompt}\n\n---\nOfficer Question: {q}"
                 reply_text = None
-                for model_name in ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"]:
+                # gemini-3.5-flash confirmed working; fallback to newer models
+                for model_name in ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.7-flash"]:
                     try:
                         response = client.models.generate_content(
                             model=model_name,
-                            contents=full_prompt
+                            contents=full_prompt,
+                            config=genai_types.GenerateContentConfig(
+                                max_output_tokens=700,
+                                temperature=0.15,
+                            )
                         )
                         reply_text = response.text
                         break
@@ -494,53 +532,28 @@ class OfficerChatAssistantService:
 
     @classmethod
     def _build_system_prompt(cls, tender_id: str, bidders: List[Any]) -> str:
-        bidders_summary = []
+        rows = []
         for b in bidders[:15]:
             f = b.documents[0].forensic_report if b.documents and b.documents[0].forensic_report else None
-            msme_str = f"Yes (Udyam: {b.identifiers.udyam_registration_number})" if b.identifiers.udyam_registration_number else "No"
-            mismatch_str = "; ".join([f"{m.field_name}: {m.discrepancy_explanation}" for m in b.cross_check_mismatches]) or "None"
-            forensic_flags = ""
-            if f and f.metadata_analysis and f.metadata_analysis.flags:
-                forensic_flags = "; ".join(f.metadata_analysis.flags)
+            msme = "MSME" if b.identifiers.udyam_registration_number else "Non-MSME"
+            tamper = f"{f.overall_tamper_score if f else 0}%({'TAMPERED' if f and f.status.value != 'CLEAN' else 'CLEAN'})"
+            flags = ("; ".join(f.metadata_analysis.flags) if f and f.metadata_analysis and f.metadata_analysis.flags else "None")[:60]
+            mismatches = len(b.cross_check_mismatches)
             turnover_cr = b.financials.annual_turnover_inr / 10000000.0
-            bidders_summary.append(
-                f"VENDOR: {b.company_name}\n"
-                f"  BidderID: {b.bidder_id} | TenderID: {b.tender_id}\n"
-                f"  Compliance: {b.compliance_score.score}/100 ({b.compliance_score.risk_level.value} Risk)\n"
-                f"  CIBIL Trust Score: {b.longitudinal_trust_score.score}/900 ({b.longitudinal_trust_score.rating_band})\n"
-                f"  Annual Turnover: ₹{turnover_cr:.2f} Cr | State: {b.registered_state} | Legal: {b.legal_structure}\n"
-                f"  GSTIN: {b.identifiers.gstin} | PAN: {b.identifiers.pan} | CIN: {b.identifiers.cin or 'N/A'}\n"
-                f"  MSME/Udyam: {msme_str}\n"
-                f"  Document Tamper Score: {f.overall_tamper_score if f else 0}% ({f.status.value if f else 'CLEAN'})\n"
-                f"  ELA Score: {f.ela_score if f else 0}% | Producing Software: {f.metadata_analysis.producing_software if f else 'N/A'}\n"
-                f"  Forensic Flags: {forensic_flags or 'None'}\n"
-                f"  Cartel/Conflict Links: {b.conflict_links_count}\n"
-                f"  Portal Mismatches: {mismatch_str}\n"
-                f"  AI Recommendation: {b.ai_recommendation.recommended_action}\n"
-                f"  Executive Summary: {b.ai_recommendation.executive_summary}\n"
-                f"  Officer Status: {b.officer_status}"
+            rows.append(
+                f"{b.company_name} | Score:{b.compliance_score.score}/100 {b.compliance_score.risk_level.value} | "
+                f"CIBIL:{b.longitudinal_trust_score.score}/900 | Turnover:₹{turnover_cr:.1f}Cr | {msme} | "
+                f"Tamper:{tamper} | Conflicts:{b.conflict_links_count} | Mismatches:{mismatches} | "
+                f"Action:{b.ai_recommendation.recommended_action} | Status:{b.officer_status}"
             )
-        bidders_text = "\n\n".join(bidders_summary)
+        vendors_csv = "\n".join(rows)
 
-        return f"""You are ProcureShield AI — the official Government Procurement Intelligence Assistant for GeM (Government e-Marketplace), India.
+        return f"""You are ProcureShield AI — GeM Procurement Intelligence Assistant (India).
+Help a senior officer evaluate bids for tender {tender_id}. Be direct, use markdown, cite vendor names and exact figures.
+Use Indian procurement terms (GFR 2017, MSME, GSTIN, L1/L2/L3, EMD, PBG). Keep response concise and actionable.
 
-You are assisting a senior procurement officer evaluate vendor bids for a Central Government tender.
-
-ACTIVE TENDER: {tender_id}
-TOTAL VENDORS SUBMITTED: {len(bidders)}
-
-FULL VENDOR DATABASE:
-{bidders_text}
-
----
-YOUR ROLE:
-- Answer any question the officer asks about vendors, scores, documents, MSME eligibility, turnovers, forensic flags, or compliance.
-- Be precise, cite specific vendor names and data points from the database above.
-- Use Indian procurement terminology (GFR 2017, GeM portal, CPPP, MSME, GSTIN, PAN, L1/L2/L3 pricing, EMD, PBG, etc.).
-- Format your responses clearly using markdown — use bullet points, tables, and bold for key data.
-- Do NOT make up data not in the database above. If asked about something not in the data, say so clearly.
-- Be concise but thorough. Lead with the direct answer, then provide supporting details.
-- When asked about specific vendors by name, look up their exact data from the vendor records above.
+VENDOR DATA ({len(bidders)} vendors):
+{vendors_csv}
 """
 
     @classmethod

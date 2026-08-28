@@ -442,12 +442,26 @@ async def get_bidder_gem_proposal_dossier(bidder_id: str):
 # Feature 5 Endpoint: Natural Language Officer Assistant (Chat)
 @app.post("/api/chat/officer", response_model=OfficerChatResponse)
 async def chat_with_officer_assistant(request: OfficerChatRequest):
-    # Run in thread pool so Gemini's blocking HTTP call doesn't freeze the event loop
+    # Fast-path: instant greeting response without thread overhead
+    q_lower = request.query.strip().lower().strip("?.!, ")
+    for greeting, resp_text in OfficerChatAssistantService._GREETINGS.items():
+        if q_lower == greeting or q_lower.startswith(greeting + " ") or q_lower.endswith(" " + greeting):
+            return OfficerChatResponse(
+                reply=resp_text,
+                context_used=["ProcureShield AI", "Instant Response"],
+                suggested_actions=[
+                    "List all vendors and their compliance scores",
+                    "Which vendors are MSME eligible?",
+                    "Who has the highest risk rating?"
+                ]
+            )
+    # Slow-path: run in thread pool so Gemini's blocking HTTP call doesn't freeze the event loop
     return await asyncio.to_thread(
         OfficerChatAssistantService.process_officer_query,
         request=request,
         bidders_db=BIDDERS_DB
     )
+
 
 @app.post("/api/officer/decision")
 async def record_officer_decision(payload: OfficerDecisionPayload):
