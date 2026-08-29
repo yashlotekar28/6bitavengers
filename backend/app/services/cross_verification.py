@@ -32,8 +32,9 @@ class CrossVerificationEngine:
 
         # 1. GSTIN Match & Legal Name Check
         if gst_doc and gst_portal:
-            doc_gstin = gst_doc.extracted_fields.get("gstin", "").upper().strip()
-            portal_gstin = gst_portal.key_fields.get("gstin", "").upper().strip()
+            gst_ef = gst_doc.extracted_fields or {}
+            doc_gstin = (gst_ef.get("gstin") or "").upper().strip()
+            portal_gstin = (gst_portal.key_fields.get("gstin") or "").upper().strip()
             
             if doc_gstin and portal_gstin and doc_gstin != portal_gstin:
                 mismatches.append(CrossCheckMismatch(
@@ -47,8 +48,8 @@ class CrossVerificationEngine:
                     suggested_investigation="Verify if the bidder accidentally uploaded another entity's certificate or altered the document."
                 ))
 
-            doc_name = gst_doc.extracted_fields.get("legal_name", "").strip().lower()
-            portal_name = gst_portal.key_fields.get("legal_name", "").strip().lower()
+            doc_name = (gst_ef.get("legal_name") or "").strip().lower()
+            portal_name = (gst_portal.key_fields.get("legal_name") or "").strip().lower()
             
             # Substantial name variation check
             if doc_name and portal_name and doc_name != portal_name:
@@ -56,17 +57,18 @@ class CrossVerificationEngine:
                 mismatches.append(CrossCheckMismatch(
                     field_name="Company Legal Name",
                     source_a_name="Uploaded GST Certificate",
-                    source_a_value=gst_doc.extracted_fields.get("legal_name"),
+                    source_a_value=gst_ef.get("legal_name"),
                     source_b_name="GST Portal Master Record",
                     source_b_value=gst_portal.key_fields.get("legal_name"),
                     severity=RiskLevel.HIGH,
-                    discrepancy_explanation=f"Name mismatch detected: '{gst_doc.extracted_fields.get('legal_name')}' vs '{gst_portal.key_fields.get('legal_name')}'.",
+                    discrepancy_explanation=f"Name mismatch detected: '{gst_ef.get('legal_name')}' vs '{gst_portal.key_fields.get('legal_name')}'.",
                     suggested_investigation="Check MCA incorporation history for recent name changes or constitution amendments."
                 ))
 
         # 2. Financial Turnover Discrepancy (Balance Sheet vs GST Reported Turnover)
         if financial_doc and gst_portal:
-            doc_turnover = float(financial_doc.extracted_fields.get("declared_turnover_inr", 0))
+            fin_ef = financial_doc.extracted_fields or {}
+            doc_turnover = float(fin_ef.get("declared_turnover_inr", 0))
             portal_turnover = float(gst_portal.key_fields.get("annual_aggregate_turnover", 0))
             
             # If discrepancy > 30%, flag as high risk financial mismatch
@@ -86,8 +88,9 @@ class CrossVerificationEngine:
 
         # 3. Udyam MSME Category / Registration Check
         if udyam_doc and udyam_portal:
-            doc_udyam = udyam_doc.extracted_fields.get("udyam_registration_number", "").strip().upper()
-            portal_udyam = udyam_portal.key_fields.get("udyam_registration_number", "").strip().upper()
+            ef = udyam_doc.extracted_fields or {}
+            doc_udyam = (ef.get("udyam_registration_number") or "").strip().upper()
+            portal_udyam = (udyam_portal.key_fields.get("udyam_registration_number") or "").strip().upper()
             
             if doc_udyam and portal_udyam and doc_udyam != portal_udyam:
                 mismatches.append(CrossCheckMismatch(
@@ -103,8 +106,8 @@ class CrossVerificationEngine:
 
         # 4. PAN Status & Legal Name Cross Check with PAN Registry
         if pan_portal and gst_portal:
-            pan_name = pan_portal.key_fields.get("registered_name", "").strip().lower()
-            gst_legal_name = gst_portal.key_fields.get("legal_name", "").strip().lower()
+            pan_name = (pan_portal.key_fields.get("registered_name") or "").strip().lower()
+            gst_legal_name = (gst_portal.key_fields.get("legal_name") or "").strip().lower()
             if pan_name and gst_legal_name and pan_name != gst_legal_name:
                 mismatches.append(CrossCheckMismatch(
                     field_name="PAN Registered Name vs GST Legal Name",
