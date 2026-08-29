@@ -55,6 +55,13 @@ class Tender(BaseModel):
     flagged_bidders: int = 0
     debarred_bidders: int = 0
     description: str = ""
+    winner_company: Optional[str] = None
+    winner_bidder_id: Optional[str] = None
+    standby_l2_company: Optional[str] = None
+    standby_l3_company: Optional[str] = None
+    finalized_at: Optional[str] = None
+    finalized_by: Optional[str] = None
+    finalized_by_badge: Optional[str] = None
 
 # Feature 1: Unified Document Vault Schemas
 class VaultDocument(BaseModel):

@@ -9,7 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- React 18, ReactDOM, and Babel -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -20,9 +20,10 @@
 
   <style>
     body {
-      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Public Sans", sans-serif;
       background-color: #f8fafc;
       color: #0f172a;
+      letter-spacing: -0.01em;
     }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #e2e8f0; }
@@ -440,6 +441,12 @@
       const [tenderMinistryFilter, setTenderMinistryFilter] = useState('ALL');
       const [tenderValueFilter, setTenderValueFilter] = useState('ALL');
 
+      // BID STATUS & RESULTS PAGE FILTERS
+      const [allBidders, setAllBidders] = useState([]);
+      const [resultsFilter, setResultsFilter] = useState('ALL'); // 'ALL', 'COMPLETED', 'PENDING'
+      const [resultsSearchQuery, setResultsSearchQuery] = useState('');
+      const [expandedResultsTenderId, setExpandedResultsTenderId] = useState(null);
+
       // VENDOR EVALUATION FILTERS
       const [vendorSearchQuery, setVendorSearchQuery] = useState('');
       const [filterRiskProfile, setFilterRiskProfile] = useState('ALL');
@@ -480,14 +487,97 @@
       const loadInitialData = async () => {
         try {
           setLoading(true);
-          const [tRes, aRes] = await Promise.all([
+          const [tRes, aRes, bAllRes] = await Promise.all([
             fetch('/api/tenders').then(r => r.json()),
-            fetch('/api/audit').then(r => r.json())
+            fetch('/api/audit').then(r => r.json()),
+            fetch('/api/bidders').then(r => r.json())
           ]);
           setTenders(tRes);
           setAuditLogs(aRes);
+          setAllBidders(bAllRes || []);
         } catch (e) {
           console.error('Error loading initial data:', e);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const handleFinalizeEvaluation = async (tenderIdToFinalize) => {
+        const tid = tenderIdToFinalize || selectedTenderId;
+        const officerName = currentOfficer ? currentOfficer.name : 'Rajesh Kumar Sharma';
+        const officerId = currentOfficer ? currentOfficer.userId : 'officer001';
+        const officerBadge = currentOfficer ? currentOfficer.badge : 'IAS-2018-RK';
+
+        try {
+          setLoading(true);
+          const res = await fetch('/api/tenders/finalize-evaluation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tender_id: tid,
+              officer_name: officerName,
+              officer_id: officerId,
+              officer_badge: officerBadge
+            })
+          });
+          const data = await res.json();
+
+          const [tRes, bRes, cRes, bAllRes, aRes] = await Promise.all([
+            fetch('/api/tenders').then(r => r.json()),
+            fetch(`/api/bidders?tender_id=${encodeURIComponent(tid)}`).then(r => r.json()),
+            fetch(`/api/bidders/contingency-roster/${encodeURIComponent(tid)}`).then(r => r.json()),
+            fetch('/api/bidders').then(r => r.json()),
+            fetch('/api/audit').then(r => r.json())
+          ]);
+          setTenders(tRes);
+          setBidders(bRes);
+          setContingencyRoster(cRes);
+          setAllBidders(bAllRes || []);
+          setAuditLogs(aRes || []);
+
+          showNotice(`🏆 Bid ${tid} evaluation finalized! Winner: ${data.tender.winner_company}. All remaining bidders marked as Rejected.`);
+          setCurrentView('BID_RESULTS_STATUS');
+        } catch (e) {
+          console.error('Error finalizing evaluation:', e);
+          showNotice('Failed to finalize evaluation. Please try again.');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const handleReopenEvaluation = async (tenderIdToReopen) => {
+        const tid = tenderIdToReopen || selectedTenderId;
+        const officerName = currentOfficer ? currentOfficer.name : 'Rajesh Kumar Sharma';
+        const officerId = currentOfficer ? currentOfficer.userId : 'officer001';
+
+        try {
+          setLoading(true);
+          await fetch('/api/tenders/reopen-evaluation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tender_id: tid,
+              officer_name: officerName,
+              officer_id: officerId
+            })
+          });
+
+          const [tRes, bRes, cRes, bAllRes, aRes] = await Promise.all([
+            fetch('/api/tenders').then(r => r.json()),
+            fetch(`/api/bidders?tender_id=${encodeURIComponent(tid)}`).then(r => r.json()),
+            fetch(`/api/bidders/contingency-roster/${encodeURIComponent(tid)}`).then(r => r.json()),
+            fetch('/api/bidders').then(r => r.json()),
+            fetch('/api/audit').then(r => r.json())
+          ]);
+          setTenders(tRes);
+          setBidders(bRes);
+          setContingencyRoster(cRes);
+          setAllBidders(bAllRes || []);
+          setAuditLogs(aRes || []);
+
+          showNotice(`🔓 Bid ${tid} evaluation reopened for adjustments.`);
+        } catch (e) {
+          console.error('Error reopening evaluation:', e);
         } finally {
           setLoading(false);
         }
@@ -938,6 +1028,59 @@
             </div>
           </header>
 
+          {/* Sub-Header Navigation Bar — Clean Official Tabs */}
+          <nav className="bg-slate-900 text-white px-4 py-2 border-b border-slate-800 shadow-inner no-print">
+            <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setCurrentView('SELECT_TENDER')}
+                  className={`px-3.5 py-1.5 rounded-xl font-bold transition flex items-center space-x-1.5 ${
+                    currentView === 'SELECT_TENDER'
+                      ? 'bg-orange-600 text-white shadow'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                  }`}
+                >
+                  <span>🏛️ Bids Dashboard</span>
+                </button>
+
+                <button
+                  onClick={() => setCurrentView('BID_RESULTS_STATUS')}
+                  className={`px-3.5 py-1.5 rounded-xl font-bold transition flex items-center space-x-1.5 ${
+                    currentView === 'BID_RESULTS_STATUS'
+                      ? 'bg-orange-600 text-white shadow'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                  }`}
+                >
+                  <span>📊 Bid Status & Results</span>
+                  {tenders.some(t => t.status === 'EVALUATION_COMPLETED') && (
+                    <span className="bg-emerald-500 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded-full ml-1">
+                      {tenders.filter(t => t.status === 'EVALUATION_COMPLETED').length} Finalized
+                    </span>
+                  )}
+                </button>
+
+                {currentView === 'EVALUATION_COCKPIT' && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-slate-600 font-bold">/</span>
+                    <button
+                      className="px-3.5 py-1.5 rounded-xl font-bold bg-amber-500 text-slate-950 shadow flex items-center space-x-1.5"
+                    >
+                      <span>🔍 Active Evaluation: {selectedTenderId}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center space-x-4 text-[11px] text-slate-400 font-mono">
+                <span>Total Bids: <strong className="text-white">{tenders.length}</strong></span>
+                <span className="text-slate-600">•</span>
+                <span>Finalized: <strong className="text-emerald-400">{tenders.filter(t => t.status === 'EVALUATION_COMPLETED').length}</strong></span>
+                <span className="text-slate-600">•</span>
+                <span>In-Progress: <strong className="text-amber-400">{tenders.filter(t => t.status !== 'EVALUATION_COMPLETED').length}</strong></span>
+              </div>
+            </div>
+          </nav>
+
           {/* Notification Toast */}
           {notification && (
             <div className="fixed top-20 right-6 z-50 bg-[#18110D] border-2 border-orange-500 text-white px-5 py-3 rounded-2xl shadow-2xl text-xs font-bold flex items-center space-x-2 animate-bounce no-print">
@@ -1102,12 +1245,30 @@
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        className="w-full py-2.5 bg-orange-600 group-hover:bg-orange-700 text-white text-xs font-bold rounded-xl transition shadow flex items-center justify-center space-x-1.5"
-                      >
-                        <span>👉 Open Evaluation Roster</span>
-                      </button>
+                      {t.status === 'EVALUATION_COMPLETED' ? (
+                        <div className="space-y-2">
+                          <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-2 text-xs text-emerald-950 flex items-center justify-between">
+                            <span className="font-bold flex items-center gap-1">
+                              <span>🏆 Winner:</span>
+                              <span className="truncate max-w-[140px]">{t.winner_company || 'L1 Confirmed'}</span>
+                            </span>
+                            <span className="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.5 rounded">Awarded</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="w-full py-2 bg-emerald-600 group-hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow flex items-center justify-center space-x-1.5"
+                          >
+                            <span>Review Finalized Results →</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="w-full py-2.5 bg-orange-600 group-hover:bg-orange-700 text-white text-xs font-bold rounded-xl transition shadow flex items-center justify-center space-x-1.5"
+                        >
+                          <span>Open Evaluation Roster →</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1136,7 +1297,448 @@
           )}
 
           {/* ========================================================================= */}
-          {/* SCREEN 2: OFFICER EVALUATION COCKPIT (Visible after selecting a bid)      */}
+          {/* SCREEN 2: BID STATUS & FINALIZED RESULTS (NEW COMPREHENSIVE VIEW)         */}
+          {/* ========================================================================= */}
+          {currentView === 'BID_RESULTS_STATUS' && (
+            <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8 space-y-8 animate-fadeIn">
+              
+              {/* Header Title Banner */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                <div>
+                  <div className="flex items-center space-x-2.5">
+                    <span className="text-2xl">📊</span>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                      Central Bid Evaluation Status & Finalized Results
+                    </h2>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Live statutory tracking of all Government Tenders: In-progress technical evaluations, confirmed L1 winners, contingency backups, and automated rejection records.
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-2.5">
+                  <button
+                    onClick={() => setCurrentView('SELECT_TENDER')}
+                    className="px-4 py-2 bg-orange-50 hover:bg-orange-100 text-orange-900 text-xs font-bold rounded-xl border border-orange-200 transition shadow-sm flex items-center space-x-1"
+                  >
+                    <span>🏛️ Open Bids Dashboard</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* STATS OVERVIEW CARDS */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                  <div className="flex justify-between items-center text-slate-500 text-xs font-bold uppercase">
+                    <span>Total Active Bids</span>
+                    <span className="text-lg">📋</span>
+                  </div>
+                  <div className="text-2xl font-black text-slate-900 font-mono">{tenders.length}</div>
+                  <div className="text-[11px] text-slate-500 font-medium">All registered GeM procurement tenders</div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border-2 border-emerald-300 shadow-sm space-y-2 bg-emerald-50/30">
+                  <div className="flex justify-between items-center text-emerald-800 text-xs font-bold uppercase">
+                    <span>Completed & Finalized</span>
+                    <span className="text-lg">🏆</span>
+                  </div>
+                  <div className="text-2xl font-black text-emerald-700 font-mono">
+                    {tenders.filter(t => t.status === 'EVALUATION_COMPLETED').length}
+                    <span className="text-xs text-emerald-600 font-sans font-bold ml-2">
+                      ({Math.round((tenders.filter(t => t.status === 'EVALUATION_COMPLETED').length / (tenders.length || 1)) * 100)}%)
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-emerald-700 font-medium">L1 Awarded & Non-winners Disqualified</div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border-2 border-amber-300 shadow-sm space-y-2 bg-amber-50/30">
+                  <div className="flex justify-between items-center text-amber-800 text-xs font-bold uppercase">
+                    <span>Pending / Work Remaining</span>
+                    <span className="text-lg">⏳</span>
+                  </div>
+                  <div className="text-2xl font-black text-amber-700 font-mono">
+                    {tenders.filter(t => t.status !== 'EVALUATION_COMPLETED').length}
+                  </div>
+                  <div className="text-[11px] text-amber-700 font-medium">Awaiting final officer evaluation sign-off</div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                  <div className="flex justify-between items-center text-slate-500 text-xs font-bold uppercase">
+                    <span>Finalized Award Value</span>
+                    <span className="text-lg">💰</span>
+                  </div>
+                  <div className="text-2xl font-black text-slate-900 font-mono text-emerald-700">
+                    ₹{tenders.filter(t => t.status === 'EVALUATION_COMPLETED').reduce((acc, t) => acc + (t.estimated_value_cr || 0), 0).toFixed(2)} Cr
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-medium">Total value of concluded evaluations</div>
+                </div>
+              </div>
+
+              {/* FILTER & SEARCH BAR */}
+              <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div className="flex items-center space-x-1.5 w-full sm:w-auto">
+                  <span className="text-xs font-bold text-slate-500 mr-1 uppercase">Filter:</span>
+                  {[
+                    { id: 'ALL', label: `All Bids (${tenders.length})` },
+                    { id: 'COMPLETED', label: `Completed / Finalized (${tenders.filter(t => t.status === 'EVALUATION_COMPLETED').length})` },
+                    { id: 'PENDING', label: `Pending Evaluation (${tenders.filter(t => t.status !== 'EVALUATION_COMPLETED').length})` }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setResultsFilter(tab.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                        resultsFilter === tab.id
+                          ? 'bg-orange-600 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="w-full sm:w-72">
+                  <input
+                    type="text"
+                    placeholder="Search by Bid ID, Ministry, or Winner..."
+                    value={resultsSearchQuery}
+                    onChange={e => setResultsSearchQuery(e.target.value)}
+                    className="w-full px-3.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+
+              {/* LIST OF BIDS WITH FULL PODIUM RESULTS & PENDING METRICS */}
+              <div className="space-y-6">
+                {tenders
+                  .filter(t => {
+                    if (resultsFilter === 'COMPLETED' && t.status !== 'EVALUATION_COMPLETED') return false;
+                    if (resultsFilter === 'PENDING' && t.status === 'EVALUATION_COMPLETED') return false;
+                    if (resultsSearchQuery.trim()) {
+                      const q = resultsSearchQuery.toLowerCase();
+                      const matchId = t.tender_id?.toLowerCase().includes(q);
+                      const matchTitle = t.title?.toLowerCase().includes(q);
+                      const matchMin = t.ministry?.toLowerCase().includes(q);
+                      const matchWinner = t.winner_company?.toLowerCase().includes(q);
+                      if (!matchId && !matchTitle && !matchMin && !matchWinner) return false;
+                    }
+                    return true;
+                  })
+                  .map(t => {
+                    const isCompleted = t.status === 'EVALUATION_COMPLETED';
+                    const tenderBidders = allBidders.filter(b => b.tender_id === t.tender_id);
+                    const p1 = tenderBidders.find(b => b.award_priority === 'PRIORITY_1_L1' || b.award_status === 'CONFIRMED_L1');
+                    const p2 = tenderBidders.find(b => b.award_priority === 'PRIORITY_2_L2');
+                    const p3 = tenderBidders.find(b => b.award_priority === 'PRIORITY_3_L3');
+                    const rejectedBidders = tenderBidders.filter(b => b.award_status === 'REJECTED' || (isCompleted && !b.award_priority));
+                    const isExpanded = expandedResultsTenderId === t.tender_id;
+
+                    return (
+                      <div
+                        key={t.tender_id}
+                        className={`bg-white rounded-3xl border-2 transition shadow-sm overflow-hidden ${
+                          isCompleted ? 'border-emerald-300' : 'border-slate-200'
+                        }`}
+                      >
+                        {/* Card Header Bar */}
+                        <div className={`p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${
+                          isCompleted ? 'bg-gradient-to-r from-emerald-50/60 to-slate-50 border-emerald-100' : 'bg-slate-50/60 border-slate-100'
+                        }`}>
+                          <div className="space-y-1.5">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="px-3 py-1 bg-slate-900 text-orange-300 text-xs font-black font-mono rounded-lg">
+                                {t.tender_id}
+                              </span>
+                              {isCompleted ? (
+                                <span className="px-3 py-1 bg-emerald-600 text-white text-xs font-black uppercase rounded-lg shadow-sm flex items-center gap-1">
+                                  <span>✅ Evaluation Completed</span>
+                                </span>
+                              ) : (
+                                <span className="px-3 py-1 bg-amber-500 text-slate-950 text-xs font-black uppercase rounded-lg shadow-sm flex items-center gap-1">
+                                  <span>⏳ Evaluation In Progress</span>
+                                </span>
+                              )}
+                              <span className="px-2.5 py-0.5 bg-slate-200 text-slate-800 text-[11px] font-bold rounded">
+                                {t.bid_type.replace('_', ' ')}
+                              </span>
+                              <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded">
+                                ₹{t.estimated_value_cr.toFixed(2)} Cr
+                              </span>
+                            </div>
+
+                            <h3 className="text-lg font-black text-slate-900 leading-snug">
+                              {t.title}
+                            </h3>
+
+                            <p className="text-xs text-slate-600 font-medium">
+                              {t.ministry} • <strong className="text-slate-800">{t.department}</strong>
+                            </p>
+                          </div>
+
+                          {/* Quick Action Controls */}
+                          <div className="flex items-center space-x-2 flex-shrink-0">
+                            <button
+                              onClick={() => handleSelectTender(t.tender_id)}
+                              className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-xl shadow transition flex items-center space-x-1"
+                            >
+                              <span>{isCompleted ? '🔍 Review Evaluation Cockpit' : '⚡ Open & Evaluate Bid →'}</span>
+                            </button>
+
+                            {isCompleted && (
+                              <button
+                                onClick={() => handleReopenEvaluation(t.tender_id)}
+                                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition border border-slate-300"
+                                title="Reopen evaluation to adjust priorities"
+                              >
+                                🔄 Re-open
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* FINALIZED RESULTS PODIUM & REJECTION SUMMARY */}
+                        {isCompleted ? (
+                          <div className="p-6 space-y-6">
+                            
+                            {/* Officer Sign-off Meta Banner */}
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs">
+                              <div className="flex items-center space-x-2 text-emerald-950">
+                                <span className="text-base">📜</span>
+                                <span>
+                                  Finalized on <strong>{t.finalized_at || 'Recent Evaluation'}</strong> by Officer: <strong className="text-emerald-900">{t.finalized_by || 'Rajesh Kumar Sharma'}</strong>
+                                  <span className="ml-2 bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded font-mono font-bold text-[10px]">{t.finalized_by_badge || 'IAS-2018-RK'}</span>
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-emerald-800 font-bold bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300">
+                                GFR 2017 & GeM Technical Committee Validated
+                              </span>
+                            </div>
+
+                            {/* PODIUM SHOWCASE: WINNER + P2 + P3 */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              
+                              {/* 🥇 WINNER (PRIORITY 1) */}
+                              <div className="bg-gradient-to-b from-amber-50 to-orange-50/80 border-2 border-orange-400 rounded-2xl p-5 space-y-3 shadow-md relative overflow-hidden">
+                                <div className="absolute top-2 right-2 text-3xl opacity-20">🏆</div>
+                                <div className="flex justify-between items-center">
+                                  <span className="px-3 py-1 bg-orange-600 text-white text-[10px] font-black uppercase tracking-wider rounded-full font-mono shadow-sm">
+                                    🥇 BID WINNER (PRIORITY 1 / L1)
+                                  </span>
+                                  <span className="text-[11px] font-bold text-orange-900 font-mono">Confirmed Award</span>
+                                </div>
+
+                                {p1 ? (
+                                  <div className="space-y-2 text-xs">
+                                    <h4 className="text-base font-black text-slate-900">{p1.company_name}</h4>
+                                    <div className="text-[11px] text-slate-600 font-mono">
+                                      ID: <strong>{p1.bidder_id}</strong> • {p1.registered_state}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-orange-200 text-[11px]">
+                                      <div className="bg-white/80 p-2 rounded-xl border border-orange-200">
+                                        <span className="text-[9px] text-slate-400 uppercase font-bold block">Annual Turnover</span>
+                                        <strong className="text-slate-900 font-mono">₹{(p1.financials?.annual_turnover_inr / 1e7).toFixed(2)} Cr</strong>
+                                      </div>
+                                      <div className="bg-white/80 p-2 rounded-xl border border-orange-200">
+                                        <span className="text-[9px] text-slate-400 uppercase font-bold block">Trust Score</span>
+                                        <strong className="text-orange-700 font-mono">{p1.longitudinal_trust_score?.score} / 900</strong>
+                                      </div>
+                                    </div>
+                                    <div className="bg-emerald-100/90 text-emerald-950 p-2 rounded-xl text-[11px] font-bold border border-emerald-300 flex items-center gap-1.5">
+                                      <span>✅</span>
+                                      <span>Recommended for PO Issuance & EMD Release</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="py-6 text-center text-xs text-slate-400 font-bold">
+                                    {t.winner_company || 'Winner Designated'}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* 🥈 PRIORITY 2 STANDBY */}
+                              <div className="bg-gradient-to-b from-slate-50 to-amber-50/50 border-2 border-amber-300 rounded-2xl p-5 space-y-3 shadow-sm relative overflow-hidden">
+                                <div className="flex justify-between items-center">
+                                  <span className="px-3 py-1 bg-amber-600 text-white text-[10px] font-black uppercase tracking-wider rounded-full font-mono">
+                                    🥈 PRIORITY 2 (L2 STANDBY)
+                                  </span>
+                                  <span className="text-[11px] font-bold text-amber-900 font-mono">1st Backup</span>
+                                </div>
+
+                                {p2 ? (
+                                  <div className="space-y-2 text-xs">
+                                    <h4 className="text-sm font-black text-slate-900">{p2.company_name}</h4>
+                                    <div className="text-[11px] text-slate-600 font-mono">
+                                      ID: <strong>{p2.bidder_id}</strong> • {p2.registered_state}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-amber-200 text-[11px]">
+                                      <div className="bg-white/80 p-2 rounded-xl border border-amber-200">
+                                        <span className="text-[9px] text-slate-400 uppercase font-bold block">Annual Turnover</span>
+                                        <strong className="text-slate-900 font-mono">₹{(p2.financials?.annual_turnover_inr / 1e7).toFixed(2)} Cr</strong>
+                                      </div>
+                                      <div className="bg-white/80 p-2 rounded-xl border border-amber-200">
+                                        <span className="text-[9px] text-slate-400 uppercase font-bold block">Trust Score</span>
+                                        <strong className="text-orange-700 font-mono">{p2.longitudinal_trust_score?.score} / 900</strong>
+                                      </div>
+                                    </div>
+                                    <div className="bg-amber-100 text-amber-950 p-2 rounded-xl text-[11px] font-bold border border-amber-200 flex items-center gap-1.5">
+                                      <span>⚡</span>
+                                      <span>72h Contingency SLA Auto-Promotion Window</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="py-8 text-center text-xs text-slate-400 font-bold">
+                                    {t.standby_l2_company || 'No Priority 2 Backup Assigned'}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* 🥉 PRIORITY 3 STANDBY */}
+                              <div className="bg-slate-50 border-2 border-slate-300 rounded-2xl p-5 space-y-3 shadow-sm relative overflow-hidden">
+                                <div className="flex justify-between items-center">
+                                  <span className="px-3 py-1 bg-slate-800 text-white text-[10px] font-black uppercase tracking-wider rounded-full font-mono">
+                                    🥉 PRIORITY 3 (L3 STANDBY)
+                                  </span>
+                                  <span className="text-[11px] font-bold text-slate-700 font-mono">2nd Backup</span>
+                                </div>
+
+                                {p3 ? (
+                                  <div className="space-y-2 text-xs">
+                                    <h4 className="text-sm font-black text-slate-900">{p3.company_name}</h4>
+                                    <div className="text-[11px] text-slate-600 font-mono">
+                                      ID: <strong>{p3.bidder_id}</strong> • {p3.registered_state}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200 text-[11px]">
+                                      <div className="bg-white/80 p-2 rounded-xl border border-slate-200">
+                                        <span className="text-[9px] text-slate-400 uppercase font-bold block">Annual Turnover</span>
+                                        <strong className="text-slate-900 font-mono">₹{(p3.financials?.annual_turnover_inr / 1e7).toFixed(2)} Cr</strong>
+                                      </div>
+                                      <div className="bg-white/80 p-2 rounded-xl border border-slate-200">
+                                        <span className="text-[9px] text-slate-400 uppercase font-bold block">Trust Score</span>
+                                        <strong className="text-orange-700 font-mono">{p3.longitudinal_trust_score?.score} / 900</strong>
+                                      </div>
+                                    </div>
+                                    <div className="bg-slate-200/80 text-slate-800 p-2 rounded-xl text-[11px] font-bold flex items-center gap-1.5">
+                                      <span>🛡️</span>
+                                      <span>Secondary Failover Backup</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="py-8 text-center text-xs text-slate-400 font-bold">
+                                    {t.standby_l3_company || 'No Priority 3 Backup Assigned'}
+                                  </div>
+                                )}
+                              </div>
+
+                            </div>
+
+                            {/* AUTOMATED DISQUALIFICATION & REJECTION AUDIT BOX */}
+                            <div className="bg-rose-50/50 border border-rose-200 rounded-2xl p-4 space-y-3">
+                              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-base">🚫</span>
+                                  <h5 className="font-extrabold text-rose-950 text-xs uppercase tracking-wide">
+                                    Automated Rejection Audit: {rejectedBidders.length} Non-Winning Vendors Marked as Disqualified
+                                  </h5>
+                                </div>
+                                <button
+                                  onClick={() => setExpandedResultsTenderId(isExpanded ? null : t.tender_id)}
+                                  className="text-xs font-bold text-rose-700 hover:text-rose-900 underline"
+                                >
+                                  {isExpanded ? 'Hide Disqualified Vendors ▲' : `View ${rejectedBidders.length} Disqualified Vendors ▼`}
+                                </button>
+                              </div>
+
+                              {isExpanded && (
+                                <div className="pt-3 border-t border-rose-200 overflow-x-auto animate-fadeIn">
+                                  <table className="w-full text-left text-xs border-collapse">
+                                    <thead>
+                                      <tr className="bg-rose-100/60 text-rose-950 font-bold text-[11px]">
+                                        <th className="p-2.5 rounded-l-lg">Bidder ID</th>
+                                        <th className="p-2.5">Company Name</th>
+                                        <th className="p-2.5">State</th>
+                                        <th className="p-2.5">Risk Level</th>
+                                        <th className="p-2.5">Trust Score</th>
+                                        <th className="p-2.5 rounded-r-lg">Disqualification Reason</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-rose-100">
+                                      {rejectedBidders.map(rb => (
+                                        <tr key={rb.bidder_id} className="hover:bg-rose-50 text-slate-800 text-[11px]">
+                                          <td className="p-2.5 font-mono font-bold">{rb.bidder_id}</td>
+                                          <td className="p-2.5 font-bold">{rb.company_name}</td>
+                                          <td className="p-2.5">{rb.registered_state}</td>
+                                          <td className="p-2.5">
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                              rb.compliance_score?.risk_level === 'CRITICAL' ? 'bg-rose-600 text-white' :
+                                              rb.compliance_score?.risk_level === 'HIGH' ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-800'
+                                            }`}>
+                                              {rb.compliance_score?.risk_level || 'REJECTED'}
+                                            </span>
+                                          </td>
+                                          <td className="p-2.5 font-mono">{rb.longitudinal_trust_score?.score || 'N/A'}</td>
+                                          <td className="p-2.5 text-rose-700 font-medium">
+                                            {rb.scenario_type === 'HARD_FAIL_DEBARRED_VENDOR' ? 'Debarred under MoF Rule 151 / Director Debarred' :
+                                             rb.scenario_type === 'DOCUMENT_MISMATCH_SUSPICIOUS' ? 'Document Forgery / Tax Discrepancy Failed Gates' :
+                                             'Non-L1 Bidder / Disqualified on Finalization'}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+
+                          </div>
+                        ) : (
+                          /* PENDING EVALUATION WORKFLOW VIEW */
+                          <div className="p-6 space-y-4 bg-amber-50/20">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                              <div className="space-y-1 text-xs">
+                                <span className="font-extrabold text-amber-900 uppercase text-[11px] block">Current Evaluation Progress:</span>
+                                <p className="text-slate-600">
+                                  15 vendor dossiers ingested into AI verification pipeline. Technical committee evaluation is in progress.
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => handleSelectTender(t.tender_id)}
+                                className="px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-black rounded-xl shadow transition flex items-center space-x-1.5 flex-shrink-0"
+                              >
+                                <span>Complete Technical Evaluation →</span>
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2">
+                              <div className="bg-white p-3 rounded-xl border border-slate-200 text-xs">
+                                <span className="text-[10px] text-slate-400 font-bold uppercase block">Total Bidders</span>
+                                <strong className="text-slate-900 font-mono text-sm">15 Vendors</strong>
+                              </div>
+                              <div className="bg-white p-3 rounded-xl border border-emerald-200 text-xs">
+                                <span className="text-[10px] text-emerald-600 font-bold uppercase block">Compliant Pass</span>
+                                <strong className="text-emerald-700 font-mono text-sm">{t.compliant_bidders || 8} Vendors</strong>
+                              </div>
+                              <div className="bg-white p-3 rounded-xl border border-amber-200 text-xs">
+                                <span className="text-[10px] text-amber-600 font-bold uppercase block">Flagged / Suspicious</span>
+                                <strong className="text-amber-700 font-mono text-sm">{t.flagged_bidders || 5} Vendors</strong>
+                              </div>
+                              <div className="bg-white p-3 rounded-xl border border-rose-200 text-xs">
+                                <span className="text-[10px] text-rose-600 font-bold uppercase block">Debarred Hard-Fail</span>
+                                <strong className="text-rose-700 font-mono text-sm">{t.debarred_bidders || 2} Vendors</strong>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                      </div>
+                    );
+                  })}
+              </div>
+
+            </main>
+          )}
+
+          {/* ========================================================================= */}
+          {/* SCREEN 3: OFFICER EVALUATION COCKPIT (Visible after selecting a bid)      */}
           {/* ========================================================================= */}
           {currentView === 'EVALUATION_COCKPIT' && (
             <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6 animate-fadeIn">
@@ -1285,6 +1887,51 @@
                   </div>
 
                 </div>
+
+                {/* Finalize Result Action Bar */}
+                <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div className="text-xs">
+                    {currentTender?.status === 'EVALUATION_COMPLETED' ? (
+                      <div className="flex items-center space-x-2 text-emerald-800 font-bold bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-300">
+                        <span className="text-base">🏆</span>
+                        <span>Evaluation Finalized! Winner: <strong>{currentTender.winner_company}</strong>. All other bidders marked as Rejected.</span>
+                      </div>
+                    ) : (
+                      <div className="text-slate-600 font-medium">
+                        Assign <strong className="text-orange-700">Priority 1 (L1 Winner)</strong> and optional Priority 2 & 3 standbys, then click <strong>Finalize Result</strong> to conclude evaluation.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center space-x-2.5 flex-shrink-0">
+                    {currentTender?.status === 'EVALUATION_COMPLETED' ? (
+                      <>
+                        <button
+                          onClick={() => setCurrentView('BID_RESULTS_STATUS')}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition flex items-center space-x-1"
+                        >
+                          <span>📊 View on Results Page →</span>
+                        </button>
+                        <button
+                          onClick={() => handleReopenEvaluation(selectedTenderId)}
+                          className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 transition"
+                          title="Reopen evaluation to adjust priorities"
+                        >
+                          🔄 Re-open Evaluation
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => handleFinalizeEvaluation(selectedTenderId)}
+                        className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-black rounded-xl shadow-lg transition flex items-center space-x-2 animate-pulse-slow cursor-pointer border border-emerald-400/50"
+                      >
+                        <span className="text-sm">✅</span>
+                        <span className="tracking-wide uppercase">Finalize Result & Publish</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
               </section>
 
               {/* VENDOR ROSTER SECTION & COMPREHENSIVE FILTER TOOLBAR */}

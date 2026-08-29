@@ -622,6 +622,132 @@ async def set_bidder_priority(payload: SetPriorityPayload):
 
     return {"success": True, "bidder": bidder}
 
+class FinalizeEvaluationPayload(BaseModel):
+    tender_id: str
+    officer_id: Optional[str] = "officer001"
+    officer_name: Optional[str] = "Rajesh Kumar Sharma"
+    officer_badge: Optional[str] = "IAS-2018-RK"
+
+@app.post("/api/tenders/finalize-evaluation", tags=["Evaluation"])
+async def finalize_tender_evaluation(payload: FinalizeEvaluationPayload):
+    """
+    Finalizes the technical evaluation for a tender:
+    1. Confirms the Bid Winner (Priority 1 / L1) and Standbys (Priority 2 & 3).
+    2. Automatically marks all remaining non-priority bidders as REJECTED.
+    3. Updates tender status to 'EVALUATION_COMPLETED'.
+    4. Logs formal finalization event in CAG Audit Trail.
+    """
+    tender_id = payload.tender_id
+    if tender_id not in TENDERS_DB:
+        raise HTTPException(status_code=404, detail="Tender not found")
+    
+    tender = TENDERS_DB[tender_id]
+    tender_bidders = [b for b in BIDDERS_DB.values() if b.tender_id == tender_id]
+    
+    primary_l1 = next((b for b in tender_bidders if b.award_priority == "PRIORITY_1_L1"), None)
+    standby_l2 = next((b for b in tender_bidders if b.award_priority == "PRIORITY_2_L2"), None)
+    standby_l3 = next((b for b in tender_bidders if b.award_priority == "PRIORITY_3_L3"), None)
+    
+    # If no L1 assigned yet, auto-assign top compliant bidder
+    if not primary_l1:
+        eligible = [b for b in tender_bidders if (b.compliance_score and b.compliance_score.risk_level != RiskLevel.CRITICAL and b.conflict_links_count == 0)]
+        eligible.sort(key=lambda x: (x.longitudinal_trust_score.score if x.longitudinal_trust_score else 0), reverse=True)
+        if eligible:
+            primary_l1 = eligible[0]
+            primary_l1.award_priority = "PRIORITY_1_L1"
+    
+    now_str = datetime.utcnow().strftime("%d %b %Y, %I:%M %p UTC")
+    
+    # Process all bidders for this tender
+    for b in tender_bidders:
+        if primary_l1 and b.bidder_id == primary_l1.bidder_id:
+            b.award_priority = "PRIORITY_1_L1"
+            b.award_status = "CONFIRMED_L1"
+            b.officer_status = "APPROVED"
+            b.decided_at = now_str
+            b.officer_id = payload.officer_id
+            b.officer_notes = "Awarded as Primary Bid Winner (L1) upon technical evaluation completion."
+        elif standby_l2 and b.bidder_id == standby_l2.bidder_id:
+            b.award_priority = "PRIORITY_2_L2"
+            b.award_status = "CONTINGENCY_STANDBY"
+            b.officer_status = "CONTINGENCY_L2"
+            b.decided_at = now_str
+            b.officer_id = payload.officer_id
+            b.officer_notes = "Designated Priority 2 Standby (72-hour SLA contingency)."
+        elif standby_l3 and b.bidder_id == standby_l3.bidder_id:
+            b.award_priority = "PRIORITY_3_L3"
+            b.award_status = "CONTINGENCY_STANDBY"
+            b.officer_status = "CONTINGENCY_L3"
+            b.decided_at = now_str
+            b.officer_id = payload.officer_id
+            b.officer_notes = "Designated Priority 3 Standby (72-hour SLA contingency)."
+        else:
+            b.award_priority = None
+            b.award_status = "REJECTED"
+            b.officer_status = "REJECTED"
+            b.decided_at = now_str
+            b.officer_id = payload.officer_id
+            b.officer_notes = "Automatically marked as Rejected upon bid result finalization."
+
+    # Update tender record
+    tender.status = "EVALUATION_COMPLETED"
+    tender.winner_company = primary_l1.company_name if primary_l1 else "N/A"
+    tender.winner_bidder_id = primary_l1.bidder_id if primary_l1 else "N/A"
+    tender.standby_l2_company = standby_l2.company_name if standby_l2 else None
+    tender.standby_l3_company = standby_l3.company_name if standby_l3 else None
+    tender.finalized_at = now_str
+    tender.finalized_by = payload.officer_name or "Procurement Officer"
+    tender.finalized_by_badge = payload.officer_badge or "IAS-2018-RK"
+
+    # Audit log
+    audit_trail.log_event(
+        bidder_id=primary_l1.bidder_id if primary_l1 else tender_id,
+        step="EVALUATION_FINALIZATION",
+        actor="OFFICER",
+        action_type="FINALIZE_TENDER_RESULT",
+        details={
+            "tender_id": tender_id,
+            "officer_name": payload.officer_name,
+            "officer_id": payload.officer_id,
+            "winner_company": tender.winner_company,
+            "standby_l2": tender.standby_l2_company,
+            "standby_l3": tender.standby_l3_company,
+            "rejected_count": len([b for b in tender_bidders if b.award_status == "REJECTED"])
+        },
+        notes=f"Tender {tender_id} technical evaluation finalized. Winner: {tender.winner_company}."
+    )
+
+    return {
+        "success": True,
+        "tender": tender,
+        "primary_l1": primary_l1,
+        "standby_l2": standby_l2,
+        "standby_l3": standby_l3,
+        "rejected_count": len([b for b in tender_bidders if b.award_status == "REJECTED"])
+    }
+
+@app.post("/api/tenders/reopen-evaluation", tags=["Evaluation"])
+async def reopen_tender_evaluation(payload: FinalizeEvaluationPayload):
+    """
+    Reopens a finalized tender for further evaluation adjustments.
+    """
+    tender_id = payload.tender_id
+    if tender_id not in TENDERS_DB:
+        raise HTTPException(status_code=404, detail="Tender not found")
+    
+    tender = TENDERS_DB[tender_id]
+    tender.status = "TECHNICAL_EVALUATION"
+    
+    audit_trail.log_event(
+        bidder_id=tender_id,
+        step="EVALUATION_REOPENED",
+        actor="OFFICER",
+        action_type="REOPEN_TENDER_EVALUATION",
+        details={"tender_id": tender_id, "officer_name": payload.officer_name},
+        notes=f"Tender {tender_id} evaluation reopened by {payload.officer_name}."
+    )
+    return {"success": True, "tender": tender}
+
 @app.get("/api/audit")
 async def get_audit_logs(bidder_id: Optional[str] = None):
     if bidder_id:
