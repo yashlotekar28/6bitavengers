@@ -696,6 +696,12 @@
       const [gemDossierData, setGemDossierData] = useState(null);
       const [dossierPage, setDossierPage] = useState(1);
 
+      const [isFinalizeAuthModalOpen, setIsFinalizeAuthModalOpen] = useState(false);
+      const [finalizeTenderIdTarget, setFinalizeTenderIdTarget] = useState(null);
+      const [finalizeAuthUsername, setFinalizeAuthUsername] = useState('');
+      const [finalizeAuthPassword, setFinalizeAuthPassword] = useState('');
+      const [finalizeAuthError, setFinalizeAuthError] = useState('');
+
       const [loading, setLoading] = useState(true);
       const [notification, setNotification] = useState(null);
 
@@ -764,6 +770,35 @@
         } finally {
           setLoading(false);
         }
+      };
+
+      const promptFinalizeAuthentication = (tenderId) => {
+        setFinalizeTenderIdTarget(tenderId || selectedTenderId);
+        setFinalizeAuthUsername(currentOfficer ? currentOfficer.userId : 'officer001');
+        setFinalizeAuthPassword('');
+        setFinalizeAuthError('');
+        setIsFinalizeAuthModalOpen(true);
+      };
+
+      const handleConfirmFinalizeWithAuth = (e) => {
+        if (e) e.preventDefault();
+        setFinalizeAuthError('');
+        const uid = finalizeAuthUsername.trim();
+        const pwd = finalizeAuthPassword.trim();
+        const officer = OFFICERS[uid];
+
+        if (!officer) {
+          setFinalizeAuthError('Officer User ID not found in GeM statutory directory.');
+          return;
+        }
+        if (officer.password !== pwd) {
+          setFinalizeAuthError('Authentication Failed: Incorrect officer password. Please enter your valid credentials.');
+          return;
+        }
+
+        // Successfully authenticated!
+        setIsFinalizeAuthModalOpen(false);
+        handleFinalizeEvaluation(finalizeTenderIdTarget);
       };
 
       const handleFinalizeEvaluation = async (tenderIdToFinalize) => {
@@ -2437,7 +2472,7 @@
                       </>
                     ) : (
                       <button
-                        onClick={() => handleFinalizeEvaluation(selectedTenderId)}
+                        onClick={() => promptFinalizeAuthentication(selectedTenderId)}
                         className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-black rounded-xl shadow-lg transition flex items-center space-x-2 animate-pulse-slow cursor-pointer border border-emerald-400/50"
                       >
                         <span className="text-sm">✅</span>
@@ -3484,6 +3519,103 @@
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* STATUTORY OFFICER RE-AUTHENTICATION & DIGITAL SIGN-OFF MODAL */}
+          {isFinalizeAuthModalOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex justify-center items-center p-4">
+              <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border-2 border-emerald-500 overflow-hidden flex flex-col animate-fadeIn">
+                {/* Modal Header */}
+                <div className="p-5 bg-gradient-to-r from-emerald-800 to-teal-800 text-white flex justify-between items-center">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl">
+                      🔐
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-extrabold uppercase tracking-wide">
+                        Officer Re-Authentication
+                      </h3>
+                      <p className="text-[11px] text-emerald-200">
+                        GFR 2017 Statutory Digital Sign-off Gate
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsFinalizeAuthModalOpen(false)}
+                    className="text-white/80 hover:text-white font-bold text-xl p-1"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <form onSubmit={handleConfirmFinalizeWithAuth} className="p-6 space-y-4 text-xs">
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 space-y-1">
+                    <div className="flex justify-between font-bold text-emerald-950">
+                      <span>Target Bid:</span>
+                      <span className="font-mono">{finalizeTenderIdTarget}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-600">
+                      <span>Primary L1 Winner:</span>
+                      <strong className="text-emerald-900">{contingencyRoster?.primary_l1?.company_name || currentTender?.winner_company || 'Assigned L1'}</strong>
+                    </div>
+                  </div>
+
+                  <p className="text-slate-500 leading-relaxed">
+                    Under <strong>Rule 151 of General Financial Rules (GFR 2017)</strong>, finalizing a government procurement evaluation requires mandatory officer credential verification.
+                  </p>
+
+                  {finalizeAuthError && (
+                    <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-800 font-bold flex items-center space-x-2">
+                      <span>⚠️</span>
+                      <span>{finalizeAuthError}</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <label className="font-bold text-slate-700 block">Officer User ID:</label>
+                    <input
+                      type="text"
+                      value={finalizeAuthUsername}
+                      onChange={e => setFinalizeAuthUsername(e.target.value)}
+                      placeholder="e.g. officer001"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono text-slate-900 focus:ring-2 focus:ring-emerald-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-bold text-slate-700 block">Officer Password / PIN:</label>
+                    <input
+                      type="password"
+                      value={finalizeAuthPassword}
+                      onChange={e => setFinalizeAuthPassword(e.target.value)}
+                      placeholder="Enter your login password (e.g. GeM@2026)"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:ring-2 focus:ring-emerald-500"
+                      autoFocus
+                      required
+                    />
+                    <p className="text-[10px] text-slate-400">Demo PIN: <code>GeM@2026</code> (or your officer password)</p>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setIsFinalizeAuthModalOpen(false)}
+                      className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition flex items-center space-x-1.5 cursor-pointer"
+                    >
+                      <span>🔒 Authenticate & Finalize</span>
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
