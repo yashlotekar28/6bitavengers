@@ -385,6 +385,7 @@
       const [isDarkMode, setIsDarkMode] = useState(false);
       const [language, setLanguage] = useState('en');
       const [showLangMenu, setShowLangMenu] = useState(false);
+      const [showAppLangMenu, setShowAppLangMenu] = useState(false);
 
       // ── TRANSLATIONS ─────────────────────────────────────────────────────────
       const T = {
@@ -441,6 +442,20 @@
           disclaimer: 'Disclaimer',
           help: 'Help',
           version: 'Version 2.1.0 • Build: 2025.05.17',
+          cartelGraph: 'Cartel Graph',
+          forensicLab: 'Live Forensic Lab',
+          aiAssistant: 'AI Assistant',
+          cagAudit: 'CAG Audit',
+          logout: 'Logout',
+          bidsDashboard: 'Bids Dashboard',
+          bidStatusResults: 'Bid Status & Results',
+          finalized: 'Finalized',
+          appTagline: 'Technical Evaluation Committee AI Decision Cockpit & Fraud Shield',
+          govRibbon: 'Government of India • Ministry of Commerce & Industry',
+          certIn: 'CERT-In Level 4',
+          totalBids: 'Total Bids:',
+          inProgress: 'In-Progress:',
+          activeEval: 'Active Evaluation:',
         },
         hi: {
           govIndia: 'भारत सरकार',
@@ -495,6 +510,20 @@
           disclaimer: 'अस्वीकरण',
           help: 'सहायता',
           version: 'संस्करण 2.1.0 • बिल्ड: 2025.05.17',
+          cartelGraph: 'कार्टेल ग्राफ',
+          forensicLab: 'लाइव फोरेंसिक लैब',
+          aiAssistant: 'AI सहायक',
+          cagAudit: 'CAG ऑडिट',
+          logout: 'लॉगआउट',
+          bidsDashboard: 'बोली डैशबोर्ड',
+          bidStatusResults: 'बोली स्थिति एवं परिणाम',
+          finalized: 'अंतिम रूप दिया गया',
+          appTagline: 'तकनीकी मूल्यांकन समिति AI निर्णय कॉकपिट एवं धोखाधड़ी रक्षा',
+          govRibbon: 'भारत सरकार • वाणिज्य एवं उद्योग मंत्रालय',
+          certIn: 'CERT-In स्तर 4',
+          totalBids: 'कुल बोलियां:',
+          inProgress: 'प्रगति में:',
+          activeEval: 'सक्रिय मूल्यांकन:',
         },
       };
       const t = T[language];
@@ -1217,83 +1246,158 @@
         );
       }
 
+      // Logged-in derived styling
+      const dkApp = isDarkMode;
+      const appPageBg = dkApp ? 'bg-[#0c0c0c] text-zinc-100' : 'bg-[#FAF8F5] text-slate-900';
+      const appRibbonBg = dkApp ? 'bg-[#050505] text-zinc-400 border-[#222222]' : 'bg-[#F2ECE1] text-stone-700 border-[#E2D6C3]';
+      const appHeaderBg = dkApp ? 'bg-[#141414] text-white border-[#2a2a2a]' : 'bg-[#FAF5EC] text-slate-900 border-[#E8DFC8]';
+      const appNavBg = dkApp ? 'bg-[#0a0a0a] text-zinc-300 border-[#1f1f1f]' : 'bg-[#ECE3D2] text-stone-800 border-[#DDD0BC]';
+      const appEmblemBg = dkApp ? 'bg-white/10 border-white/20 text-white' : 'bg-[#E8DFC8] border-[#D9CEB4] text-[#8B1D2C]';
+      const appBtnSecondary = dkApp ? 'bg-[#1e1e1e] hover:bg-[#2a2a2a] text-zinc-200 border-[#333333]' : 'bg-white/90 hover:bg-white text-stone-800 border-stone-300 hover:border-stone-400 shadow-2xs';
+      const appBtnAudit = dkApp ? 'bg-[#222222] hover:bg-[#2c2c2c] text-zinc-200 border-[#3a3a3a]' : 'bg-[#E4DAC7] hover:bg-[#D9CEB8] text-stone-900 border-[#D2C5AD] shadow-2xs';
+      const appOfficerPill = dkApp ? 'bg-[#1a1a1a] border-[#2e2e2e] text-zinc-200' : 'bg-[#EDE4D3] border-[#DDD0BC] text-stone-900';
+
       return (
-        <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
+        <div className={`min-h-screen flex flex-col font-sans selection:bg-[#8B1D2C] selection:text-white transition-colors duration-300 ${appPageBg}`} onClick={() => showAppLangMenu && setShowAppLangMenu(false)}>
           
           {/* Top Utility Ribbon */}
-          <div className="bg-[#0B1E33] text-slate-300 text-[11px] font-medium px-4 py-2 border-b border-slate-800 no-print">
-            <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className={`text-[11px] font-medium px-4 py-2 border-b no-print transition-colors duration-300 ${appRibbonBg}`}>
+            <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-3">
               <div className="flex items-center space-x-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span className="text-white font-bold">Government of India • Ministry of Commerce & Industry</span>
-                <span className="text-slate-600">|</span>
-                <span className="text-slate-300 font-bold">GeM ProcureShield AI</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className={`font-bold ${dkApp ? 'text-zinc-200' : 'text-stone-900'}`}>{t.govRibbon}</span>
+                <span className={dkApp ? 'text-zinc-600' : 'text-stone-400'}>|</span>
+                <span className={`font-bold ${dkApp ? 'text-zinc-300' : 'text-[#8B1D2C]'}`}>GeM ProcureShield AI</span>
               </div>
               <div className="flex items-center space-x-3 text-xs">
-                <span>Security: <strong className="text-emerald-400 font-mono">CERT-In Level 4</strong></span>
+                <span>Security: <strong className="text-emerald-600 font-mono font-bold">{t.certIn}</strong></span>
               </div>
             </div>
           </div>
 
-          {/* Main Top Navigation Header — Authentic Government Navy with Crimson Accents */}
-          <header className="bg-[#0F2942] text-white sticky top-0 z-40 px-4 py-3 shadow-md border-b border-[#8B1D2C]/40 no-print">
-            <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          {/* Main Top Navigation Header — Cream Theme with Crimson Accents & Controls */}
+          <header className={`sticky top-0 z-40 px-4 py-3 shadow-xs border-b no-print transition-colors duration-300 ${appHeaderBg}`}>
+            <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+              
+              {/* Left: Emblem & App Branding */}
               <div className="flex items-center space-x-3.5 cursor-pointer" onClick={() => setCurrentView('SELECT_TENDER')}>
-                <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-xl shadow-inner backdrop-blur-sm">
+                <div className={`w-11 h-11 rounded-xl border flex items-center justify-center text-2xl shadow-inner transition ${appEmblemBg}`}>
                   🏛️
                 </div>
                 <div>
-                  <h1 className="font-extrabold text-lg tracking-tight text-white flex items-center gap-1.5 drop-shadow-sm">
-                    GeM <span className="text-[#F43F5E]">Procure</span><span className="text-white">Shield</span>
-                    <span className="px-1.5 py-0.2 bg-[#8B1D2C] text-white text-[11px] font-bold rounded">AI</span>
+                  <h1 className="font-extrabold text-lg tracking-tight flex items-center gap-1.5 drop-shadow-2xs">
+                    <span className={dkApp ? 'text-white' : 'text-[#0B1E33]'}>GeM</span>
+                    <span className="text-[#8B1D2C]">ProcureShield</span>
+                    <span className="px-1.5 py-0.2 bg-[#8B1D2C] text-white text-[10px] font-bold rounded">AI</span>
                   </h1>
-                  <p className="text-[11px] text-slate-300 font-medium leading-none mt-0.5">
-                    Technical Evaluation Committee AI Decision Cockpit & Fraud Shield
+                  <p className={`text-[11px] font-medium leading-none mt-0.5 ${dkApp ? 'text-zinc-400' : 'text-stone-600'}`}>
+                    {t.appTagline}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2.5">
+              {/* Right: Controls (Zoom, Theme, Language) + Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                
+                {/* Accessibility Zoom & Theme & Language Controls */}
+                <div className={`flex items-center space-x-2 font-medium px-2.5 py-1 rounded-xl border ${dkApp ? 'bg-[#1a1a1a] text-zinc-400 border-[#2a2a2a]' : 'bg-[#F4ECE0] text-stone-600 border-[#DDD0BC]'}`}>
+                  <span
+                    onClick={() => { document.body.style.zoom = String(Math.min(parseFloat(document.body.style.zoom || '1') + 0.1, 1.5)); }}
+                    title="Increase page size"
+                    className="cursor-pointer hover:text-[#8B1D2C] font-black px-1 rounded select-none text-sm"
+                  >A+</span>
+                  <span
+                    onClick={() => { document.body.style.zoom = '1'; }}
+                    title="Reset page size"
+                    className="cursor-pointer hover:text-[#8B1D2C] font-black px-1 rounded select-none text-xs"
+                  >A</span>
+                  <span
+                    onClick={() => { document.body.style.zoom = String(Math.max(parseFloat(document.body.style.zoom || '1') - 0.1, 0.7)); }}
+                    title="Decrease page size"
+                    className="cursor-pointer hover:text-[#8B1D2C] font-black px-1 rounded select-none text-[11px]"
+                  >A-</span>
+                  <span className={dkApp ? 'text-zinc-600' : 'text-stone-300'}>|</span>
+                  
+                  {/* Theme Toggle Button ☀️ / 🌙 */}
+                  <span
+                    onClick={() => setIsDarkMode(!isDarkMode)}
+                    title={isDarkMode ? 'Switch to Cream Light Theme' : 'Switch to Dark Theme'}
+                    className="cursor-pointer text-base select-none hover:scale-110 transition"
+                  >
+                    {isDarkMode ? '🌙' : '☀️'}
+                  </span>
+                  <span className={dkApp ? 'text-zinc-600' : 'text-stone-300'}>|</span>
+
+                  {/* Language Selector Dropdown */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setShowAppLangMenu(!showAppLangMenu); }}
+                      className={`cursor-pointer font-bold text-xs flex items-center gap-1 select-none hover:text-[#8B1D2C] ${dkApp ? 'text-zinc-200' : 'text-stone-800'}`}
+                    >
+                      {language === 'en' ? '🇬🇧 EN' : '🇮🇳 हि'} ▾
+                    </button>
+                    {showAppLangMenu && (
+                      <div className={`absolute top-8 right-0 z-50 rounded-xl shadow-lg border overflow-hidden text-xs font-semibold min-w-[120px] ${dkApp ? 'bg-[#161616] border-[#333333]' : 'bg-[#FAF5EC] border-[#DDD0BC]'}`}>
+                        <button
+                          type="button"
+                          onClick={() => { setLanguage('en'); setShowAppLangMenu(false); }}
+                          className={`w-full text-left px-3 py-2 flex items-center gap-2 transition ${language === 'en' ? 'bg-[#8B1D2C] text-white font-bold' : (dkApp ? 'hover:bg-zinc-800 text-zinc-200' : 'hover:bg-[#EDE4D3] text-stone-800')}`}
+                        >
+                          🇬🇧 English
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setLanguage('hi'); setShowAppLangMenu(false); }}
+                          className={`w-full text-left px-3 py-2 flex items-center gap-2 transition ${language === 'hi' ? 'bg-[#8B1D2C] text-white font-bold' : (dkApp ? 'hover:bg-zinc-800 text-zinc-200' : 'hover:bg-[#EDE4D3] text-stone-800')}`}
+                        >
+                          🇮🇳 हिन्दी
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <button
                   onClick={() => setIsFullGraphOpen(true)}
-                  className="px-3.5 py-2 text-xs font-bold bg-[#0B1E33] hover:bg-slate-900 text-slate-200 rounded-xl shadow-sm transition flex items-center space-x-1.5 border border-slate-700"
+                  className={`px-3 py-2 text-xs font-bold rounded-xl border transition flex items-center space-x-1.5 ${appBtnSecondary}`}
                 >
-                  <span>🕸️ Cartel Graph</span>
+                  <span>🕸️</span> <span>{t.cartelGraph}</span>
                 </button>
 
                 <button
                   onClick={() => setIsForensicLabOpen(true)}
-                  className="px-3.5 py-2 text-xs font-bold bg-white text-[#0F2942] hover:bg-slate-100 rounded-xl shadow-sm transition"
+                  className={`px-3 py-2 text-xs font-bold rounded-xl border transition flex items-center space-x-1.5 ${appBtnSecondary}`}
                 >
-                  🔬 Live Forensic Lab
+                  <span>🔬</span> <span>{t.forensicLab}</span>
                 </button>
 
                 <button
                   onClick={() => setIsChatOpen(true)}
-                  className="px-3.5 py-2 text-xs font-bold bg-[#8B1D2C] hover:bg-[#721523] text-white rounded-xl shadow-sm transition flex items-center space-x-1.5"
+                  className="px-3.5 py-2 text-xs font-bold bg-[#8B1D2C] hover:bg-[#721523] text-white rounded-xl shadow-xs transition flex items-center space-x-1.5 cursor-pointer"
                 >
-                  <span>💬 AI Assistant</span>
+                  <span>💬 {t.aiAssistant}</span>
                   <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
                 </button>
 
                 <button
                   onClick={() => setIsAuditOpen(true)}
-                  className="px-3 py-2 text-xs font-bold bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 transition"
+                  className={`px-3 py-2 text-xs font-bold rounded-xl border transition ${appBtnAudit}`}
                 >
-                  📜 CAG Audit
+                  📜 {t.cagAudit}
                 </button>
 
                 {currentOfficer && (
-                  <div className="hidden lg:flex items-center space-x-2 bg-black/25 backdrop-blur-sm border border-white/15 rounded-xl px-3 py-1.5 text-left">
-                    <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center text-xs font-bold text-white">
+                  <div className={`hidden lg:flex items-center space-x-2 border rounded-xl px-3 py-1.5 text-left transition ${appOfficerPill}`}>
+                    <div className="w-7 h-7 rounded-lg bg-[#8B1D2C] flex items-center justify-center text-xs font-bold text-white">
                       👤
                     </div>
                     <div className="leading-tight">
-                      <div className="text-[11px] font-bold text-white flex items-center gap-1">
+                      <div className={`text-[11px] font-bold flex items-center gap-1 ${dkApp ? 'text-zinc-100' : 'text-stone-900'}`}>
                         {currentOfficer.name}
                         <span className="text-[9px] bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded font-mono font-bold">{currentOfficer.badge}</span>
                       </div>
-                      <div className="text-[10px] text-slate-300 truncate max-w-[160px]">
+                      <div className={`text-[10px] truncate max-w-[150px] ${dkApp ? 'text-zinc-400' : 'text-stone-600'}`}>
                         {currentOfficer.rank} · {currentOfficer.ministry}
                       </div>
                     </div>
@@ -1303,63 +1407,63 @@
                 <button
                   onClick={handleLogout}
                   title="Logout from GeM Cockpit"
-                  className="px-3 py-2 text-xs font-bold bg-[#8B1D2C] hover:bg-[#721523] text-white rounded-xl border border-rose-400/40 transition flex items-center space-x-1 shadow-sm"
+                  className="px-3 py-2 text-xs font-bold bg-[#8B1D2C] hover:bg-[#721523] text-white rounded-xl border border-rose-900/30 transition flex items-center space-x-1 shadow-xs cursor-pointer"
                 >
-                  <span>🚪 Logout</span>
+                  <span>🚪 {t.logout}</span>
                 </button>
               </div>
             </div>
           </header>
 
           {/* Sub-Header Navigation Bar — Clean Official Tabs */}
-          <nav className="bg-slate-900 text-white px-4 py-2 border-b border-slate-800 shadow-xs no-print">
+          <nav className={`px-4 py-2 border-b shadow-2xs no-print transition-colors duration-300 ${appNavBg}`}>
             <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => setCurrentView('SELECT_TENDER')}
                   className={`px-3.5 py-1.5 rounded-xl font-bold transition flex items-center space-x-1.5 ${
                     currentView === 'SELECT_TENDER'
-                      ? 'bg-[#8B1D2C] text-white shadow'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                      ? 'bg-[#8B1D2C] text-white shadow-xs'
+                      : (dkApp ? 'bg-[#1a1a1a] text-zinc-300 hover:bg-[#252525] hover:text-white' : 'bg-[#DFD5C2] text-stone-700 hover:bg-[#D5C9B3] hover:text-stone-900')
                   }`}
                 >
-                  <span>🏛️ Bids Dashboard</span>
+                  <span>🏛️ {t.bidsDashboard}</span>
                 </button>
 
                 <button
                   onClick={() => setCurrentView('BID_RESULTS_STATUS')}
                   className={`px-3.5 py-1.5 rounded-xl font-bold transition flex items-center space-x-1.5 ${
                     currentView === 'BID_RESULTS_STATUS'
-                      ? 'bg-[#8B1D2C] text-white shadow'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                      ? 'bg-[#8B1D2C] text-white shadow-xs'
+                      : (dkApp ? 'bg-[#1a1a1a] text-zinc-300 hover:bg-[#252525] hover:text-white' : 'bg-[#DFD5C2] text-stone-700 hover:bg-[#D5C9B3] hover:text-stone-900')
                   }`}
                 >
-                  <span>📊 Bid Status & Results</span>
+                  <span>📊 {t.bidStatusResults}</span>
                   {tenders.some(t => t.status === 'EVALUATION_COMPLETED') && (
-                    <span className="bg-emerald-500 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded-full ml-1">
-                      {tenders.filter(t => t.status === 'EVALUATION_COMPLETED').length} Finalized
+                    <span className="bg-emerald-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full ml-1">
+                      {tenders.filter(t => t.status === 'EVALUATION_COMPLETED').length} {t.finalized}
                     </span>
                   )}
                 </button>
 
                 {currentView === 'EVALUATION_COCKPIT' && (
                   <div className="flex items-center space-x-2">
-                    <span className="text-slate-600 font-bold">/</span>
+                    <span className={dkApp ? 'text-zinc-600 font-bold' : 'text-stone-400 font-bold'}>/</span>
                     <button
-                      className="px-3.5 py-1.5 rounded-xl font-bold bg-[#8B1D2C] text-white shadow flex items-center space-x-1.5"
+                      className="px-3.5 py-1.5 rounded-xl font-bold bg-[#8B1D2C] text-white shadow-xs flex items-center space-x-1.5"
                     >
-                      <span>🔍 Active Evaluation: {selectedTenderId}</span>
+                      <span>🔍 {t.activeEval} {selectedTenderId}</span>
                     </button>
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center space-x-4 text-[11px] text-slate-400 font-mono">
-                <span>Total Bids: <strong className="text-white">{tenders.length}</strong></span>
-                <span className="text-slate-600">•</span>
-                <span>Finalized: <strong className="text-emerald-400">{tenders.filter(t => t.status === 'EVALUATION_COMPLETED').length}</strong></span>
-                <span className="text-slate-600">•</span>
-                <span>In-Progress: <strong className="text-amber-400">{tenders.filter(t => t.status !== 'EVALUATION_COMPLETED').length}</strong></span>
+              <div className={`flex items-center space-x-4 text-[11px] font-mono ${dkApp ? 'text-zinc-400' : 'text-stone-600'}`}>
+                <span>{t.totalBids} <strong className={dkApp ? 'text-white' : 'text-stone-900'}>{tenders.length}</strong></span>
+                <span className={dkApp ? 'text-zinc-600' : 'text-stone-400'}>•</span>
+                <span>{t.finalized}: <strong className="text-emerald-600">{tenders.filter(t => t.status === 'EVALUATION_COMPLETED').length}</strong></span>
+                <span className={dkApp ? 'text-zinc-600' : 'text-stone-400'}>•</span>
+                <span>{t.inProgress} <strong className="text-amber-600">{tenders.filter(t => t.status !== 'EVALUATION_COMPLETED').length}</strong></span>
               </div>
             </div>
           </nav>
