@@ -39,7 +39,7 @@ from app.services.ai_recommender import AIReasoningEngine
 from app.services.scoring_engine import ComplianceScoringEngine
 from app.services.audit_service import audit_trail
 from app.services.vault_service import VendorDocumentVaultService
-from app.services.trust_scoring_service import LongitudinalTrustScoringService
+from app.services.trust_scoring_service import LongitudinalTrustScoringService, VendorTrackRecordService
 from app.services.entity_graph_service import EntityGraphLinkingService
 from app.services.chat_service import OfficerChatAssistantService
 from app.services.document_forensics_service import DocumentForensicsService
@@ -101,6 +101,15 @@ async def run_full_pipeline_for_bidder(bidder: Bidder, scenario_type: str = "") 
         scenario_type=scenario_type
     )
     bidder.longitudinal_trust_score = trust_score
+
+    # Feature: Multi-Year Historical Bidding & Contract Track Record
+    track_record = VendorTrackRecordService.get_track_record_for_vendor(
+        company_name=bidder.company_name,
+        scenario_type=scenario_type,
+        annual_turnover_inr=bidder.financials.annual_turnover_inr,
+        registered_state=bidder.registered_state
+    )
+    bidder.track_record = track_record
 
     # Step 3: Concurrent Portal Verification (Process A)
     gst_task = gst_adapter.verify(

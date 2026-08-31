@@ -340,6 +340,42 @@ class Bidder(BaseModel):
     award_priority: Optional[str] = None # "PRIORITY_1_L1", "PRIORITY_2_L2", "PRIORITY_3_L3"
     award_status: Optional[str] = "UNASSIGNED" # "CONFIRMED_L1", "CONTINGENCY_STANDBY", "REJECTED", "UNASSIGNED"
     contingency_sla_hours: int = 72
+    
+    # Feature: Vendor Historical Bids, Selection Record & Delivery History
+    track_record: Optional['VendorTrackRecord'] = None
+
+# Vendor Historical Bidding & Contract Track Record Schemas
+class PastBidOutcome(str, Enum):
+    AWARDED_L1 = "AWARDED_L1"                      # Selected & Won (L1 Awarded)
+    RUNNER_UP_L2 = "RUNNER_UP_L2"                  # 1st Contingency Standby (L2)
+    RUNNER_UP_L3 = "RUNNER_UP_L3"                  # 2nd Contingency Standby (L3)
+    PARTICIPATED_REJECTED = "PARTICIPATED_REJECTED"# Disqualified / Not Selected
+    IN_EVALUATION = "IN_EVALUATION"
+
+class PastBidHistoryRecord(BaseModel):
+    tender_id: str
+    tender_title: str
+    ministry: str
+    department: str
+    bid_value_cr: float
+    bid_type: str = "PRODUCT_BID"
+    fiscal_year: str = "2024-25"
+    outcome: PastBidOutcome
+    execution_status: str                          # "COMPLETED_ON_TIME", "COMPLETED_WITH_DELAY", "IN_EXECUTION", "DISQUALIFIED", "TERMINATED_GFR151"
+    sla_delivery_rate: float                       # e.g. 99.4
+    consignee_rating: float                        # e.g. 4.9
+    buyer_feedback: str
+
+class VendorTrackRecord(BaseModel):
+    total_bids_participated: int = 0
+    bids_won_l1: int = 0
+    bids_runner_up: int = 0
+    bids_rejected: int = 0
+    win_rate_percent: float = 0.0
+    total_contract_value_won_cr: float = 0.0
+    avg_delivery_sla: float = 0.0
+    avg_consignee_rating: float = 0.0
+    past_bids: List[PastBidHistoryRecord] = []
 
 # Officer Decision Payload
 class OfficerDecisionPayload(BaseModel):
