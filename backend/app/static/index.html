@@ -18,13 +18,43 @@
   <!-- Markdown renderer for AI chat responses -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+  <!-- Google Website Translation API for full-app multi-lingual translation -->
+  <script type="text/javascript">
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'en,hi',
+        autoDisplay: false
+      }, 'google_translate_element');
+    }
+  </script>
+  <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
   <style>
     body {
       font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: #F8FAFC;
       color: #0f172a;
       letter-spacing: -0.01em;
+      top: 0px !important;
     }
+    /* Hide Google Translate top banner bar and tooltip popups for clean native UI */
+    .goog-te-banner-frame.skiptranslate, .goog-te-banner-frame, iframe.goog-te-banner-frame {
+      display: none !important;
+      visibility: hidden !important;
+      height: 0px !important;
+    }
+    #goog-gt-tt, .goog-te-balloon-frame, .goog-tooltip, .goog-tooltip:hover {
+      display: none !important;
+    }
+    .goog-text-highlight {
+      background: none !important;
+      box-shadow: none !important;
+    }
+    #google_translate_element {
+      display: none !important;
+    }
+
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #e2e8f0; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -456,6 +486,35 @@
           totalBids: 'Total Bids:',
           inProgress: 'In-Progress:',
           activeEval: 'Active Evaluation:',
+          centralProcurementDashboard: 'CENTRAL PROCUREMENT DASHBOARD',
+          selectBidTitle: 'Select Active Government Bid for Technical Evaluation',
+          selectBidDesc: 'Search bids by keywords, filter by procurement type or ministry, and open the 15-vendor evaluation roster with priority award allocation.',
+          searchPlaceholder: 'Search bids by Bid Number (e.g. GEM/2026/B/89420), Title, Ministry, or Category...',
+          clear: '✕ Clear',
+          bidTypeLabel: 'Bid Type:',
+          allBids: 'All Bids',
+          productBids: 'Product Bids',
+          serviceBids: 'Service Bids',
+          boqBids: 'BOQ Bids',
+          customBids: 'Global / Custom',
+          allMinistries: 'All Ministries',
+          allValues: 'All Estimated Values',
+          highValue: 'High Value (> ₹10 Cr)',
+          standardValue: 'Standard Value (< ₹10 Cr)',
+          reset: 'Reset',
+          showingText: 'Showing',
+          ofText: 'of',
+          activeGovBids: 'Active Government Bids',
+          sanctionedValue: 'Sanctioned Value',
+          vendorsIngested: 'Vendors Ingested',
+          biddersCount: '15 Bidders',
+          awarded: 'Awarded',
+          winnerLabel: '🏆 Winner:',
+          reviewFinalizedResults: 'Review Finalized Results →',
+          openEvaluationRoster: 'Open Evaluation Roster →',
+          noBidsTitle: 'No Bids Matched Your Search Filters',
+          noBidsDesc: 'Try adjusting your search keywords, bid type, or ministry filters.',
+          clearAllFilters: 'Clear All Filters',
         },
         hi: {
           govIndia: 'भारत सरकार',
@@ -524,9 +583,68 @@
           totalBids: 'कुल बोलियां:',
           inProgress: 'प्रगति में:',
           activeEval: 'सक्रिय मूल्यांकन:',
+          centralProcurementDashboard: 'केंद्रीय खरीद डैशबोर्ड',
+          selectBidTitle: 'तकनीकी मूल्यांकन के लिए सक्रिय सरकारी बोली चुनें',
+          selectBidDesc: 'कीवर्ड द्वारा बोलियां खोजें, खरीद प्रकार या मंत्रालय द्वारा फ़िल्टर करें, और प्राथमिकता पुरस्कार आवंटन के साथ 15-विक्रेता मूल्यांकन रोस्टर खोलें।',
+          searchPlaceholder: 'बोली संख्या (उदा. GEM/2026/B/89420), शीर्षक, मंत्रालय, या श्रेणी द्वारा बोलियां खोजें...',
+          clear: '✕ साफ़ करें',
+          bidTypeLabel: 'बोली प्रकार:',
+          allBids: 'सभी बोलियां',
+          productBids: 'उत्पाद बोलियां',
+          serviceBids: 'सेवा बोलियां',
+          boqBids: 'BOQ बोलियां',
+          customBids: 'वैश्विक / कस्टम',
+          allMinistries: 'सभी मंत्रालय',
+          allValues: 'सभी अनुमानित मूल्य',
+          highValue: 'उच्च मूल्य (> ₹10 करोड़)',
+          standardValue: 'मानक मूल्य (< ₹10 करोड़)',
+          reset: 'रीसेट',
+          showingText: 'दिखा रहा है',
+          ofText: 'का',
+          activeGovBids: 'सक्रिय सरकारी बोलियां',
+          sanctionedValue: 'स्वीकृत मूल्य',
+          vendorsIngested: 'शामिल विक्रेता',
+          biddersCount: '15 बोलीदाता',
+          awarded: 'पुरस्कृत',
+          winnerLabel: '🏆 विजेता:',
+          reviewFinalizedResults: 'अंतिम परिणाम देखें →',
+          openEvaluationRoster: 'मूल्यांकन रोस्टर खोलें →',
+          noBidsTitle: 'आपके खोज फ़िल्टर से कोई बोली मेल नहीं खाई',
+          noBidsDesc: 'अपने खोज कीवर्ड, बोली प्रकार, या मंत्रालय फ़िल्टर को समायोजित करने का प्रयास करें।',
+          clearAllFilters: 'सभी फ़िल्टर साफ़ करें',
         },
       };
       const t = T[language];
+
+      const applyLanguage = (lang) => {
+        setLanguage(lang);
+        setShowLangMenu(false);
+        setShowAppLangMenu(false);
+
+        try {
+          // Set translation cookie for Google Translate
+          const cookieVal = lang === 'hi' ? '/en/hi' : '/en/en';
+          document.cookie = 'googtrans=' + cookieVal + '; path=/;';
+          document.cookie = 'googtrans=' + cookieVal + '; domain=' + window.location.hostname + '; path=/;';
+
+          const combo = document.querySelector('.goog-te-combo');
+          if (combo) {
+            combo.value = lang;
+            combo.dispatchEvent(new Event('change'));
+          } else {
+            // If Google Translate is not yet initialized or need reload
+            setTimeout(() => {
+              const c2 = document.querySelector('.goog-te-combo');
+              if (c2) {
+                c2.value = lang;
+                c2.dispatchEvent(new Event('change'));
+              }
+            }, 300);
+          }
+        } catch (e) {
+          console.error('Translation error:', e);
+        }
+      };
 
 
       const handleLogin = (e) => {
@@ -1016,13 +1134,13 @@
                       {showLangMenu && (
                         <div className={`absolute top-7 right-0 z-50 rounded-lg shadow-lg border overflow-hidden text-xs font-semibold min-w-[110px] ${dk ? 'bg-[#111827] border-slate-700' : 'bg-white border-slate-200'}`}>
                           <button
-                            onClick={() => { setLanguage('en'); setShowLangMenu(false); }}
+                            onClick={() => applyLanguage('en')}
                             className={`w-full text-left px-3 py-2 flex items-center gap-2 transition ${language==='en' ? 'bg-[#8B1D2C] text-white' : (dk ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-50 text-slate-700')}`}
                           >
                             🇬🇧 English
                           </button>
                           <button
-                            onClick={() => { setLanguage('hi'); setShowLangMenu(false); }}
+                            onClick={() => applyLanguage('hi')}
                             className={`w-full text-left px-3 py-2 flex items-center gap-2 transition ${language==='hi' ? 'bg-[#8B1D2C] text-white' : (dk ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-50 text-slate-700')}`}
                           >
                             🇮🇳 हिन्दी
@@ -1341,14 +1459,14 @@
                       <div className={`absolute top-8 right-0 z-50 rounded-xl shadow-lg border overflow-hidden text-xs font-semibold min-w-[120px] ${dkApp ? 'bg-[#161616] border-[#333333]' : 'bg-[#FAF5EC] border-[#DDD0BC]'}`}>
                         <button
                           type="button"
-                          onClick={() => { setLanguage('en'); setShowAppLangMenu(false); }}
+                          onClick={() => applyLanguage('en')}
                           className={`w-full text-left px-3 py-2 flex items-center gap-2 transition ${language === 'en' ? 'bg-[#8B1D2C] text-white font-bold' : (dkApp ? 'hover:bg-zinc-800 text-zinc-200' : 'hover:bg-[#EDE4D3] text-stone-800')}`}
                         >
                           🇬🇧 English
                         </button>
                         <button
                           type="button"
-                          onClick={() => { setLanguage('hi'); setShowAppLangMenu(false); }}
+                          onClick={() => applyLanguage('hi')}
                           className={`w-full text-left px-3 py-2 flex items-center gap-2 transition ${language === 'hi' ? 'bg-[#8B1D2C] text-white font-bold' : (dkApp ? 'hover:bg-zinc-800 text-zinc-200' : 'hover:bg-[#EDE4D3] text-stone-800')}`}
                         >
                           🇮🇳 हिन्दी
@@ -1485,13 +1603,13 @@
               {/* Header Title Banner */}
               <div className="text-center space-y-2 max-w-2xl mx-auto">
                 <span className="text-[10px] font-black uppercase tracking-widest text-orange-800 bg-orange-100 border border-orange-200 px-3.5 py-1 rounded-full">
-                  CENTRAL PROCUREMENT DASHBOARD
+                  {t.centralProcurementDashboard}
                 </span>
                 <h2 className="text-2xl font-black text-slate-900">
-                  Select Active Government Bid for Technical Evaluation
+                  {t.selectBidTitle}
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Search bids by keywords, filter by procurement type or ministry, and open the 15-vendor evaluation roster with priority award allocation.
+                  {t.selectBidDesc}
                 </p>
               </div>
 
@@ -1505,7 +1623,7 @@
                   </span>
                   <input
                     type="text"
-                    placeholder="Search bids by Bid Number (e.g. GEM/2026/B/89420), Title, Ministry, or Category..."
+                    placeholder={t.searchPlaceholder}
                     value={tenderSearchQuery}
                     onChange={e => setTenderSearchQuery(e.target.value)}
                     className="w-full pl-11 pr-10 py-3 bg-orange-50/30 border border-slate-300 rounded-2xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition"
@@ -1515,7 +1633,7 @@
                       onClick={() => setTenderSearchQuery('')}
                       className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-700 text-xs font-bold"
                     >
-                      ✕ Clear
+                      {t.clear}
                     </button>
                   )}
                 </div>
@@ -1525,13 +1643,13 @@
                   
                   {/* Bid Type Filter Tabs */}
                   <div className="flex items-center space-x-1.5 flex-wrap">
-                    <span className="font-bold text-slate-500 mr-1 text-[11px] uppercase">Bid Type:</span>
+                    <span className="font-bold text-slate-500 mr-1 text-[11px] uppercase">{t.bidTypeLabel}</span>
                     {[
-                      { id: 'ALL', label: 'All Bids' },
-                      { id: 'PRODUCT_BID', label: 'Product Bids' },
-                      { id: 'SERVICE_BID', label: 'Service Bids' },
-                      { id: 'BOQ_BID', label: 'BOQ Bids' },
-                      { id: 'CUSTOM_BID', label: 'Global / Custom' }
+                      { id: 'ALL', label: t.allBids },
+                      { id: 'PRODUCT_BID', label: t.productBids },
+                      { id: 'SERVICE_BID', label: t.serviceBids },
+                      { id: 'BOQ_BID', label: t.boqBids },
+                      { id: 'CUSTOM_BID', label: t.customBids }
                     ].map(bt => (
                       <button
                         key={bt.id}
@@ -1554,7 +1672,7 @@
                       onChange={e => setTenderMinistryFilter(e.target.value)}
                       className="bg-slate-100 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-orange-500"
                     >
-                      <option value="ALL">All Ministries</option>
+                      <option value="ALL">{t.allMinistries}</option>
                       <option value="Ministry of Defence">Ministry of Defence</option>
                       <option value="Ministry of Health and Family Welfare">Ministry of Health</option>
                       <option value="Ministry of Power">Ministry of Power</option>
@@ -1565,9 +1683,9 @@
                       onChange={e => setTenderValueFilter(e.target.value)}
                       className="bg-slate-100 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-orange-500"
                     >
-                      <option value="ALL">All Estimated Values</option>
-                      <option value="HIGH">High Value (&gt; ₹10 Cr)</option>
-                      <option value="STANDARD">Standard Value (&lt; ₹10 Cr)</option>
+                      <option value="ALL">{t.allValues}</option>
+                      <option value="HIGH">{t.highValue}</option>
+                      <option value="STANDARD">{t.standardValue}</option>
                     </select>
 
                     {(tenderSearchQuery || tenderBidTypeFilter !== 'ALL' || tenderMinistryFilter !== 'ALL' || tenderValueFilter !== 'ALL') && (
@@ -1580,7 +1698,7 @@
                         }}
                         className="text-xs font-bold text-orange-600 hover:underline px-2"
                       >
-                        Reset
+                        {t.reset}
                       </button>
                     )}
                   </div>
@@ -1588,64 +1706,64 @@
                 </div>
 
                 <div className="text-[11px] text-slate-500 font-mono pt-1">
-                  Showing <strong className="text-orange-700 font-bold">{filteredTenders.length}</strong> of {tenders.length} Active Government Bids
+                  {t.showingText} <strong className="text-orange-700 font-bold">{filteredTenders.length}</strong> {t.ofText} {tenders.length} {t.activeGovBids}
                 </div>
 
               </div>
 
               {/* Tenders Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {filteredTenders.map((t) => (
+                {filteredTenders.map((tItem) => (
                   <div
-                    key={t.tender_id}
-                    onClick={() => handleSelectTender(t.tender_id)}
+                    key={tItem.tender_id}
+                    onClick={() => handleSelectTender(tItem.tender_id)}
                     className="bg-white rounded-3xl p-6 border-2 border-slate-200 hover:border-orange-500 cursor-pointer transition-all card-hover-lift shadow-sm flex flex-col justify-between space-y-5 group"
                   >
                     <div className="space-y-3">
                       <div className="flex justify-between items-start">
                         <span className="px-2.5 py-1 text-xs font-black bg-orange-100 text-orange-900 rounded-lg font-mono">
-                          {t.tender_id}
+                          {tItem.tender_id}
                         </span>
                         <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 rounded uppercase">
-                          {t.status.replace('_', ' ')}
+                          {tItem.status.replace('_', ' ')}
                         </span>
                       </div>
 
                       <h3 className="text-base font-extrabold text-slate-900 leading-snug group-hover:text-orange-600 transition">
-                        {t.title}
+                        {tItem.title}
                       </h3>
 
                       <p className="text-xs text-slate-500 font-medium">
-                        {t.ministry} • <strong className="text-slate-700">{t.category}</strong>
+                        {tItem.ministry} • <strong className="text-slate-700">{tItem.category}</strong>
                       </p>
                     </div>
 
                     <div className="space-y-4 pt-4 border-t border-slate-100">
                       <div className="flex justify-between items-center text-xs">
                         <div>
-                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Sanctioned Value</span>
-                          <span className="text-base font-black font-mono text-emerald-700">₹{t.estimated_value_cr.toFixed(2)} Cr</span>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase block">{t.sanctionedValue}</span>
+                          <span className="text-base font-black font-mono text-emerald-700">₹{tItem.estimated_value_cr.toFixed(2)} Cr</span>
                         </div>
                         <div className="text-right">
-                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Vendors Ingested</span>
-                          <span className="text-sm font-black font-mono text-orange-700">15 Bidders</span>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase block">{t.vendorsIngested}</span>
+                          <span className="text-sm font-black font-mono text-orange-700">{t.biddersCount}</span>
                         </div>
                       </div>
 
-                      {t.status === 'EVALUATION_COMPLETED' ? (
+                      {tItem.status === 'EVALUATION_COMPLETED' ? (
                         <div className="space-y-2">
                           <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-2 text-xs text-emerald-950 flex items-center justify-between">
                             <span className="font-bold flex items-center gap-1">
-                              <span>🏆 Winner:</span>
-                              <span className="truncate max-w-[140px]">{t.winner_company || 'L1 Confirmed'}</span>
+                              <span>{t.winnerLabel}</span>
+                              <span className="truncate max-w-[140px]">{tItem.winner_company || 'L1 Confirmed'}</span>
                             </span>
-                            <span className="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.5 rounded">Awarded</span>
+                            <span className="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.5 rounded">{t.awarded}</span>
                           </div>
                           <button
                             type="button"
                             className="w-full py-2 bg-emerald-600 group-hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow flex items-center justify-center space-x-1.5"
                           >
-                            <span>Review Finalized Results →</span>
+                            <span>{t.reviewFinalizedResults}</span>
                           </button>
                         </div>
                       ) : (
@@ -1653,7 +1771,7 @@
                           type="button"
                           className="w-full py-2.5 bg-orange-600 group-hover:bg-orange-700 text-white text-xs font-bold rounded-xl transition shadow flex items-center justify-center space-x-1.5"
                         >
-                          <span>Open Evaluation Roster →</span>
+                          <span>{t.openEvaluationRoster}</span>
                         </button>
                       )}
                     </div>
@@ -1664,8 +1782,8 @@
               {filteredTenders.length === 0 && (
                 <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center space-y-3">
                   <span className="text-4xl block">🔍</span>
-                  <h4 className="text-base font-extrabold text-slate-800">No Bids Matched Your Search Filters</h4>
-                  <p className="text-xs text-slate-500">Try adjusting your search keywords, bid type, or ministry filters.</p>
+                  <h4 className="text-base font-extrabold text-slate-800">{t.noBidsTitle}</h4>
+                  <p className="text-xs text-slate-500">{t.noBidsDesc}</p>
                   <button
                     onClick={() => {
                       setTenderSearchQuery('');
@@ -1675,7 +1793,7 @@
                     }}
                     className="px-4 py-2 bg-orange-600 text-white text-xs font-bold rounded-xl"
                   >
-                    Reset All Filters
+                    {t.clearAllFilters}
                   </button>
                 </div>
               )}
