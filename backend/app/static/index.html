@@ -1064,6 +1064,11 @@
         return list;
       }, [bidders, vendorSearchQuery, filterRiskProfile, filterPriorityStatus, filterMsmeOnly, filterTamperedOnly, filterExcludeConflicts, vendorSortBy]);
 
+      // Currently active tender object for Cockpit and sub-views
+      const currentTender = useMemo(() => {
+        return tenders.find(t => t.tender_id === selectedTenderId) || tenders[0] || null;
+      }, [tenders, selectedTenderId]);
+
       // Show login screen if officer is not authenticated
       if (!isLoggedIn) {
         // Dark mode derived class helpers — true black/charcoal palette, no blue
@@ -1538,7 +1543,7 @@
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => setCurrentView('SELECT_TENDER')}
-                  className={`px-4 py-2 rounded-xl font-bold transition flex items-center space-x-1.5 ${
+                  className={`px-4 py-2 rounded-xl font-bold transition flex items-center space-x-1.5 cursor-pointer ${
                     currentView === 'SELECT_TENDER'
                       ? (dkApp ? 'bg-[#222222] text-white border border-[#444444] shadow-sm' : 'bg-white text-slate-900 border border-stone-300 shadow-sm')
                       : (dkApp ? 'bg-[#141414] text-zinc-400 hover:bg-[#202020] hover:text-white' : 'bg-[#E3DACB] text-stone-700 hover:bg-white/80 hover:text-slate-900')
@@ -1549,7 +1554,7 @@
 
                 <button
                   onClick={() => setCurrentView('BID_RESULTS_STATUS')}
-                  className={`px-4 py-2 rounded-xl font-bold transition flex items-center space-x-1.5 ${
+                  className={`px-4 py-2 rounded-xl font-bold transition flex items-center space-x-1.5 cursor-pointer ${
                     currentView === 'BID_RESULTS_STATUS'
                       ? (dkApp ? 'bg-[#222222] text-white border border-[#444444] shadow-sm' : 'bg-white text-slate-900 border border-stone-300 shadow-sm')
                       : (dkApp ? 'bg-[#141414] text-zinc-400 hover:bg-[#202020] hover:text-white' : 'bg-[#E3DACB] text-stone-700 hover:bg-white/80 hover:text-slate-900')
@@ -1563,18 +1568,22 @@
                   )}
                 </button>
 
-                {currentView === 'EVALUATION_COCKPIT' && (
-                  <div className="flex items-center space-x-2">
-                    <span className={dkApp ? 'text-zinc-600 font-bold' : 'text-stone-400 font-bold'}>/</span>
-                    <button
-                      className={`px-4 py-2 rounded-xl font-bold transition flex items-center space-x-1.5 ${
-                        dkApp ? 'bg-[#222222] text-emerald-400 border border-emerald-600 shadow-sm' : 'bg-white text-emerald-800 border border-emerald-300 shadow-sm'
-                      }`}
-                    >
-                      <span>🔍 {t.activeEval} {selectedTenderId}</span>
-                    </button>
-                  </div>
-                )}
+                <button
+                  onClick={() => {
+                    if (bidders.length === 0 && selectedTenderId) {
+                      handleSelectTender(selectedTenderId);
+                    } else {
+                      setCurrentView('EVALUATION_COCKPIT');
+                    }
+                  }}
+                  className={`px-4 py-2 rounded-xl font-bold transition flex items-center space-x-1.5 cursor-pointer ${
+                    currentView === 'EVALUATION_COCKPIT'
+                      ? (dkApp ? 'bg-[#222222] text-emerald-400 border border-emerald-600 shadow-sm' : 'bg-white text-emerald-800 border border-emerald-300 shadow-sm')
+                      : (dkApp ? 'bg-[#141414] text-zinc-400 hover:bg-[#202020] hover:text-white' : 'bg-[#E3DACB] text-stone-700 hover:bg-white/80 hover:text-slate-900')
+                  }`}
+                >
+                  <span>🔍 {t.activeEval} {selectedTenderId}</span>
+                </button>
               </div>
 
               <div className={`flex items-center space-x-4 text-[11px] font-mono ${dkApp ? 'text-zinc-400' : 'text-stone-600'}`}>
@@ -2268,9 +2277,9 @@
                 </div>
 
                 <div className="flex items-center space-x-3 text-xs font-mono">
-                  <span className="text-slate-500">Value: <strong className="text-emerald-700">₹{currentTender?.estimated_value_cr.toFixed(2)} Cr</strong></span>
+                  <span className="text-slate-500">Value: <strong className="text-emerald-700">₹{currentTender?.estimated_value_cr != null ? currentTender.estimated_value_cr.toFixed(2) : '0.00'} Cr</strong></span>
                   <span className="text-slate-300">|</span>
-                  <span className="text-slate-500">Department: <strong className="text-slate-800">{currentTender?.department}</strong></span>
+                  <span className="text-slate-500">Department: <strong className="text-slate-800">{currentTender?.department || 'Government of India'}</strong></span>
                 </div>
               </div>
 
