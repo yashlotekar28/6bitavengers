@@ -1,0 +1,2755 @@
+{
+  "metadata": {
+    "dataset_name": "GeM Nirikshan AI - Public Procurement & Vendor Verification Dataset",
+    "version": "2.0.0",
+    "total_tenders": 3,
+    "total_bidders": 45,
+    "statutory_framework": "General Financial Rules (GFR 2017) & GeM Procurement Guidelines",
+    "features": [
+      "Multi-document OCR cross-verification",
+      "ELA digital tamper detection",
+      "Entity graph cartel links",
+      "CIBIL longitudinal trust score"
+    ]
+  },
+  "tenders": [
+    {
+      "tender_id": "GEM/2026/B/89420",
+      "title": "Procurement of Scalable Multi-Region Cloud Infrastructure & AI Defense Analytics Framework",
+      "category": "Cloud Infrastructure & Cybersecurity",
+      "ministry": "Ministry of Defence",
+      "department": "Indian Air Force (IAF - Cyber Command)",
+      "estimated_value_cr": 8.5,
+      "bid_type": "PRODUCT_BID",
+      "closing_date": "15 Mar 2026",
+      "status": "TECHNICAL_EVALUATION",
+      "description": "High-availability secure sovereign cloud compute clusters, zero-trust API gateways, and automated threat defense platform across 4 national datacenters."
+    },
+    {
+      "tender_id": "GEM/2026/B/77312",
+      "title": "Turnkey Medical Diagnostic & AI Radiography Imaging Framework for New AIIMS Institutes",
+      "category": "Healthcare & Advanced Medical Equipment",
+      "ministry": "Ministry of Health & Family Welfare",
+      "department": "Pradhan Mantri Swasthya Suraksha Yojana (PMSSY)",
+      "estimated_value_cr": 28.8,
+      "bid_type": "SERVICE_BID",
+      "closing_date": "22 Mar 2026",
+      "status": "TECHNICAL_EVALUATION",
+      "description": "Supply, installation, and 5-year AMC of High-Field 3T MRI systems, 128-slice CT Scanners, and AI-assisted pulmonary diagnostic suites across 6 AIIMS facilities."
+    },
+    {
+      "tender_id": "GEM/2026/B/65109",
+      "title": "Procurement of Electric High-Capacity Transport Fleet & Fast-Charging Network (FAME-II)",
+      "category": "E-Mobility & Clean Energy Infrastructure",
+      "ministry": "Ministry of Heavy Industries",
+      "department": "National Clean Air Programme (NCAP)",
+      "estimated_value_cr": 54.0,
+      "bid_type": "CUSTOM_BID",
+      "closing_date": "30 Mar 2026",
+      "status": "TECHNICAL_EVALUATION",
+      "description": "Supply of 120 heavy-duty low-floor electric transit buses and deployment of 30 CCS-2 240kW ultra-fast automated charging depots across Tier-1 municipal corridors."
+    }
+  ],
+  "bidders": [
+    {
+      "bidder_id": "BID-2026-0891",
+      "tender_id": "GEM/2026/B/89420",
+      "company_name": "Apex InfraTech Private Limited",
+      "legal_structure": "Private Limited",
+      "registered_state": "Maharashtra",
+      "registered_address": "Plot 45, Andheri East, Mumbai, Maharashtra",
+      "bank_branch_code": "SBIN0004921",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "08412910",
+          "name": "Rajiv Mehta",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "08412911",
+          "name": "Associate Director (Rajiv)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "27AABCA1234F1Z5",
+        "pan": "AABCA1234F",
+        "cin": "U72200MA2018PTC084129",
+        "udyam_registration_number": "UDYAM-MH-01-0012345",
+        "epfo_code": "MA/BAN/0008412/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 45000000.0,
+        "net_worth_inr": 12600000.000000002,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Apex_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Apex_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Apex_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Apex_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0442",
+      "tender_id": "GEM/2026/B/89420",
+      "company_name": "Bharat Heavy Logistics Solutions",
+      "legal_structure": "LLP",
+      "registered_state": "Gujarat",
+      "registered_address": "B-402, SG Highway, Ahmedabad, Gujarat",
+      "bank_branch_code": "HDFC0001842",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "07198234",
+          "name": "Suresh Patel",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "07198235",
+          "name": "Associate Director (Suresh)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "24AAACB9876Q1Z3",
+        "pan": "AAACB9876Q",
+        "cin": "U72200GU2018PTC071982",
+        "udyam_registration_number": "UDYAM-GJ-04-0098412",
+        "epfo_code": "GU/BAN/0007198/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 45000000.0,
+        "net_worth_inr": 12600000.000000002,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "DOCUMENT_MISMATCH_SUSPICIOUS",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Bharat_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Bharat_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Bharat_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Bharat_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0109",
+      "tender_id": "GEM/2026/B/89420",
+      "company_name": "Vanguard Defense & Engineering Works",
+      "legal_structure": "Private Limited",
+      "registered_state": "Delhi",
+      "registered_address": "Plot 12, Phase-II, Okhla Ind Area, Delhi, Delhi",
+      "bank_branch_code": "SBIN0004921",
+      "conflict_links_count": 3,
+      "directors": [
+        {
+          "din": "01928374",
+          "name": "Vikram Malhotra",
+          "designation": "Managing Director",
+          "is_flagged_debarred": true
+        },
+        {
+          "din": "01928375",
+          "name": "Associate Director (Vikram)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "07AAACV7788P1Z8",
+        "pan": "AAACV7788P",
+        "cin": "U72200DE2018PTC019283",
+        "udyam_registration_number": null,
+        "epfo_code": "DE/BAN/0001928/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 85000000.0,
+        "net_worth_inr": 23800000.000000004,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "HARD_FAIL_DEBARRED_VENDOR",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Vanguard_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Vanguard_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Vanguard_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Vanguard_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0112",
+      "tender_id": "GEM/2026/B/89420",
+      "company_name": "Param Quantum Computing Systems Ltd",
+      "legal_structure": "Public Limited",
+      "registered_state": "Karnataka",
+      "registered_address": "Electronic City Phase 1, Bangalore, Karnataka",
+      "bank_branch_code": "ICIC0001092",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "02918234",
+          "name": "Dr. Anand Rao",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "02918235",
+          "name": "Associate Director (Dr.)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "29AAACP5544R1Z1",
+        "pan": "AAACP5544R",
+        "cin": "U72200KA2018PTC029182",
+        "udyam_registration_number": null,
+        "epfo_code": "KA/BAN/0002918/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 120000000.0,
+        "net_worth_inr": 33600000.0,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Param_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Param_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Param_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Param_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0115",
+      "tender_id": "GEM/2026/B/89420",
+      "company_name": "Garuda AeroTech & Cyber Solutions",
+      "legal_structure": "Private Limited",
+      "registered_state": "Telangana",
+      "registered_address": "HITEC City, Madhapur, Hyderabad, Telangana",
+      "bank_branch_code": "KKBK0000512",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "06129845",
+          "name": "Venkat Reddy",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "06129846",
+          "name": "Associate Director (Venkat)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "36AAACG4411K1Z9",
+        "pan": "AAACG4411K",
+        "cin": "U72200TE2018PTC061298",
+        "udyam_registration_number": "UDYAM-TS-08-0033182",
+        "epfo_code": "TE/BAN/0006129/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 38000000.0,
+        "net_worth_inr": 10640000.000000002,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Garuda_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Garuda_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Garuda_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Garuda_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0118",
+      "tender_id": "GEM/2026/B/89420",
+      "company_name": "Trishul Defense Informatics LLP",
+      "legal_structure": "LLP",
+      "registered_state": "Uttar Pradesh",
+      "registered_address": "Sector 62, Noida, Gautam Buddha Nagar, Uttar Pradesh",
+      "bank_branch_code": "PUNB0029100",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "05829104",
+          "name": "Manoj Saxena",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "05829105",
+          "name": "Associate Director (Manoj)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "09AABCT8812N1Z4",
+        "pan": "AABCT8812N",
+        "cin": "U72200UT2018PTC058291",
+        "udyam_registration_number": "UDYAM-UP-12-0089123",
+        "epfo_code": "UT/BAN/0005829/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 28000000.0,
+        "net_worth_inr": 7840000.000000001,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "DOCUMENT_MISMATCH_SUSPICIOUS",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Trishul_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Trishul_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Trishul_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Trishul_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0121",
+      "tender_id": "GEM/2026/B/89420",
+      "company_name": "Vayu Networks & Server Grid Pvt Ltd",
+      "legal_structure": "Private Limited",
+      "registered_state": "Tamil Nadu",
+      "registered_address": "Tidel Park, OMR, Chennai, Tamil Nadu",
+      "bank_branch_code": "BARB0OMRCHE",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "04719283",
+          "name": "K. Swaminathan",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "04719284",
+          "name": "Associate Director (K.)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "33AAACV3399J1Z7",
+        "pan": "AAACV3399J",
+        "cin": "U72200TA2018PTC047192",
+        "udyam_registration_number": null,
+        "epfo_code": "TA/BAN/0004719/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 62000000.0,
+        "net_worth_inr": 17360000.0,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Vayu_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Vayu_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Vayu_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Vayu_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0124",
+      "tender_id": "GEM/2026/B/89420",
+      "company_name": "Shakti Secure Datacenters Corp",
+      "legal_structure": "Private Limited",
+      "registered_state": "Maharashtra",
+      "registered_address": "MIDC Hinjewadi, Pune, Maharashtra",
+      "bank_branch_code": "SBIN0008812",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "03192847",
+          "name": "Prashant Kulkarni",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "03192848",
+          "name": "Associate Director (Prashant)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "27AABCS7744M1Z2",
+        "pan": "AABCS7744M",
+        "cin": "U72200MA2018PTC031928",
+        "udyam_registration_number": "UDYAM-MH-14-0091823",
+        "epfo_code": "MA/BAN/0003192/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 51000000.0,
+        "net_worth_inr": 14280000.000000002,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "DOCUMENT_MISMATCH_SUSPICIOUS",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Shakti_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Shakti_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Shakti_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Shakti_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0127",
+      "tender_id": "GEM/2026/B/89420",
+      "company_name": "Astra Cloud & AI Innovations Pvt Ltd",
+      "legal_structure": "Private Limited",
+      "registered_state": "Delhi",
+      "registered_address": "Barakhamba Road, Connaught Place, New Delhi, Delhi",
+      "bank_branch_code": "HDFC0000120",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "01829471",
+          "name": "Deepak Varma",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "01829472",
+          "name": "Associate Director (Deepak)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "07AAACA1122L1Z6",
+        "pan": "AAACA1122L",
+        "cin": "U72200DE2018PTC018294",
+        "udyam_registration_number": "UDYAM-DL-01-0077192",
+        "epfo_code": "DE/BAN/0001829/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 94000000.0,
+        "net_worth_inr": 26320000.000000004,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Astra_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Astra_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Astra_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Astra_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0130",
+      "tender_id": "GEM/2026/B/89420",
+      "company_name": "Raksha Cyber Labs Private Limited",
+      "legal_structure": "Private Limited",
+      "registered_state": "Delhi",
+      "registered_address": "Plot 14, Phase-II, Okhla Ind Area, Delhi, Delhi",
+      "bank_branch_code": "SBIN0004921",
+      "conflict_links_count": 2,
+      "directors": [
+        {
+          "din": "08192833",
+          "name": "Rohan Malhotra",
+          "designation": "Managing Director",
+          "is_flagged_debarred": true
+        },
+        {
+          "din": "08192834",
+          "name": "Associate Director (Rohan)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "07AAACR9988C1Z0",
+        "pan": "AAACR9988C",
+        "cin": "U72200DE2018PTC081928",
+        "udyam_registration_number": null,
+        "epfo_code": "DE/BAN/0008192/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 42000000.0,
+        "net_worth_inr": 11760000.000000002,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "HARD_FAIL_DEBARRED_VENDOR",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Raksha_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Raksha_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Raksha_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Raksha_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0133",
+      "tender_id": "GEM/2026/B/89420",
+      "company_name": "Bharat Mission Cloud Services LLP",
+      "legal_structure": "LLP",
+      "registered_state": "Rajasthan",
+      "registered_address": "Sitapura Industrial Area, Jaipur, Rajasthan",
+      "bank_branch_code": "ICIC0002819",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "05192837",
+          "name": "Gaurav Sharma",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "05192838",
+          "name": "Associate Director (Gaurav)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "08AABCB2233P1Z5",
+        "pan": "AABCB2233P",
+        "cin": "U72200RA2018PTC051928",
+        "udyam_registration_number": "UDYAM-RJ-06-0022819",
+        "epfo_code": "RA/BAN/0005192/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 24000000.0,
+        "net_worth_inr": 6720000.000000001,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Bharat_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Bharat_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Bharat_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Bharat_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0136",
+      "tender_id": "GEM/2026/B/89420",
+      "company_name": "Indus AI Systems & Hardware Pvt Ltd",
+      "legal_structure": "Private Limited",
+      "registered_state": "Haryana",
+      "registered_address": "Cyber Hub, DLF Phase 2, Gurugram, Haryana",
+      "bank_branch_code": "UTIB0000812",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "07482910",
+          "name": "Sunil Grover",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "07482911",
+          "name": "Associate Director (Sunil)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "06AAACI6655Q1Z8",
+        "pan": "AAACI6655Q",
+        "cin": "U72200HA2018PTC074829",
+        "udyam_registration_number": "UDYAM-HR-04-0055192",
+        "epfo_code": "HA/BAN/0007482/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 78000000.0,
+        "net_worth_inr": 21840000.000000004,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "DOCUMENT_MISMATCH_SUSPICIOUS",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Indus_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Indus_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Indus_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Indus_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0139",
+      "tender_id": "GEM/2026/B/89420",
+      "company_name": "Surya Defense Telematics",
+      "legal_structure": "Partnership",
+      "registered_state": "Madhya Pradesh",
+      "registered_address": "Pithampur Industrial Area, Indore, Madhya Pradesh",
+      "bank_branch_code": "BKID0004491",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "04192837",
+          "name": "Harish Chawla",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "04192838",
+          "name": "Associate Director (Harish)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "23AAAFS9900H1Z3",
+        "pan": "AAAFS9900H",
+        "cin": "U72200MA2018PTC041928",
+        "udyam_registration_number": null,
+        "epfo_code": "MA/BAN/0004192/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 31000000.0,
+        "net_worth_inr": 8680000.0,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Surya_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Surya_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Surya_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Surya_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0142",
+      "tender_id": "GEM/2026/B/89420",
+      "company_name": "Pragati IT Infrastructure Solutions",
+      "legal_structure": "Private Limited",
+      "registered_state": "West Bengal",
+      "registered_address": "Salt Lake Sector V, Kolkata, West Bengal",
+      "bank_branch_code": "UBIN0532819",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "02198274",
+          "name": "Subrata Sen",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "02198275",
+          "name": "Associate Director (Subrata)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "19AAACP4433D1Z1",
+        "pan": "AAACP4433D",
+        "cin": "U72200WE2018PTC021982",
+        "udyam_registration_number": null,
+        "epfo_code": "WE/BAN/0002198/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 58000000.0,
+        "net_worth_inr": 16240000.000000002,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Pragati_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Pragati_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Pragati_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Pragati_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0145",
+      "tender_id": "GEM/2026/B/89420",
+      "company_name": "Kestrel Tactical Embedded Systems",
+      "legal_structure": "Private Limited",
+      "registered_state": "Punjab",
+      "registered_address": "Industrial Focal Point, Mohali, Punjab",
+      "bank_branch_code": "PUNB0049102",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "06829103",
+          "name": "Gurpreet Singh",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "06829104",
+          "name": "Associate Director (Gurpreet)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "03AAACK1199F1Z9",
+        "pan": "AAACK1199F",
+        "cin": "U72200PU2018PTC068291",
+        "udyam_registration_number": "UDYAM-PB-11-0033819",
+        "epfo_code": "PU/BAN/0006829/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 22000000.0,
+        "net_worth_inr": 6160000.000000001,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "DOCUMENT_MISMATCH_SUSPICIOUS",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Kestrel_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Kestrel_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Kestrel_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Kestrel_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0201",
+      "tender_id": "GEM/2026/B/77312",
+      "company_name": "Sanjeevani MedTech Diagnostic Devices",
+      "legal_structure": "Private Limited",
+      "registered_state": "Maharashtra",
+      "registered_address": "Chakala, Andheri East, Mumbai, Maharashtra",
+      "bank_branch_code": "SBIN0001234",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "01129384",
+          "name": "Dr. Arvind Joshi",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "01129385",
+          "name": "Associate Director (Dr.)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "27AAACS1122A1Z4",
+        "pan": "AAACS1122A",
+        "cin": "U72200MA2018PTC011293",
+        "udyam_registration_number": "UDYAM-MH-01-0088123",
+        "epfo_code": "MA/BAN/0001129/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 185000000.0,
+        "net_worth_inr": 51800000.00000001,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Sanjeevani_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Sanjeevani_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Sanjeevani_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Sanjeevani_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0204",
+      "tender_id": "GEM/2026/B/77312",
+      "company_name": "Dhanvantari Bio-Imaging Solutions Ltd",
+      "legal_structure": "Public Limited",
+      "registered_state": "Karnataka",
+      "registered_address": "Whitefield, Bangalore, Karnataka",
+      "bank_branch_code": "HDFC0004812",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "02819283",
+          "name": "Ramesh Narayan",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "02819284",
+          "name": "Associate Director (Ramesh)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "29AAACD9988B1Z7",
+        "pan": "AAACD9988B",
+        "cin": "U72200KA2018PTC028192",
+        "udyam_registration_number": null,
+        "epfo_code": "KA/BAN/0002819/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 340000000.0,
+        "net_worth_inr": 95200000.00000001,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Dhanvantari_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Dhanvantari_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Dhanvantari_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Dhanvantari_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0207",
+      "tender_id": "GEM/2026/B/77312",
+      "company_name": "Medicare Allied Surgical Imports LLP",
+      "legal_structure": "LLP",
+      "registered_state": "Delhi",
+      "registered_address": "Netaji Subhash Place, Pitampura, New Delhi, Delhi",
+      "bank_branch_code": "ICIC0000912",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "03918274",
+          "name": "Ashok Singhal",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "03918275",
+          "name": "Associate Director (Ashok)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "07AABCM7766C1Z1",
+        "pan": "AABCM7766C",
+        "cin": "U72200DE2018PTC039182",
+        "udyam_registration_number": "UDYAM-DL-03-0044812",
+        "epfo_code": "DE/BAN/0003918/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 65000000.0,
+        "net_worth_inr": 18200000.0,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "DOCUMENT_MISMATCH_SUSPICIOUS",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Medicare_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Medicare_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Medicare_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Medicare_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0210",
+      "tender_id": "GEM/2026/B/77312",
+      "company_name": "Arogya Diagnostic Systems Pvt Ltd",
+      "legal_structure": "Private Limited",
+      "registered_state": "Tamil Nadu",
+      "registered_address": "Guindy Industrial Estate, Chennai, Tamil Nadu",
+      "bank_branch_code": "BARB0GUINDY",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "04819283",
+          "name": "S. Chandrasekhar",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "04819284",
+          "name": "Associate Director (S.)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "33AAACA4433D1Z9",
+        "pan": "AAACA4433D",
+        "cin": "U72200TA2018PTC048192",
+        "udyam_registration_number": "UDYAM-TN-02-0055182",
+        "epfo_code": "TA/BAN/0004819/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 92000000.0,
+        "net_worth_inr": 25760000.000000004,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Arogya_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Arogya_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Arogya_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Arogya_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0213",
+      "tender_id": "GEM/2026/B/77312",
+      "company_name": "Lifeline Healthcare Robotics",
+      "legal_structure": "Private Limited",
+      "registered_state": "Telangana",
+      "registered_address": "Gachibowli, Hyderabad, Telangana",
+      "bank_branch_code": "KKBK0001928",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "05192834",
+          "name": "Naveen Prasad",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "05192835",
+          "name": "Associate Director (Naveen)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "36AAACL8899E1Z2",
+        "pan": "AAACL8899E",
+        "cin": "U72200TE2018PTC051928",
+        "udyam_registration_number": null,
+        "epfo_code": "TE/BAN/0005192/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 145000000.0,
+        "net_worth_inr": 40600000.00000001,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Lifeline_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Lifeline_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Lifeline_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Lifeline_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0216",
+      "tender_id": "GEM/2026/B/77312",
+      "company_name": "Medico Global Supply Chain Pvt Ltd",
+      "legal_structure": "Private Limited",
+      "registered_state": "Delhi",
+      "registered_address": "Patparganj Industrial Area, Delhi, Delhi",
+      "bank_branch_code": "SBIN0008819",
+      "conflict_links_count": 2,
+      "directors": [
+        {
+          "din": "06192837",
+          "name": "Rajender Aggarwal",
+          "designation": "Managing Director",
+          "is_flagged_debarred": true
+        },
+        {
+          "din": "06192838",
+          "name": "Associate Director (Rajender)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "07AAACM3322F1Z8",
+        "pan": "AAACM3322F",
+        "cin": "U72200DE2018PTC061928",
+        "udyam_registration_number": null,
+        "epfo_code": "DE/BAN/0006192/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 48000000.0,
+        "net_worth_inr": 13440000.000000002,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "HARD_FAIL_DEBARRED_VENDOR",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Medico_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Medico_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Medico_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Medico_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0219",
+      "tender_id": "GEM/2026/B/77312",
+      "company_name": "AyurVeda AI Diagnostic Equipments",
+      "legal_structure": "Private Limited",
+      "registered_state": "Kerala",
+      "registered_address": "Infopark, Kakkanad, Kochi, Kerala",
+      "bank_branch_code": "FDRL0001829",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "07182934",
+          "name": "Thomas Varghese",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "07182935",
+          "name": "Associate Director (Thomas)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "32AAACA7788G1Z5",
+        "pan": "AAACA7788G",
+        "cin": "U72200KE2018PTC071829",
+        "udyam_registration_number": "UDYAM-KL-07-0099182",
+        "epfo_code": "KE/BAN/0007182/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 88000000.0,
+        "net_worth_inr": 24640000.000000004,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "AyurVeda_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "AyurVeda_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "AyurVeda_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "AyurVeda_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0222",
+      "tender_id": "GEM/2026/B/77312",
+      "company_name": "National MedScan & X-Ray Systems",
+      "legal_structure": "Private Limited",
+      "registered_state": "Gujarat",
+      "registered_address": "Makarpura GIDC, Vadodara, Gujarat",
+      "bank_branch_code": "UBIN0544192",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "08192834",
+          "name": "Bhavesh Dave",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "08192835",
+          "name": "Associate Director (Bhavesh)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "24AAACN2233H1Z3",
+        "pan": "AAACN2233H",
+        "cin": "U72200GU2018PTC081928",
+        "udyam_registration_number": "UDYAM-GJ-06-0033819",
+        "epfo_code": "GU/BAN/0008192/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 54000000.0,
+        "net_worth_inr": 15120000.000000002,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "DOCUMENT_MISMATCH_SUSPICIOUS",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "National_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "National_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "National_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "National_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0225",
+      "tender_id": "GEM/2026/B/77312",
+      "company_name": "Pulse Biomedical Technologies Pvt Ltd",
+      "legal_structure": "Private Limited",
+      "registered_state": "Uttar Pradesh",
+      "registered_address": "Sector 59, Noida, Uttar Pradesh",
+      "bank_branch_code": "PUNB0019283",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "09182734",
+          "name": "Vipin Mathur",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "09182735",
+          "name": "Associate Director (Vipin)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "09AAACP6655I1Z0",
+        "pan": "AAACP6655I",
+        "cin": "U72200UT2018PTC091827",
+        "udyam_registration_number": null,
+        "epfo_code": "UT/BAN/0009182/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 72000000.0,
+        "net_worth_inr": 20160000.000000004,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Pulse_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Pulse_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Pulse_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Pulse_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0228",
+      "tender_id": "GEM/2026/B/77312",
+      "company_name": "HealthCare Informatics India LLP",
+      "legal_structure": "LLP",
+      "registered_state": "Maharashtra",
+      "registered_address": "Kalyani Nagar, Pune, Maharashtra",
+      "bank_branch_code": "HDFC0001092",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "01928381",
+          "name": "Anand Deshmukh",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "01928382",
+          "name": "Associate Director (Anand)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "27AABCH4433J1Z8",
+        "pan": "AABCH4433J",
+        "cin": "U72200MA2018PTC019283",
+        "udyam_registration_number": "UDYAM-MH-14-0066182",
+        "epfo_code": "MA/BAN/0001928/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 61000000.0,
+        "net_worth_inr": 17080000.0,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "HealthCare_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "HealthCare_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "HealthCare_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "HealthCare_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0231",
+      "tender_id": "GEM/2026/B/77312",
+      "company_name": "CureTech Surgical & Radiography",
+      "legal_structure": "Private Limited",
+      "registered_state": "Haryana",
+      "registered_address": "Udyog Vihar, Gurugram, Haryana",
+      "bank_branch_code": "ICIC0001829",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "02819273",
+          "name": "Pankaj Sethi",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "02819274",
+          "name": "Associate Director (Pankaj)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "06AAACC8877K1Z4",
+        "pan": "AAACC8877K",
+        "cin": "U72200HA2018PTC028192",
+        "udyam_registration_number": null,
+        "epfo_code": "HA/BAN/0002819/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 110000000.0,
+        "net_worth_inr": 30800000.000000004,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "DOCUMENT_MISMATCH_SUSPICIOUS",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "CureTech_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "CureTech_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "CureTech_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "CureTech_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0234",
+      "tender_id": "GEM/2026/B/77312",
+      "company_name": "BioShield Labs & Diagnostics",
+      "legal_structure": "Private Limited",
+      "registered_state": "Delhi",
+      "registered_address": "Okhla Industrial Area Phase-1, Delhi, Delhi",
+      "bank_branch_code": "SBIN0004921",
+      "conflict_links_count": 2,
+      "directors": [
+        {
+          "din": "03719283",
+          "name": "Sanjay Mittal",
+          "designation": "Managing Director",
+          "is_flagged_debarred": true
+        },
+        {
+          "din": "03719284",
+          "name": "Associate Director (Sanjay)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "07AAACB5544L1Z2",
+        "pan": "AAACB5544L",
+        "cin": "U72200DE2018PTC037192",
+        "udyam_registration_number": null,
+        "epfo_code": "DE/BAN/0003719/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 39000000.0,
+        "net_worth_inr": 10920000.000000002,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "HARD_FAIL_DEBARRED_VENDOR",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "BioShield_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "BioShield_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "BioShield_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "BioShield_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0237",
+      "tender_id": "GEM/2026/B/77312",
+      "company_name": "Zenith Medical Instrumentation Ltd",
+      "legal_structure": "Public Limited",
+      "registered_state": "Karnataka",
+      "registered_address": "Peenya Industrial Area, Bangalore, Karnataka",
+      "bank_branch_code": "KKBK0008819",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "04819201",
+          "name": "K. R. Murthy",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "04819202",
+          "name": "Associate Director (K.)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "29AAACZ1199M1Z9",
+        "pan": "AAACZ1199M",
+        "cin": "U72200KA2018PTC048192",
+        "udyam_registration_number": null,
+        "epfo_code": "KA/BAN/0004819/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 290000000.0,
+        "net_worth_inr": 81200000.00000001,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Zenith_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Zenith_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Zenith_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Zenith_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0240",
+      "tender_id": "GEM/2026/B/77312",
+      "company_name": "MediEquip Supercomputing Pvt Ltd",
+      "legal_structure": "Private Limited",
+      "registered_state": "Andhra Pradesh",
+      "registered_address": "APIIC IT Park, Visakhapatnam, Andhra Pradesh",
+      "bank_branch_code": "ANDB0001928",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "05918273",
+          "name": "P. Srinivas",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "05918274",
+          "name": "Associate Director (P.)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "37AAACM7766N1Z7",
+        "pan": "AAACM7766N",
+        "cin": "U72200AN2018PTC059182",
+        "udyam_registration_number": "UDYAM-AP-03-0055182",
+        "epfo_code": "AN/BAN/0005918/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 53000000.0,
+        "net_worth_inr": 14840000.000000002,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "MediEquip_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "MediEquip_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "MediEquip_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "MediEquip_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0243",
+      "tender_id": "GEM/2026/B/77312",
+      "company_name": "Om HealthTech & Imaging Grid",
+      "legal_structure": "Partnership",
+      "registered_state": "Rajasthan",
+      "registered_address": "VKIA, Jaipur, Rajasthan",
+      "bank_branch_code": "BKID0001829",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "06819283",
+          "name": "Kailash Agarwal",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "06819284",
+          "name": "Associate Director (Kailash)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "08AAAFO3322P1Z3",
+        "pan": "AAAFO3322P",
+        "cin": "U72200RA2018PTC068192",
+        "udyam_registration_number": "UDYAM-RJ-06-0044192",
+        "epfo_code": "RA/BAN/0006819/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 41000000.0,
+        "net_worth_inr": 11480000.000000002,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "DOCUMENT_MISMATCH_SUSPICIOUS",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Om_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Om_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Om_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Om_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0301",
+      "tender_id": "GEM/2026/B/65109",
+      "company_name": "Vidyut Motors & EV Fleet Private Limited",
+      "legal_structure": "Private Limited",
+      "registered_state": "Maharashtra",
+      "registered_address": "Chakan Industrial Area, Pune, Maharashtra",
+      "bank_branch_code": "SBIN0004921",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "01192834",
+          "name": "Ketan Shah",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "01192835",
+          "name": "Associate Director (Ketan)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "27AAACV1122Q1Z6",
+        "pan": "AAACV1122Q",
+        "cin": "U72200MA2018PTC011928",
+        "udyam_registration_number": "UDYAM-MH-14-0011928",
+        "epfo_code": "MA/BAN/0001192/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 480000000.0,
+        "net_worth_inr": 134400000.0,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Vidyut_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Vidyut_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Vidyut_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Vidyut_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0304",
+      "tender_id": "GEM/2026/B/65109",
+      "company_name": "Gati Green Mobility Innovations Ltd",
+      "legal_structure": "Public Limited",
+      "registered_state": "Tamil Nadu",
+      "registered_address": "Sriperumbudur, Chennai, Tamil Nadu",
+      "bank_branch_code": "HDFC0001928",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "02918234",
+          "name": "M. Balakrishnan",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "02918235",
+          "name": "Associate Director (M.)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "33AAACG9988R1Z2",
+        "pan": "AAACG9988R",
+        "cin": "U72200TA2018PTC029182",
+        "udyam_registration_number": null,
+        "epfo_code": "TA/BAN/0002918/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 620000000.0,
+        "net_worth_inr": 173600000.00000003,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Gati_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Gati_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Gati_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Gati_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0307",
+      "tender_id": "GEM/2026/B/65109",
+      "company_name": "Urja High-Capacity EV Solutions LLP",
+      "legal_structure": "LLP",
+      "registered_state": "Gujarat",
+      "registered_address": "Sanand GIDC, Ahmedabad, Gujarat",
+      "bank_branch_code": "ICIC0004819",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "03819284",
+          "name": "Nilesh Zaveri",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "03819285",
+          "name": "Associate Director (Nilesh)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "24AABCU7766S1Z9",
+        "pan": "AABCU7766S",
+        "cin": "U72200GU2018PTC038192",
+        "udyam_registration_number": "UDYAM-GJ-04-0088192",
+        "epfo_code": "GU/BAN/0003819/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 95000000.0,
+        "net_worth_inr": 26600000.000000004,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "DOCUMENT_MISMATCH_SUSPICIOUS",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Urja_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Urja_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Urja_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Urja_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0310",
+      "tender_id": "GEM/2026/B/65109",
+      "company_name": "E-Shakti Battery & Charger Systems",
+      "legal_structure": "Private Limited",
+      "registered_state": "Karnataka",
+      "registered_address": "Hosur Road, Electronic City, Bangalore, Karnataka",
+      "bank_branch_code": "BARB0ELEBAN",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "04719283",
+          "name": "Raghavendra Hegde",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "04719284",
+          "name": "Associate Director (Raghavendra)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "29AAACE4433T1Z5",
+        "pan": "AAACE4433T",
+        "cin": "U72200KA2018PTC047192",
+        "udyam_registration_number": "UDYAM-KR-03-0066182",
+        "epfo_code": "KA/BAN/0004719/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 210000000.0,
+        "net_worth_inr": 58800000.00000001,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "E-Shakti_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "E-Shakti_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "E-Shakti_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "E-Shakti_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0313",
+      "tender_id": "GEM/2026/B/65109",
+      "company_name": "Prakriti Clean Transport Infrastructure",
+      "legal_structure": "Private Limited",
+      "registered_state": "Haryana",
+      "registered_address": "Manesar Industrial Township, Gurugram, Haryana",
+      "bank_branch_code": "KKBK0001829",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "05819283",
+          "name": "Abhay Singhania",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "05819284",
+          "name": "Associate Director (Abhay)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "06AAACP8899U1Z1",
+        "pan": "AAACP8899U",
+        "cin": "U72200HA2018PTC058192",
+        "udyam_registration_number": null,
+        "epfo_code": "HA/BAN/0005819/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 160000000.0,
+        "net_worth_inr": 44800000.00000001,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Prakriti_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Prakriti_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Prakriti_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Prakriti_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0316",
+      "tender_id": "GEM/2026/B/65109",
+      "company_name": "AutoTech Fleet Assemblies Pvt Ltd",
+      "legal_structure": "Private Limited",
+      "registered_state": "Delhi",
+      "registered_address": "Badli Industrial Estate, Delhi, Delhi",
+      "bank_branch_code": "SBIN0008812",
+      "conflict_links_count": 2,
+      "directors": [
+        {
+          "din": "06918273",
+          "name": "Devendra Juneja",
+          "designation": "Managing Director",
+          "is_flagged_debarred": true
+        },
+        {
+          "din": "06918274",
+          "name": "Associate Director (Devendra)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "07AAACA3322V1Z7",
+        "pan": "AAACA3322V",
+        "cin": "U72200DE2018PTC069182",
+        "udyam_registration_number": null,
+        "epfo_code": "DE/BAN/0006918/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 78000000.0,
+        "net_worth_inr": 21840000.000000004,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "HARD_FAIL_DEBARRED_VENDOR",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "AutoTech_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "AutoTech_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "AutoTech_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "AutoTech_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0319",
+      "tender_id": "GEM/2026/B/65109",
+      "company_name": "Vahan E-Mobility Technologies Pvt Ltd",
+      "legal_structure": "Private Limited",
+      "registered_state": "Telangana",
+      "registered_address": "Pashamylaram Industrial Area, Hyderabad, Telangana",
+      "bank_branch_code": "FDRL0004491",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "07819283",
+          "name": "Sudhakar Rao",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "07819284",
+          "name": "Associate Director (Sudhakar)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "36AAACV7788W1Z4",
+        "pan": "AAACV7788W",
+        "cin": "U72200TE2018PTC078192",
+        "udyam_registration_number": "UDYAM-TS-08-0055192",
+        "epfo_code": "TE/BAN/0007819/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 290000000.0,
+        "net_worth_inr": 81200000.00000001,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Vahan_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Vahan_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Vahan_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Vahan_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0322",
+      "tender_id": "GEM/2026/B/65109",
+      "company_name": "ChargePoint Bharat Superchargers Ltd",
+      "legal_structure": "Public Limited",
+      "registered_state": "Maharashtra",
+      "registered_address": "Thane Belapur Road, Navi Mumbai, Maharashtra",
+      "bank_branch_code": "UBIN0518293",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "08918274",
+          "name": "Sanjay Vaze",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "08918275",
+          "name": "Associate Director (Sanjay)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "27AAACC2233X1Z0",
+        "pan": "AAACC2233X",
+        "cin": "U72200MA2018PTC089182",
+        "udyam_registration_number": null,
+        "epfo_code": "MA/BAN/0008918/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 140000000.0,
+        "net_worth_inr": 39200000.00000001,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "ChargePoint_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "ChargePoint_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "ChargePoint_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "ChargePoint_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0325",
+      "tender_id": "GEM/2026/B/65109",
+      "company_name": "SpeedGrid Green Commercial EV",
+      "legal_structure": "Private Limited",
+      "registered_state": "Madhya Pradesh",
+      "registered_address": "Mandideep, Bhopal, Madhya Pradesh",
+      "bank_branch_code": "PUNB0088192",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "09819283",
+          "name": "Rajeev Tiwari",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "09819284",
+          "name": "Associate Director (Rajeev)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "23AAACS6655Y1Z8",
+        "pan": "AAACS6655Y",
+        "cin": "U72200MA2018PTC098192",
+        "udyam_registration_number": "UDYAM-MP-04-0077192",
+        "epfo_code": "MA/BAN/0009819/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 84000000.0,
+        "net_worth_inr": 23520000.000000004,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "DOCUMENT_MISMATCH_SUSPICIOUS",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "SpeedGrid_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "SpeedGrid_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "SpeedGrid_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "SpeedGrid_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0328",
+      "tender_id": "GEM/2026/B/65109",
+      "company_name": "Shakti Electric Drivetrains Ltd",
+      "legal_structure": "Public Limited",
+      "registered_state": "Tamil Nadu",
+      "registered_address": "Coimbatore Industrial Area, Coimbatore, Tamil Nadu",
+      "bank_branch_code": "HDFC0002819",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "01829102",
+          "name": "R. Natarajan",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "01829103",
+          "name": "Associate Director (R.)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "33AAACS4433Z1Z3",
+        "pan": "AAACS4433Z",
+        "cin": "U72200TA2018PTC018291",
+        "udyam_registration_number": "UDYAM-TN-03-0099182",
+        "epfo_code": "TA/BAN/0001829/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 310000000.0,
+        "net_worth_inr": 86800000.00000001,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Shakti_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Shakti_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Shakti_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Shakti_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0331",
+      "tender_id": "GEM/2026/B/65109",
+      "company_name": "EcoWheel Fleet Telematics LLP",
+      "legal_structure": "LLP",
+      "registered_state": "Uttar Pradesh",
+      "registered_address": "Surajpur Industrial Area, Greater Noida, Uttar Pradesh",
+      "bank_branch_code": "ICIC0008819",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "02719283",
+          "name": "Tarun Chhabra",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "02719284",
+          "name": "Associate Director (Tarun)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "09AABCE8877A1Z7",
+        "pan": "AABCE8877A",
+        "cin": "U72200UT2018PTC027192",
+        "udyam_registration_number": "UDYAM-UP-12-0066192",
+        "epfo_code": "UT/BAN/0002719/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 52000000.0,
+        "net_worth_inr": 14560000.000000002,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "DOCUMENT_MISMATCH_SUSPICIOUS",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "EcoWheel_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "EcoWheel_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "EcoWheel_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "EcoWheel_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0334",
+      "tender_id": "GEM/2026/B/65109",
+      "company_name": "MetroVolt Commercial Vehicles",
+      "legal_structure": "Private Limited",
+      "registered_state": "Delhi",
+      "registered_address": "Okhla Industrial Area Phase-3, Delhi, Delhi",
+      "bank_branch_code": "SBIN0004921",
+      "conflict_links_count": 2,
+      "directors": [
+        {
+          "din": "03819284",
+          "name": "Siddharth Malhotra",
+          "designation": "Managing Director",
+          "is_flagged_debarred": true
+        },
+        {
+          "din": "03819285",
+          "name": "Associate Director (Siddharth)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "07AAACM5544B1Z5",
+        "pan": "AAACM5544B",
+        "cin": "U72200DE2018PTC038192",
+        "udyam_registration_number": null,
+        "epfo_code": "DE/BAN/0003819/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 69000000.0,
+        "net_worth_inr": 19320000.0,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "HARD_FAIL_DEBARRED_VENDOR",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "MetroVolt_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "MetroVolt_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "MetroVolt_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "MetroVolt_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0337",
+      "tender_id": "GEM/2026/B/65109",
+      "company_name": "Surya EV Powertrain Innovations",
+      "legal_structure": "Private Limited",
+      "registered_state": "Karnataka",
+      "registered_address": "Bommasandra Industrial Area, Bangalore, Karnataka",
+      "bank_branch_code": "KKBK0004491",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "04918273",
+          "name": "Vishwanath Prasad",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "04918274",
+          "name": "Associate Director (Vishwanath)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "29AAACS1199C1Z2",
+        "pan": "AAACS1199C",
+        "cin": "U72200KA2018PTC049182",
+        "udyam_registration_number": "UDYAM-KR-03-0033192",
+        "epfo_code": "KA/BAN/0004918/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 520000000.0,
+        "net_worth_inr": 145600000.0,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Surya_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Surya_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Surya_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Surya_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0340",
+      "tender_id": "GEM/2026/B/65109",
+      "company_name": "Pragati Clean Energy Infra Pvt Ltd",
+      "legal_structure": "Private Limited",
+      "registered_state": "West Bengal",
+      "registered_address": "Durgapur Industrial Corridor, Burdwan, West Bengal",
+      "bank_branch_code": "ANDB0008819",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "05819201",
+          "name": "Arindam Mukherjee",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "05819202",
+          "name": "Associate Director (Arindam)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "19AAACP7766D1Z9",
+        "pan": "AAACP7766D",
+        "cin": "U72200WE2018PTC058192",
+        "udyam_registration_number": null,
+        "epfo_code": "WE/BAN/0005819/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 115000000.0,
+        "net_worth_inr": 32200000.000000004,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "COMPLIANT_MODEL_BIDDER",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "Pragati_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "Pragati_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "Pragati_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "Pragati_Quality_Standard_Cert.pdf"
+        }
+      ]
+    },
+    {
+      "bidder_id": "BID-2026-0343",
+      "tender_id": "GEM/2026/B/65109",
+      "company_name": "VoltWay Electric Logistics Fleet",
+      "legal_structure": "Private Limited",
+      "registered_state": "Rajasthan",
+      "registered_address": "Bhiwadi Industrial Area, Alwar, Rajasthan",
+      "bank_branch_code": "BKID0008819",
+      "conflict_links_count": 0,
+      "directors": [
+        {
+          "din": "06918283",
+          "name": "Praveen Yadav",
+          "designation": "Managing Director",
+          "is_flagged_debarred": false
+        },
+        {
+          "din": "06918284",
+          "name": "Associate Director (Praveen)",
+          "designation": "Director",
+          "is_flagged_debarred": false
+        }
+      ],
+      "identifiers": {
+        "gstin": "08AAACV3322E1Z6",
+        "pan": "AAACV3322E",
+        "cin": "U72200RA2018PTC069182",
+        "udyam_registration_number": "UDYAM-RJ-02-0077192",
+        "epfo_code": "RA/BAN/0006918/000"
+      },
+      "financials": {
+        "annual_turnover_inr": 47000000.0,
+        "net_worth_inr": 13160000.000000002,
+        "last_financial_year": "2024-25",
+        "itr_filed_years": [
+          "2022-23",
+          "2023-24",
+          "2024-25"
+        ]
+      },
+      "scenario_type": "DOCUMENT_MISMATCH_SUSPICIOUS",
+      "documents_to_seed": [
+        {
+          "type": "GST_CERTIFICATE",
+          "name": "VoltWay_GST_Certificate.pdf"
+        },
+        {
+          "type": "UDYAM_CERTIFICATE",
+          "name": "VoltWay_Udyam_MSME_Registration.pdf"
+        },
+        {
+          "type": "BALANCE_SHEET",
+          "name": "VoltWay_Audited_BalanceSheet_FY25.pdf"
+        },
+        {
+          "type": "ISO_27001_CERTIFICATE",
+          "name": "VoltWay_Quality_Standard_Cert.pdf"
+        }
+      ]
+    }
+  ]
+}
