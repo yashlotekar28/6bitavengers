@@ -58,7 +58,7 @@ except Exception:
     CELERY_AVAILABLE = False
 
 app = FastAPI(
-    title="ProcureShield AI - GeM Bidder Verification Engine",
+    title="Nirikshan AI - GeM Bidder Verification Engine",
     description="Deterministic Rules & AI-powered Public Procurement Compliance Scoring System",
     version="2.0.0"
 )
@@ -268,7 +268,7 @@ async def serve_dashboard():
     static_file = os.path.join(os.path.dirname(__file__), "static", "index.html")
     if os.path.exists(static_file):
         return FileResponse(static_file)
-    return {"message": "ProcureShield AI API Running"}
+    return {"message": "Nirikshan AI API Running"}
 
 @app.get("/dashboard", response_class=FileResponse)
 async def serve_dashboard_alias():
@@ -466,7 +466,7 @@ async def chat_with_officer_assistant(request: OfficerChatRequest):
         if q_lower == greeting or q_lower.startswith(greeting + " ") or q_lower.endswith(" " + greeting):
             return OfficerChatResponse(
                 reply=resp_text,
-                context_used=["ProcureShield AI", "Instant Response"],
+                context_used=["Nirikshan AI", "Instant Response"],
                 suggested_actions=[
                     "List all vendors and their compliance scores",
                     "Which vendors are MSME eligible?",

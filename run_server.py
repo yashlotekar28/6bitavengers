@@ -18,7 +18,7 @@ if os.path.exists(_env_path):
 
 def open_browser():
     time.sleep(1.5)
-    print("\n[INFO] Opening ProcureShield AI Dashboard in your browser: http://localhost:8000")
+    print("\n[INFO] Opening Nirikshan AI Dashboard in your browser: http://localhost:8000")
     webbrowser.open("http://localhost:8000")
 
 if __name__ == "__main__":
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     sys.path.insert(0, backend_dir)
 
     print("=" * 65)
-    print("  ProcureShield AI — GeM Vendor Verification & Compliance Engine")
+    print("  Nirikshan AI — GeM Vendor Verification & Compliance Engine")
     print("=" * 65)
     print("Starting FastAPI Engine + Interactive Dashboard at http://localhost:8000")
     print("Swagger API Docs: http://localhost:8000/docs\n")

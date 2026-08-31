@@ -520,7 +520,7 @@ class DocumentForensicsService:
 
         # Add visual watermark tag
         try:
-            draw.text((15, height - 25), "GeM ProcureShield AI • ELA Forensic Layer Q90", fill=(148, 163, 184))
+            draw.text((15, height - 25), "GeM Nirikshan AI • ELA Forensic Layer Q90", fill=(148, 163, 184))
         except Exception:
             pass
 

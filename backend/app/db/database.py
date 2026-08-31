@@ -8,7 +8,7 @@ from sqlalchemy.orm import DeclarativeBase
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/procureshield_db"
+    "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/nirikshan_db"
 ).replace("postgresql://", "postgresql+asyncpg://")
 
 engine = create_async_engine(DATABASE_URL, echo=False, pool_pre_ping=True)

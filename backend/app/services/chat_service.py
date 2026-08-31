@@ -12,18 +12,18 @@ class OfficerChatAssistantService:
 
     # ── Instant greeting/casual responses (no Gemini call needed) ────────────
     _GREETINGS = {
-        "hi": "Hello! 👋 I'm **ProcureShield AI**, your procurement intelligence assistant.\n\nYou can ask me anything about the active tender — vendor compliance scores, MSME eligibility, document forensics, cartel risks, and more.\n\nWhat would you like to know?",
-        "hello": "Hello! 👋 I'm **ProcureShield AI**, your procurement intelligence assistant.\n\nYou can ask me anything about the active tender — vendor compliance scores, MSME eligibility, document forensics, cartel risks, and more.\n\nWhat would you like to know?",
-        "hey": "Hey there! 👋 I'm **ProcureShield AI**. Ask me anything about vendors, compliance, or the active tender!",
-        "good morning": "Good morning! ☀️ I'm **ProcureShield AI** — ready to assist with your procurement analysis. What would you like to explore?",
-        "good evening": "Good evening! 🌙 I'm **ProcureShield AI**. How can I assist with your tender evaluation?",
-        "good afternoon": "Good afternoon! ☀️ I'm **ProcureShield AI**. Ready to help with your procurement queries!",
+        "hi": "Hello! 👋 I'm **Nirikshan AI**, your procurement intelligence assistant.\n\nYou can ask me anything about the active tender — vendor compliance scores, MSME eligibility, document forensics, cartel risks, and more.\n\nWhat would you like to know?",
+        "hello": "Hello! 👋 I'm **Nirikshan AI**, your procurement intelligence assistant.\n\nYou can ask me anything about the active tender — vendor compliance scores, MSME eligibility, document forensics, cartel risks, and more.\n\nWhat would you like to know?",
+        "hey": "Hey there! 👋 I'm **Nirikshan AI**. Ask me anything about vendors, compliance, or the active tender!",
+        "good morning": "Good morning! ☀️ I'm **Nirikshan AI** — ready to assist with your procurement analysis. What would you like to explore?",
+        "good evening": "Good evening! 🌙 I'm **Nirikshan AI**. How can I assist with your tender evaluation?",
+        "good afternoon": "Good afternoon! ☀️ I'm **Nirikshan AI**. Ready to help with your procurement queries!",
         "thanks": "You're welcome! 😊 Let me know if you have more questions about the vendors or tender.",
         "thank you": "You're welcome! 😊 Feel free to ask anything else.",
         "ok": "Got it! What else can I help you with?",
         "okay": "Got it! What else can I help you with?",
         "bye": "Goodbye! 👋 Come back anytime for procurement intelligence support.",
-        "who are you": "I'm **ProcureShield AI** — an AI-powered procurement intelligence assistant built for GeM (Government e-Marketplace) officers.\n\nI can help you analyze vendor bids, detect document fraud, assess compliance scores, identify MSME-eligible vendors, and flag cartel risks.\n\nWhat would you like to investigate?",
+        "who are you": "I'm **Nirikshan AI** — an AI-powered procurement intelligence assistant built for GeM (Government e-Marketplace) officers.\n\nI can help you analyze vendor bids, detect document fraud, assess compliance scores, identify MSME-eligible vendors, and flag cartel risks.\n\nWhat would you like to investigate?",
         "what can you do": "I can help you with:\n\n- 📊 **Compliance scores** — who's high/low risk?\n- 🏭 **MSME vendors** — who qualifies for purchase preference?\n- 🔬 **Document forensics** — any tampering detected?\n- 🔗 **Cartel/conflict links** — related vendor networks\n- 💰 **Turnover & financials** — vendor capacity\n- ⚠️ **Disqualified vendors** — who to reject and why\n\nJust ask naturally — I understand plain English!",
     }
 
@@ -43,7 +43,7 @@ class OfficerChatAssistantService:
             if q_lower == greeting or q_lower.startswith(greeting + " ") or q_lower.endswith(" " + greeting):
                 return OfficerChatResponse(
                     reply=response_text,
-                    context_used=["ProcureShield AI", "Instant Response"],
+                    context_used=["Nirikshan AI", "Instant Response"],
                     suggested_actions=[
                         "List all vendors and their compliance scores",
                         "Which vendors are MSME eligible?",
@@ -548,7 +548,7 @@ class OfficerChatAssistantService:
             )
         vendors_csv = "\n".join(rows)
 
-        return f"""You are ProcureShield AI — GeM Procurement Intelligence Assistant (India).
+        return f"""You are Nirikshan AI — GeM Procurement Intelligence Assistant (India).
 Help a senior officer evaluate bids for tender {tender_id}. Be direct, use markdown, cite vendor names and exact figures.
 Use Indian procurement terms (GFR 2017, MSME, GSTIN, L1/L2/L3, EMD, PBG). Keep response concise and actionable.
 

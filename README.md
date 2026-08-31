@@ -1,4 +1,4 @@
-# ProcureShield AI — GeM Vendor Verification & Compliance Scoring Engine (v2.0)
+# Nirikshan AI — GeM Vendor Verification & Compliance Scoring Engine (v2.0)
 
 > **AI-Powered Public Procurement Verification, Entity Linkage & Longitudinal Trust Scoring System** for Government e-Marketplace (GeM) & CPPP Tenders.
 
