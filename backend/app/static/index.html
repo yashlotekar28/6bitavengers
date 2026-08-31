@@ -805,132 +805,277 @@
       // Show login screen if officer is not authenticated
       if (!isLoggedIn) {
         return (
-          <div
-            className="min-h-screen flex items-center justify-center p-4 relative"
-            style={{
-              backgroundColor: '#f5e4e2',
-              backgroundImage: `url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALkAAABBCAYAAACNbAUoAAACNElEQVR4AezYUU7DMBBFUYf9LxIWwXeIS6WAxEfkJHQ8cyBGEYrdefddVZS3z4/31cIgswNvzRcCyQmQPHnB4rVGchakJ0Dy9BULSPIQDhjiTgIkv5Ous0MQIHmIGgxxJwGS30nX2SEIkDxEDYa4kwDJ76Tr7BAEDkseYlpDIDBAgOQD0GyZiwDJ5+rLtAMESD4AzZa5CJB8rr5MO0CA5APQXrjFSw8QIPkANFvmIkDyufoy7QABkg9As2UuAiSfqy/TDhAg+QA0W+YicL3kc+U3bQECJC9QcvWIJK9uQIH8JC9QcvWIJK9uQIH8JE9aslg7AZLvLNwlJUDypMWKtRMg+c7CXVICJE9arFg7AZLvLNwlJfBCyZMSFSscAZKHq8RAVxMg+dVEnReOAMnDVWKgqwmQ/GqizgtHgOThKvnngQq8HMkLlFw9IsmrG1AgP8kLlFw9IsmrG1AgP8kLlFw94gySV+9I/MESH4SoO3xCZA8fkcmPEmA5CcB2h6fAMnjd2TCkwRIfhJgne3zJiX5vN2Z/CABkh8E5bF5CZB83u5MfpAAyQ+C8tg8BJb2+5vk83Rn0qME1u3BHyuV5Fs0FwIbgeWx1mVp63ZL8g2HKx+BLndr/e28NZLn67d8onXpcvfVUawk7xisXAS65I/lnTxXsdL8QWD5/p0/V745+HkdgXAnkTxcJQa6mgDJrybqvDAEHp8/t2lIvkFwJSTw/OdKF53kCfutHqmL/fzM+UDxBQAA//+gjKLVAAAABklEQVQDAOLJxG5R9hEHAAAAAElFTkSuQmCC'), url('/login-bg.png')`,
-              backgroundRepeat: 'repeat',
-              backgroundSize: 'auto'
-            }}
-          >
-            {/* Subtle soft backdrop layer */}
-            <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px]"></div>
-
-            <div className="relative w-full max-w-md my-6">
-              {/* Logo / Header */}
-              <div className="text-center mb-6">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl border border-orange-200/80 mb-3 shadow-md">
-                  <span className="text-3xl">🛡️</span>
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center justify-center gap-1.5">
-                  GeM <span className="text-orange-600">Procure</span><span>Shield</span> AI
-                </h1>
-                <p className="text-slate-600 text-xs font-semibold mt-1">Vendor Verification & Compliance Intelligence Cockpit</p>
-                <div className="mt-2.5 inline-flex items-center px-3 py-1 bg-white/90 rounded-full border border-orange-200 shadow-sm">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
-                  <span className="text-[11px] text-slate-800 font-bold">Government of India — Official Portal</span>
-                </div>
-              </div>
-
-              {/* Login Card */}
-              <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-xl border border-orange-100 overflow-hidden">
-                <div className="bg-gradient-to-r from-orange-600 to-amber-600 px-8 py-4 text-white">
-                  <h2 className="font-bold text-base">Officer Authentication</h2>
-                  <p className="text-orange-100 text-xs mt-0.5">Enter your official GeM credentials to access the cockpit</p>
-                </div>
-
-                <form onSubmit={handleLogin} className="p-7 space-y-4">
-                  {/* User ID */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Officer User ID</label>
-                    <div className="relative">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base">👤</span>
-                      <input
-                        type="text"
-                        value={loginUserId}
-                        onChange={e => setLoginUserId(e.target.value)}
-                        placeholder="e.g. officer001"
-                        className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-slate-50 font-medium"
-                        required
-                        autoFocus
-                      />
-                    </div>
-                  </div>
-
-                  {/* Password */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Password</label>
-                    <div className="relative">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base">🔒</span>
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={loginPassword}
-                        onChange={e => setLoginPassword(e.target.value)}
-                        placeholder="Enter password"
-                        className="w-full pl-10 pr-11 py-2.5 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-slate-50 font-medium"
-                        required
-                      />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm">
-                        {showPassword ? '🙈' : '👁️'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Error message */}
-                  {loginError && (
-                    <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5">
-                      <span className="text-red-500 text-sm">⚠️</span>
-                      <span className="text-red-700 text-xs font-medium">{loginError}</span>
-                    </div>
-                  )}
-
-                  {/* Login Button */}
-                  <button
-                    type="submit"
-                    disabled={loginLoading || !loginUserId || !loginPassword}
-                    className="w-full py-2.5 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl text-xs shadow-md hover:from-orange-700 hover:to-amber-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {loginLoading ? (
-                      <>
-                        <span className="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                        Authenticating Officer...
-                      </>
-                    ) : (
-                      <>🔐 Secure Login</>
-                    )}
-                  </button>
-
-                  {/* Demo credentials hint */}
-                  <div className="bg-orange-50/80 border border-orange-200/80 rounded-xl p-3.5">
-                    <p className="text-xs font-bold text-orange-950 mb-1.5 flex items-center gap-1">
-                      <span>📋</span> Demo Credentials:
-                    </p>
-                    <div className="space-y-1 text-[11px] text-orange-900 font-mono">
-                      <div className="flex justify-between items-center bg-white/70 px-2 py-1 rounded border border-orange-100">
-                        <span>User: <strong>officer001</strong></span>
-                        <span>PW: <strong>GeM@2026</strong></span>
-                      </div>
-                      <div className="flex justify-between items-center bg-white/70 px-2 py-1 rounded border border-orange-100">
-                        <span>User: <strong>officer002</strong></span>
-                        <span>PW: <strong>Shield@123</strong></span>
-                      </div>
-                      <div className="flex justify-between items-center bg-white/70 px-2 py-1 rounded border border-orange-100">
-                        <span>User: <strong>admin</strong></span>
-                        <span>PW: <strong>Admin@2026</strong></span>
-                      </div>
-                    </div>
-                  </div>
-                </form>
-
-                <div className="px-7 pb-5 text-center">
-                  <p className="text-[10px] text-slate-400">🔐 256-bit encrypted · GeM Restricted System · Authorized Personnel Only</p>
-                </div>
-              </div>
-
-              <p className="text-center text-slate-500 text-[11px] mt-4 font-medium">© 2026 Government e-Marketplace (GeM) · ProcureShield AI v2.0</p>
+          <div className="min-h-screen flex flex-col bg-slate-900 text-slate-100 font-sans selection:bg-orange-500 selection:text-white">
+            
+            {/* Top National Tricolor Ribbon */}
+            <div className="h-1.5 w-full flex no-print">
+              <div className="flex-1 bg-[#FF9933]"></div>
+              <div className="flex-1 bg-[#FFFFFF]"></div>
+              <div className="flex-1 bg-[#138808]"></div>
             </div>
+
+            {/* Top Official Utility Header */}
+            <header className="bg-slate-950 border-b border-slate-800 px-6 py-3 no-print">
+              <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-3">
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">🏛️</span>
+                  <div>
+                    <h1 className="text-xs font-black text-white uppercase tracking-wider">
+                      Government of India • Ministry of Commerce & Industry
+                    </h1>
+                    <p className="text-[11px] text-slate-400 font-medium">
+                      Directorate General of Supplies & Disposals • Government e-Marketplace (GeM)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3 text-xs">
+                  <span className="px-2.5 py-1 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 font-mono font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    CERT-In Level 4 Certified
+                  </span>
+                  <span className="text-slate-500">|</span>
+                  <span className="text-slate-400 font-mono text-[11px]">NIC-SSO v4.2</span>
+                </div>
+              </div>
+            </header>
+
+            {/* Main 2-Column Split Portal */}
+            <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              
+              {/* Left 7 Columns: National Platform Authority & System Metrics */}
+              <div className="lg:col-span-7 space-y-6">
+                
+                <div className="space-y-3">
+                  <div className="inline-flex items-center space-x-2 px-3 py-1 bg-orange-950/60 border border-orange-500/40 rounded-full text-orange-300 text-xs font-bold font-mono">
+                    <span>🛡️ GFR 2017 COMPLIANCE & FRAUD INTELLIGENCE ENGINE</span>
+                  </div>
+
+                  <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+                    GeM <span className="text-orange-500">Procure</span><span>Shield</span> AI
+                  </h2>
+                  <p className="text-base text-slate-300 font-medium leading-relaxed max-w-2xl">
+                    National Technical Evaluation Committee Decision Cockpit: Automated Cross-Verification, Error Level Document Forensics, and Entity Cartel Graph Defense.
+                  </p>
+                </div>
+
+                {/* 4 Core Pillars Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+                  <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 space-y-1.5 hover:border-orange-500/50 transition">
+                    <div className="flex items-center space-x-2 text-orange-400 font-bold text-xs">
+                      <span className="text-base">🔬</span>
+                      <span>Document Tamper Forensics</span>
+                    </div>
+                    <p className="text-slate-400 text-xs leading-normal">
+                      Real-time Error Level Analysis (ELA), metadata tampering, and copy-move forgery detection on vendor certificates.
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 space-y-1.5 hover:border-orange-500/50 transition">
+                    <div className="flex items-center space-x-2 text-amber-400 font-bold text-xs">
+                      <span className="text-base">🕸️</span>
+                      <span>Cartel & Shell Graph</span>
+                    </div>
+                    <p className="text-slate-400 text-xs leading-normal">
+                      Automated detection of shared director DINs, common premise addresses, and bidder collusion networks.
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 space-y-1.5 hover:border-orange-500/50 transition">
+                    <div className="flex items-center space-x-2 text-emerald-400 font-bold text-xs">
+                      <span className="text-base">📊</span>
+                      <span>Longitudinal Trust Index</span>
+                    </div>
+                    <p className="text-slate-400 text-xs leading-normal">
+                      300–900 CIBIL-style multi-year vendor reliability score tracking delivery SLAs, tax health, and dispute history.
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 space-y-1.5 hover:border-orange-500/50 transition">
+                    <div className="flex items-center space-x-2 text-sky-400 font-bold text-xs">
+                      <span className="text-base">⚖️</span>
+                      <span>72-Hour SLA Contingency</span>
+                    </div>
+                    <p className="text-slate-400 text-xs leading-normal">
+                      Automated L1/L2/L3 contingency standby allocation preventing tender cancellation and project delays.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Live Procurement Stats Ribbon */}
+                <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 text-xs font-mono">
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Active Ministries</span>
+                    <strong className="text-orange-400 font-bold text-sm">3 Tenders Ingested</strong>
+                  </div>
+                  <div className="h-6 w-px bg-slate-800"></div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Verified Dossiers</span>
+                    <strong className="text-emerald-400 font-bold text-sm">45 Vendor Proposals</strong>
+                  </div>
+                  <div className="h-6 w-px bg-slate-800"></div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Statutory Audit</span>
+                    <strong className="text-white font-bold text-sm">CAG Audit Enabled</strong>
+                  </div>
+                </div>
+
+                {/* Statutory Warning */}
+                <div className="text-[11px] text-slate-500 leading-relaxed border-l-2 border-orange-500/60 pl-3">
+                  Restricted Official System: Access is strictly restricted to authorized Procurement Officers and Evaluation Committee members under the Information Technology Act, 2000. All activities are cryptographically signed and logged.
+                </div>
+
+              </div>
+
+              {/* Right 5 Columns: Secure Officer Authentication Gateway */}
+              <div className="lg:col-span-5 w-full max-w-md mx-auto">
+                <div className="bg-slate-800 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden">
+                  
+                  {/* Gateway Header */}
+                  <div className="bg-gradient-to-r from-orange-600 to-amber-600 p-5 text-white">
+                    <div className="flex justify-between items-center">
+                      <span className="px-2.5 py-0.5 rounded bg-black/20 text-[10px] font-mono font-bold uppercase tracking-wider">
+                        OFFICER SSO GATEWAY
+                      </span>
+                      <span className="text-xs font-mono font-bold text-amber-200">256-BIT TLS</span>
+                    </div>
+                    <h3 className="text-lg font-black mt-2">Officer Authentication</h3>
+                    <p className="text-orange-100 text-xs">Enter your credentials or click any demo officer profile below</p>
+                  </div>
+
+                  <div className="p-6 space-y-5">
+                    
+                    {/* Login Form */}
+                    <form onSubmit={handleLogin} className="space-y-4">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                          Officer User ID / Service No.
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">👤</span>
+                          <input
+                            type="text"
+                            value={loginUserId}
+                            onChange={e => setLoginUserId(e.target.value)}
+                            placeholder="e.g. officer001"
+                            className="w-full pl-9 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
+                            required
+                            autoFocus
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                          Password / PIN
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔒</span>
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            value={loginPassword}
+                            onChange={e => setLoginPassword(e.target.value)}
+                            placeholder="Enter your security password"
+                            className="w-full pl-9 pr-10 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs"
+                          >
+                            {showPassword ? '🙈' : '👁️'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {loginError && (
+                        <div className="flex items-center space-x-2 bg-rose-950/80 border border-rose-700/80 rounded-xl p-3 text-xs text-rose-300">
+                          <span>⚠️</span>
+                          <span>{loginError}</span>
+                        </div>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={loginLoading || !loginUserId || !loginPassword}
+                        className="w-full py-3 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white text-xs font-black rounded-xl shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 cursor-pointer uppercase tracking-wider"
+                      >
+                        {loginLoading ? (
+                          <>
+                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            <span>Authenticating Officer...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>🔐</span>
+                            <span>Authenticate & Enter Cockpit →</span>
+                          </>
+                        )}
+                      </button>
+                    </form>
+
+                    {/* Quick Officer Switcher / Demo Identities */}
+                    <div className="pt-3 border-t border-slate-700/80 space-y-2.5">
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="font-bold text-slate-300 uppercase tracking-wide flex items-center gap-1">
+                          <span>⚡</span> Quick Officer Sign-In:
+                        </span>
+                        <span className="text-[10px] text-orange-400 font-medium">Click to login</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2">
+                        {Object.entries(OFFICERS).map(([uid, off]) => (
+                          <div
+                            key={uid}
+                            onClick={() => {
+                              setCurrentOfficer({ userId: uid, ...off });
+                              setIsLoggedIn(true);
+                              setLoginPassword('');
+                              setLoginError('');
+                            }}
+                            className="bg-slate-900/90 hover:bg-slate-900 border border-slate-700 hover:border-orange-500/80 rounded-xl p-2.5 cursor-pointer transition flex items-center justify-between group shadow-sm"
+                          >
+                            <div className="flex items-center space-x-2.5">
+                              <div className="w-7 h-7 rounded-lg bg-orange-600/20 text-orange-400 border border-orange-500/30 flex items-center justify-center text-xs font-bold">
+                                {uid === 'admin' ? '🛡️' : '👤'}
+                              </div>
+                              <div className="leading-tight">
+                                <span className="text-xs font-bold text-white group-hover:text-orange-400 transition block">
+                                  {off.name}
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  {off.rank} • {off.ministry}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-mono font-bold bg-slate-800 text-orange-300 px-2 py-0.5 rounded border border-slate-700 group-hover:border-orange-500/50">
+                              {off.badge} →
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <div className="bg-slate-950 px-6 py-3 border-t border-slate-800 text-center text-[10px] text-slate-500">
+                    GeM Restricted National Infrastructure • Session IP & Digital Hash Logged
+                  </div>
+
+                </div>
+              </div>
+
+            </main>
+
+            {/* Bottom Official Footer */}
+            <footer className="bg-slate-950 border-t border-slate-800 py-4 px-6 text-center text-xs text-slate-500 no-print">
+              <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
+                <span>🇮🇳 Government e-Marketplace (GeM) • ProcureShield AI National Intelligence Platform</span>
+                <span className="text-[11px]">General Financial Rules (GFR 2017) • CERT-In Level 4 • CAG Audit Ready</span>
+              </div>
+            </footer>
+
           </div>
         );
       }
