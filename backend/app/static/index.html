@@ -382,6 +382,123 @@
       const [loginError, setLoginError] = useState('');
       const [loginLoading, setLoginLoading] = useState(false);
       const [showPassword, setShowPassword] = useState(false);
+      const [isDarkMode, setIsDarkMode] = useState(false);
+      const [language, setLanguage] = useState('en');
+      const [showLangMenu, setShowLangMenu] = useState(false);
+
+      // ── TRANSLATIONS ─────────────────────────────────────────────────────────
+      const T = {
+        en: {
+          govIndia: 'GOVERNMENT OF INDIA',
+          ministry: 'MINISTRY OF COMMERCE & INDUSTRY',
+          dgs: 'Directorate General of Supplies & Disposals',
+          gem: 'Government e-Marketplace (GeM)',
+          home: 'Home',
+          helpSupport: 'Help & Support',
+          officerLoginBtn: 'Officer Login',
+          badge: 'GFR 2017 | COMPLIANCE & FRAUD INTELLIGENCE ENGINE',
+          tagline: 'AI-assisted Technical Evaluation & Procurement Integrity Platform',
+          desc: 'National Technical Evaluation Committee Decision Cockpit: Automated Cross-Verification, Error Level Document Forensics, and Entity Cartel Graph Defense.',
+          card1Title: 'Document Forensics',
+          card1Desc: 'Real-time error level analysis, metadata tampering detection and vendor certificate verification.',
+          card2Title: 'Vendor Intelligence',
+          card2Desc: 'Multi-dimensional vendor reliability scoring, past performance, and dispute history analysis.',
+          card3Title: 'Cartel Detection',
+          card3Desc: 'Network graph analysis, common address detection, and bid-rigging pattern identification.',
+          card4Title: 'Procurement Analytics',
+          card4Desc: 'Dashboards and insights on tender evaluations, vendor performance and compliance trends.',
+          stat1: "Today's Technical Evaluations",
+          stat2: 'Tender Verification In Progress',
+          stat3: 'Compliance Reports Generated',
+          stat4: 'Pending Officer Reviews',
+          loginTitle: 'Officer Login',
+          loginSubtitle: 'Secure access for authorized officers only',
+          labelUserId: 'Officer User ID / Service No.',
+          placeholderUserId: 'Enter User ID / Service No.',
+          labelPassword: 'Password / PIN',
+          placeholderPassword: 'Enter your password',
+          loginBtn: 'Login',
+          authenticating: 'Authenticating...',
+          forgotPwd: 'Forgot Password?',
+          quickAccess: '⚡ Quick Officer Access:',
+          secNoticeTitle: 'Security Notice',
+          secNoticeText: 'Unauthorized access is prohibited and may be punishable under the Information Technology Act, 2000.',
+          lastLogin: 'Last Login:',
+          sysStatus: 'System Status:',
+          allOk: 'All Systems Operational',
+          serverRegion: 'Server Region:',
+          india: 'India (Primary)',
+          digSig: 'Digital Signature:',
+          enabled: 'Enabled',
+          nicLabel: 'NIC:',
+          nicText: 'NIC Certified - National Informatics Centre',
+          cagLabel: 'CAG Compliance:',
+          auditEnabled: 'Audit Enabled',
+          footerCopy: '© Government e-Marketplace (GeM) - All rights reserved.',
+          privacy: 'Privacy Policy',
+          terms: 'Terms & Conditions',
+          accessibility: 'Accessibility',
+          disclaimer: 'Disclaimer',
+          help: 'Help',
+          version: 'Version 2.1.0 • Build: 2025.05.17',
+        },
+        hi: {
+          govIndia: 'भारत सरकार',
+          ministry: 'वाणिज्य एवं उद्योग मंत्रालय',
+          dgs: 'आपूर्ति एवं निपटान महानिदेशालय',
+          gem: 'सरकारी ई-मार्केटप्लेस (GeM)',
+          home: 'होम',
+          helpSupport: 'सहायता',
+          officerLoginBtn: 'अधिकारी लॉगिन',
+          badge: 'GFR 2017 | अनुपालन एवं धोखाधड़ी खुफिया इंजन',
+          tagline: 'AI-सहायता प्राप्त तकनीकी मूल्यांकन एवं खरीद ईमानदारी मंच',
+          desc: 'राष्ट्रीय तकनीकी मूल्यांकन समिति निर्णय कॉकपिट: स्वचालित क्रॉस-सत्यापन, एरर लेवल दस्तावेज़ फोरेंसिक, और इकाई कार्टेल ग्राफ रक्षा।',
+          card1Title: 'दस्तावेज़ फोरेंसिक',
+          card1Desc: 'रियल-टाइम एरर लेवल विश्लेषण, मेटाडेटा छेड़छाड़ पहचान और विक्रेता प्रमाणपत्र सत्यापन।',
+          card2Title: 'विक्रेता खुफिया',
+          card2Desc: 'बहु-आयामी विक्रेता विश्वसनीयता स्कोरिंग, पिछला प्रदर्शन और विवाद इतिहास विश्लेषण।',
+          card3Title: 'कार्टेल की पहचान',
+          card3Desc: 'नेटवर्क ग्राफ विश्लेषण, सामान्य पता पहचान और बोली-धांधली पैटर्न पहचान।',
+          card4Title: 'खरीद विश्लेषण',
+          card4Desc: 'निविदा मूल्यांकन, विक्रेता प्रदर्शन और अनुपालन प्रवृत्तियों पर डैशबोर्ड और जानकारी।',
+          stat1: 'आज के तकनीकी मूल्यांकन',
+          stat2: 'प्रगति में निविदा सत्यापन',
+          stat3: 'अनुपालन रिपोर्ट तैयार',
+          stat4: 'लंबित अधिकारी समीक्षाएं',
+          loginTitle: 'अधिकारी लॉगिन',
+          loginSubtitle: 'केवल अधिकृत अधिकारियों के लिए सुरक्षित पहुंच',
+          labelUserId: 'अधिकारी उपयोगकर्ता ID / सेवा नं.',
+          placeholderUserId: 'उपयोगकर्ता ID / सेवा नं. दर्ज करें',
+          labelPassword: 'पासवर्ड / PIN',
+          placeholderPassword: 'अपना पासवर्ड दर्ज करें',
+          loginBtn: 'लॉगिन',
+          authenticating: 'प्रमाणीकरण...',
+          forgotPwd: 'पासवर्ड भूल गए?',
+          quickAccess: '⚡ त्वरित अधिकारी पहुंच:',
+          secNoticeTitle: 'सुरक्षा सूचना',
+          secNoticeText: 'अनधिकृत पहुंच निषिद्ध है और सूचना प्रौद्योगिकी अधिनियम, 2000 के तहत दंडनीय हो सकती है।',
+          lastLogin: 'अंतिम लॉगिन:',
+          sysStatus: 'सिस्टम स्थिति:',
+          allOk: 'सभी सिस्टम चालू हैं',
+          serverRegion: 'सर्वर क्षेत्र:',
+          india: 'भारत (प्राथमिक)',
+          digSig: 'डिजिटल हस्ताक्षर:',
+          enabled: 'सक्षम',
+          nicLabel: 'NIC:',
+          nicText: 'NIC प्रमाणित - राष्ट्रीय सूचना विज्ञान केंद्र',
+          cagLabel: 'CAG अनुपालन:',
+          auditEnabled: 'ऑडिट सक्षम',
+          footerCopy: '© सरकारी ई-मार्केटप्लेस (GeM) - सर्वाधिकार सुरक्षित।',
+          privacy: 'गोपनीयता नीति',
+          terms: 'नियम एवं शर्तें',
+          accessibility: 'अभिगम्यता',
+          disclaimer: 'अस्वीकरण',
+          help: 'सहायता',
+          version: 'संस्करण 2.1.0 • बिल्ड: 2025.05.17',
+        },
+      };
+      const t = T[language];
+
 
       const handleLogin = (e) => {
         if (e) e.preventDefault();
@@ -802,238 +919,194 @@
 
       // Show login screen if officer is not authenticated
       if (!isLoggedIn) {
+        // Dark mode derived class helpers
+        const dk = isDarkMode;
+        const pageBg    = dk ? 'bg-[#0A0F1E] text-slate-100' : 'bg-[#F8FAFC] text-slate-900';
+        const headerBg  = dk ? 'bg-[#0D1526] border-slate-700' : 'bg-white border-slate-200';
+        const textMuted = dk ? 'text-slate-400' : 'text-slate-500';
+        const textStrong= dk ? 'text-slate-100' : 'text-[#0B1E33]';
+        const cardBg    = dk ? 'bg-[#111827] border-slate-700' : 'bg-white border-slate-200';
+        const cardHover = dk ? 'hover:border-[#8B1D2C] hover:bg-[#1a0f13]' : 'hover:border-[#8B1D2C] hover:shadow-md';
+        const inputCls  = dk ? 'bg-[#1e2d45] border-slate-600 text-slate-100 placeholder-slate-500 focus:ring-[#8B1D2C] focus:border-[#8B1D2C]' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-[#8B1D2C] focus:border-[#8B1D2C]';
+        const statBg    = dk ? 'bg-[#111827] border-slate-700' : 'bg-white border-slate-200';
+        const badgeBg   = dk ? 'bg-blue-900/40 border-blue-700 text-blue-300' : 'bg-blue-50 border-blue-200 text-blue-800';
+        const statusBar = dk ? 'bg-[#0D1526] border-slate-700' : 'bg-white border-slate-200';
+        const footerBg  = dk ? 'bg-[#060B14]' : 'bg-[#0B1E33]';
+        const navLink   = dk ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900';
+        const qCardBg   = dk ? 'bg-[#1e2d45] border-slate-600 hover:border-[#8B1D2C]/60 hover:bg-[#2a1520]' : 'bg-slate-50 border-slate-200 hover:border-[#8B1D2C]/40 hover:bg-rose-50/50';
+        const qCardText = dk ? 'text-slate-200 group-hover:text-[#F43F5E]' : 'text-slate-800 group-hover:text-[#8B1D2C]';
+
         return (
-          <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-slate-900 font-sans selection:bg-[#8B1D2C] selection:text-white">
-            
+          <div className={`min-h-screen flex flex-col font-sans selection:bg-[#8B1D2C] selection:text-white transition-colors duration-300 ${pageBg}`}>
+
             {/* Top National Header */}
-            <header className="bg-white border-b border-slate-200 px-6 py-3.5 no-print shadow-xs">
+            <header className={`border-b px-6 py-3.5 no-print shadow-xs transition-colors duration-300 ${headerBg}`}>
               <div className="max-w-screen-2xl mx-auto flex flex-wrap justify-between items-center gap-4">
-                
+
                 {/* Left: National Emblem & Department Title */}
                 <div className="flex items-center space-x-4">
-                  <div className="w-14 h-14 flex items-center justify-center text-4xl">
-                    🏛️
-                  </div>
+                  <div className="w-14 h-14 flex items-center justify-center text-4xl">🏛️</div>
                   <div>
-                    <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider block">
-                      GOVERNMENT OF INDIA
+                    <span className={`text-[11px] font-bold uppercase tracking-wider block ${textMuted}`}>
+                      {t.govIndia}
                     </span>
-                    <h1 className="text-base font-black text-[#0B1E33] tracking-tight uppercase">
-                      MINISTRY OF COMMERCE & INDUSTRY
+                    <h1 className={`text-base font-black tracking-tight uppercase ${textStrong}`}>
+                      {t.ministry}
                     </h1>
-                    <p className="text-xs text-slate-600 font-medium leading-none mt-0.5">
-                      Directorate General of Supplies & Disposals
-                    </p>
-                    <p className="text-xs text-slate-700 font-bold leading-none mt-0.5">
-                      Government e-Marketplace (GeM)
-                    </p>
+                    <p className={`text-xs font-medium leading-none mt-0.5 ${textMuted}`}>{t.dgs}</p>
+                    <p className={`text-xs font-bold leading-none mt-0.5 ${dk ? 'text-slate-200' : 'text-slate-700'}`}>{t.gem}</p>
                   </div>
                 </div>
 
-                {/* Right: Accessibility Controls & Navigation Bar */}
-                <div className="flex flex-wrap items-center gap-5 text-sm font-semibold text-slate-700">
-                  <div className="flex items-center space-x-2 text-slate-500 font-medium pr-3 border-r border-slate-200">
+                {/* Right: Controls + Nav */}
+                <div className="flex flex-wrap items-center gap-5 text-sm font-semibold">
+
+                  {/* A+ / A / A- zoom */}
+                  <div className={`flex items-center space-x-2 font-medium pr-3 border-r ${dk ? 'text-slate-400 border-slate-700' : 'text-slate-500 border-slate-200'}`}>
+                    <span onClick={() => { document.body.style.zoom = String(Math.min(parseFloat(document.body.style.zoom||'1')+0.1, 1.5)); }} title="Increase size" className="cursor-pointer hover:text-[#8B1D2C] font-black px-1.5 py-0.5 rounded hover:bg-slate-100/10 select-none text-base">A+</span>
+                    <span onClick={() => { document.body.style.zoom = '1'; }} title="Reset size" className="cursor-pointer hover:text-[#8B1D2C] font-black px-1.5 py-0.5 rounded hover:bg-slate-100/10 select-none">A</span>
+                    <span onClick={() => { document.body.style.zoom = String(Math.max(parseFloat(document.body.style.zoom||'1')-0.1, 0.7)); }} title="Decrease size" className="cursor-pointer hover:text-[#8B1D2C] font-black px-1.5 py-0.5 rounded hover:bg-slate-100/10 select-none text-xs">A-</span>
+                    <span className={dk ? 'text-slate-600' : 'text-slate-300'}>|</span>
+                    {/* Theme toggle ☀️ / 🌙 */}
                     <span
-                      onClick={() => { document.body.style.zoom = String(Math.min(parseFloat(document.body.style.zoom || '1') + 0.1, 1.5)); }}
-                      title="Increase page size"
-                      className="cursor-pointer hover:text-[#8B1D2C] font-black px-1.5 py-0.5 rounded hover:bg-slate-100 select-none text-base"
-                    >A+</span>
-                    <span
-                      onClick={() => { document.body.style.zoom = '1'; }}
-                      title="Reset page size"
-                      className="cursor-pointer hover:text-[#8B1D2C] font-black px-1.5 py-0.5 rounded hover:bg-slate-100 select-none"
-                    >A</span>
-                    <span
-                      onClick={() => { document.body.style.zoom = String(Math.max(parseFloat(document.body.style.zoom || '1') - 0.1, 0.7)); }}
-                      title="Decrease page size"
-                      className="cursor-pointer hover:text-[#8B1D2C] font-black px-1.5 py-0.5 rounded hover:bg-slate-100 select-none text-xs"
-                    >A-</span>
-                    <span className="text-slate-300">|</span>
-                    <span className="cursor-pointer hover:text-slate-900">☀️</span>
-                    <span className="text-slate-300">|</span>
-                    <span className="cursor-pointer hover:text-slate-900 font-sans font-medium flex items-center gap-1">
-                      English ▾
+                      onClick={() => setIsDarkMode(!isDarkMode)}
+                      title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                      className="cursor-pointer text-xl select-none hover:opacity-80 transition"
+                    >
+                      {isDarkMode ? '🌙' : '☀️'}
                     </span>
+                    <span className={dk ? 'text-slate-600' : 'text-slate-300'}>|</span>
+                    {/* Language selector */}
+                    <div className="relative">
+                      <span
+                        onClick={() => setShowLangMenu(!showLangMenu)}
+                        className={`cursor-pointer font-medium flex items-center gap-1 select-none hover:text-[#8B1D2C] ${dk ? 'text-slate-300' : 'text-slate-600'}`}
+                      >
+                        {language === 'en' ? '🇬🇧 English' : '🇮🇳 हिन्दी'} ▾
+                      </span>
+                      {showLangMenu && (
+                        <div className={`absolute top-7 right-0 z-50 rounded-lg shadow-lg border overflow-hidden text-xs font-semibold min-w-[110px] ${dk ? 'bg-[#111827] border-slate-700' : 'bg-white border-slate-200'}`}>
+                          <button
+                            onClick={() => { setLanguage('en'); setShowLangMenu(false); }}
+                            className={`w-full text-left px-3 py-2 flex items-center gap-2 transition ${language==='en' ? 'bg-[#8B1D2C] text-white' : (dk ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-50 text-slate-700')}`}
+                          >
+                            🇬🇧 English
+                          </button>
+                          <button
+                            onClick={() => { setLanguage('hi'); setShowLangMenu(false); }}
+                            className={`w-full text-left px-3 py-2 flex items-center gap-2 transition ${language==='hi' ? 'bg-[#8B1D2C] text-white' : (dk ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-50 text-slate-700')}`}
+                          >
+                            🇮🇳 हिन्दी
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
+                  {/* Nav links — Documentation REMOVED */}
                   <nav className="flex items-center space-x-6">
                     <a href="#home" className="text-[#8B1D2C] font-bold border-b-2 border-[#8B1D2C] pb-1 flex items-center gap-1.5">
-                      <span>🏠</span> Home
+                      <span>🏠</span> {t.home}
                     </a>
-                    <a href="#docs" onClick={(e)=>{e.preventDefault(); alert("ProcureShield GFR 2017 & Forensic Documentation v2.1.0");}} className="text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
-                      <span>📄</span> Documentation
-                    </a>
-                    <a href="#help" onClick={(e)=>{e.preventDefault(); alert("GeM National Helpdesk: 1800-419-3436 / helpdesk-gem@gov.in");}} className="text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
-                      <span>❓</span> Help & Support
+                    <a href="#help" onClick={(e)=>{e.preventDefault(); alert('GeM National Helpdesk: 1800-419-3436 / helpdesk-gem@gov.in');}} className={`flex items-center gap-1.5 ${navLink}`}>
+                      <span>❓</span> {t.helpSupport}
                     </a>
                     <button
-                      onClick={() => {
-                        const input = document.getElementById('login-officer-id');
-                        if (input) input.focus();
-                      }}
+                      onClick={() => { const inp = document.getElementById('login-officer-id'); if(inp) inp.focus(); }}
                       className="px-5 py-2.5 bg-[#8B1D2C] hover:bg-[#721523] text-white rounded-lg font-bold text-sm shadow-sm transition flex items-center gap-2 cursor-pointer"
                     >
-                      <span>👤</span> Officer Login
+                      <span>👤</span> {t.officerLoginBtn}
                     </button>
                   </nav>
                 </div>
-
               </div>
             </header>
 
             {/* Main Portal Body */}
-            <main className="flex-1 w-full max-w-screen-2xl mx-auto px-8 lg:px-16 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start relative">
-              
-              {/* Subtle background watermark */}
-              <div className="absolute right-[36%] top-12 opacity-[0.04] pointer-events-none select-none text-[280px] hidden lg:block">
-                🏛️
-              </div>
+            <main className="flex-1 w-full max-w-screen-2xl mx-auto px-8 lg:px-16 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start relative" onClick={() => showLangMenu && setShowLangMenu(false)}>
 
-              {/* Left 8 Columns: Hero Branding, 4 Features, 4 Stats */}
+              {/* Watermark */}
+              <div className="absolute right-[36%] top-12 opacity-[0.03] pointer-events-none select-none text-[280px] hidden lg:block">🏛️</div>
+
+              {/* LEFT — Branding + Feature Cards + Stats */}
               <div className="lg:col-span-8 space-y-8">
-                
-                {/* Header & Badges */}
-                <div className="space-y-3">
-                  <div className="inline-flex items-center space-x-2 px-4 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-blue-800 text-xs font-bold font-mono">
-                    <span>🛡️</span>
-                    <span>GFR 2017 | COMPLIANCE & FRAUD INTELLIGENCE ENGINE</span>
-                  </div>
 
+                {/* Hero */}
+                <div className="space-y-3">
+                  <div className={`inline-flex items-center space-x-2 px-4 py-1.5 border rounded-full text-xs font-bold font-mono ${badgeBg}`}>
+                    <span>🛡️</span><span>{t.badge}</span>
+                  </div>
                   <div className="flex items-center flex-wrap gap-3 pt-1">
-                    <h2 className="text-5xl font-black text-[#0F172A] tracking-tight">
+                    <h2 className={`text-5xl font-black tracking-tight ${dk ? 'text-slate-50' : 'text-[#0F172A]'}`}>
                       GeM <span className="text-[#8B1D2C]">ProcureShield</span>
                     </h2>
-                    <span className="px-3 py-1 bg-[#8B1D2C] text-white text-sm font-bold rounded">
-                      AI
-                    </span>
+                    <span className="px-3 py-1 bg-[#8B1D2C] text-white text-sm font-bold rounded">AI</span>
                   </div>
-
-                  <h3 className="text-lg font-bold text-blue-700">
-                    AI-assisted Technical Evaluation & Procurement Integrity Platform
-                  </h3>
-
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed max-w-3xl">
-                    National Technical Evaluation Committee Decision Cockpit: Automated Cross-Verification, Error Level Document Forensics, and Entity Cartel Graph Defense.
-                  </p>
+                  <h3 className={`text-lg font-bold ${dk ? 'text-blue-400' : 'text-blue-700'}`}>{t.tagline}</h3>
+                  <p className={`text-sm font-medium leading-relaxed max-w-3xl ${dk ? 'text-slate-400' : 'text-slate-600'}`}>{t.desc}</p>
                 </div>
 
-                {/* 4 Feature Cards Grid — "View Details" removed */}
+                {/* 4 Feature Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  
-                  <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs hover:border-[#8B1D2C] hover:shadow-md transition">
-                    <div className="w-12 h-12 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center text-2xl">
-                      📄
+                  {[
+                    { icon: '📄', bg: dk?'bg-rose-900/30 border-rose-800 text-rose-400':'bg-rose-50 border-rose-100 text-rose-600', title: t.card1Title, desc: t.card1Desc },
+                    { icon: '👥', bg: dk?'bg-blue-900/30 border-blue-800 text-blue-400':'bg-blue-50 border-blue-100 text-blue-600', title: t.card2Title, desc: t.card2Desc },
+                    { icon: '🛡️', bg: dk?'bg-emerald-900/30 border-emerald-800 text-emerald-400':'bg-emerald-50 border-emerald-100 text-emerald-600', title: t.card3Title, desc: t.card3Desc },
+                    { icon: '📊', bg: dk?'bg-purple-900/30 border-purple-800 text-purple-400':'bg-purple-50 border-purple-100 text-purple-600', title: t.card4Title, desc: t.card4Desc },
+                  ].map((card, idx) => (
+                    <div key={idx} className={`border rounded-xl p-5 shadow-xs transition ${cardBg} ${cardHover}`}>
+                      <div className={`w-12 h-12 rounded-xl border flex items-center justify-center text-2xl ${card.bg}`}>{card.icon}</div>
+                      <h4 className={`font-bold text-sm mt-4 ${dk ? 'text-slate-100' : 'text-slate-900'}`}>{card.title}</h4>
+                      <p className={`text-xs leading-snug mt-2 ${dk ? 'text-slate-400' : 'text-slate-600'}`}>{card.desc}</p>
                     </div>
-                    <h4 className="font-bold text-sm text-slate-900 mt-4">Document Forensics</h4>
-                    <p className="text-xs text-slate-600 leading-snug mt-2">
-                      Real-time error level analysis, metadata tampering detection and vendor certificate verification.
-                    </p>
-                  </div>
-
-                  <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs hover:border-[#8B1D2C] hover:shadow-md transition">
-                    <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center text-2xl">
-                      👥
-                    </div>
-                    <h4 className="font-bold text-sm text-slate-900 mt-4">Vendor Intelligence</h4>
-                    <p className="text-xs text-slate-600 leading-snug mt-2">
-                      Multi-dimensional vendor reliability scoring, past performance, and dispute history analysis.
-                    </p>
-                  </div>
-
-                  <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs hover:border-[#8B1D2C] hover:shadow-md transition">
-                    <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center text-2xl">
-                      🛡️
-                    </div>
-                    <h4 className="font-bold text-sm text-slate-900 mt-4">Cartel Detection</h4>
-                    <p className="text-xs text-slate-600 leading-snug mt-2">
-                      Network graph analysis, common address detection, and bid-rigging pattern identification.
-                    </p>
-                  </div>
-
-                  <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs hover:border-[#8B1D2C] hover:shadow-md transition">
-                    <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 text-purple-600 flex items-center justify-center text-2xl">
-                      📊
-                    </div>
-                    <h4 className="font-bold text-sm text-slate-900 mt-4">Procurement Analytics</h4>
-                    <p className="text-xs text-slate-600 leading-snug mt-2">
-                      Dashboards and insights on tender evaluations, vendor performance and compliance trends.
-                    </p>
-                  </div>
-
+                  ))}
                 </div>
 
-                {/* 4 Stats Summary Strip */}
-                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs grid grid-cols-2 sm:grid-cols-4 gap-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center text-2xl">
-                      📋
+                {/* 4 Stats */}
+                <div className={`border rounded-xl p-6 shadow-xs grid grid-cols-2 sm:grid-cols-4 gap-6 ${statBg}`}>
+                  {[
+                    { icon:'📋', iconBg: dk?'bg-blue-900/40 text-blue-400':'bg-blue-50 text-blue-700', num:'12', label: t.stat1 },
+                    { icon:'🛡️', iconBg: dk?'bg-emerald-900/40 text-emerald-400':'bg-emerald-50 text-emerald-700', num:'8', label: t.stat2 },
+                    { icon:'📄', iconBg: dk?'bg-purple-900/40 text-purple-400':'bg-purple-50 text-purple-700', num:'5', label: t.stat3 },
+                    { icon:'🕒', iconBg: dk?'bg-amber-900/40 text-amber-400':'bg-amber-50 text-amber-700', num:'3', label: t.stat4 },
+                  ].map((s,i) => (
+                    <div key={i} className="flex items-center space-x-4">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${s.iconBg}`}>{s.icon}</div>
+                      <div>
+                        <div className={`text-2xl font-black leading-none ${dk ? 'text-slate-50' : 'text-slate-900'}`}>{s.num}</div>
+                        <div className={`text-xs font-semibold mt-1 ${dk ? 'text-slate-400' : 'text-slate-500'}`}>{s.label}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-2xl font-black text-slate-900 leading-none">12</div>
-                      <div className="text-xs text-slate-500 font-semibold mt-1">Today's Technical Evaluations</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-2xl">
-                      🛡️
-                    </div>
-                    <div>
-                      <div className="text-2xl font-black text-slate-900 leading-none">8</div>
-                      <div className="text-xs text-slate-500 font-semibold mt-1">Tender Verification In Progress</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-2xl">
-                      📄
-                    </div>
-                    <div>
-                      <div className="text-2xl font-black text-slate-900 leading-none">5</div>
-                      <div className="text-xs text-slate-500 font-semibold mt-1">Compliance Reports Generated</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-2xl">
-                      🕒
-                    </div>
-                    <div>
-                      <div className="text-2xl font-black text-slate-900 leading-none">3</div>
-                      <div className="text-xs text-slate-500 font-semibold mt-1">Pending Officer Reviews</div>
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
               </div>
 
-              {/* Right 4 Columns: Login Box & Security Notice */}
+              {/* RIGHT — Login Card + Security Notice */}
               <div className="lg:col-span-4 space-y-5">
-                
-                {/* Officer Login Form Card */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm space-y-5">
+
+                {/* Login Card */}
+                <div className={`border rounded-2xl p-8 shadow-sm space-y-5 transition-colors duration-300 ${cardBg}`}>
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2.5 text-[#8B1D2C]">
                       <span className="text-2xl">🛡️</span>
-                      <h3 className="font-extrabold text-xl text-slate-900">Officer Login</h3>
+                      <h3 className={`font-extrabold text-xl ${dk ? 'text-slate-100' : 'text-slate-900'}`}>{t.loginTitle}</h3>
                     </div>
-                    <p className="text-sm text-slate-500">Secure access for authorized officers only</p>
+                    <p className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>{t.loginSubtitle}</p>
                   </div>
 
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-1.5">
-                        Officer User ID / Service No.
-                      </label>
+                      <label className={`block text-sm font-bold mb-1.5 ${dk ? 'text-slate-300' : 'text-slate-700'}`}>{t.labelUserId}</label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">👤</span>
+                        <span className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dk ? 'text-slate-500' : 'text-slate-400'}`}>👤</span>
                         <input
                           id="login-officer-id"
                           type="text"
                           value={loginUserId}
                           onChange={e => setLoginUserId(e.target.value)}
-                          placeholder="Enter User ID / Service No."
-                          className="w-full pl-9 pr-4 py-3 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#8B1D2C] focus:border-[#8B1D2C]"
+                          placeholder={t.placeholderUserId}
+                          className={`w-full pl-9 pr-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 transition ${inputCls}`}
                           required
                           autoFocus
                         />
@@ -1041,33 +1114,26 @@
                     </div>
 
                     <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-1.5">
-                        Password / PIN
-                      </label>
+                      <label className={`block text-sm font-bold mb-1.5 ${dk ? 'text-slate-300' : 'text-slate-700'}`}>{t.labelPassword}</label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">🔒</span>
+                        <span className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dk ? 'text-slate-500' : 'text-slate-400'}`}>🔒</span>
                         <input
                           type={showPassword ? 'text' : 'password'}
                           value={loginPassword}
                           onChange={e => setLoginPassword(e.target.value)}
-                          placeholder="Enter your password"
-                          className="w-full pl-9 pr-10 py-3 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#8B1D2C] focus:border-[#8B1D2C]"
+                          placeholder={t.placeholderPassword}
+                          className={`w-full pl-9 pr-10 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 transition ${inputCls}`}
                           required
                         />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
-                        >
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm ${dk ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-700'}`}>
                           {showPassword ? '🙈' : '👁️'}
                         </button>
                       </div>
                     </div>
 
                     {loginError && (
-                      <div className="flex items-center space-x-2 bg-rose-50 border border-rose-200 rounded-lg p-3 text-sm text-rose-800">
-                        <span>⚠️</span>
-                        <span>{loginError}</span>
+                      <div className={`flex items-center space-x-2 rounded-lg p-3 text-sm ${dk ? 'bg-rose-900/40 border border-rose-700 text-rose-300' : 'bg-rose-50 border border-rose-200 text-rose-800'}`}>
+                        <span>⚠️</span><span>{loginError}</span>
                       </div>
                     )}
 
@@ -1077,119 +1143,73 @@
                       className="w-full py-3 bg-[#8B1D2C] hover:bg-[#721523] text-white text-sm font-bold rounded-lg shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 cursor-pointer"
                     >
                       {loginLoading ? (
-                        <>
-                          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                          <span>Authenticating...</span>
-                        </>
+                        <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span><span>{t.authenticating}</span></>
                       ) : (
-                        <>
-                          <span>→</span>
-                          <span>Login</span>
-                        </>
+                        <><span>→</span><span>{t.loginBtn}</span></>
                       )}
                     </button>
 
                     <div className="text-center">
-                      <a href="#forgot" onClick={(e)=>{e.preventDefault(); alert("Contact GeM IT Security Cell / Admin for PIN reset.");}} className="text-sm font-semibold text-blue-600 hover:underline">
-                        Forgot Password?
+                      <a href="#forgot" onClick={(e)=>{e.preventDefault(); alert('Contact GeM IT Security Cell / Admin for PIN reset.');}} className="text-sm font-semibold text-blue-500 hover:underline">
+                        {t.forgotPwd}
                       </a>
                     </div>
                   </form>
 
-                  {/* 1-Click Demo Officer Profile Selector */}
-                  <div className="pt-3 border-t border-slate-100 space-y-2">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                      ⚡ Quick Officer Access:
-                    </span>
+                  {/* Quick Officer Shortcuts */}
+                  <div className={`pt-3 border-t space-y-2 ${dk ? 'border-slate-700' : 'border-slate-100'}`}>
+                    <span className={`text-xs font-bold uppercase tracking-wider block ${dk ? 'text-slate-500' : 'text-slate-400'}`}>{t.quickAccess}</span>
                     <div className="grid grid-cols-2 gap-2">
                       {Object.entries(OFFICERS).map(([uid, off]) => (
                         <button
                           key={uid}
                           type="button"
-                          onClick={() => {
-                            setCurrentOfficer({ userId: uid, ...off });
-                            setIsLoggedIn(true);
-                            setLoginPassword('');
-                            setLoginError('');
-                          }}
-                          className="p-2.5 bg-slate-50 hover:bg-rose-50/50 border border-slate-200 hover:border-[#8B1D2C]/40 rounded-lg text-left transition text-xs group"
+                          onClick={() => { setCurrentOfficer({userId:uid,...off}); setIsLoggedIn(true); setLoginPassword(''); setLoginError(''); }}
+                          className={`p-2.5 border rounded-lg text-left transition text-xs group ${qCardBg}`}
                         >
-                          <div className="font-bold text-slate-800 group-hover:text-[#8B1D2C] truncate">
-                            {off.name.split(' ')[0]} ({uid})
-                          </div>
-                          <div className="text-[10px] text-slate-500 truncate mt-0.5">{off.ministry.replace('Ministry of ', '')}</div>
+                          <div className={`font-bold truncate ${qCardText}`}>{off.name.split(' ')[0]} ({uid})</div>
+                          <div className={`text-[10px] truncate mt-0.5 ${dk ? 'text-slate-500' : 'text-slate-500'}`}>{off.ministry.replace('Ministry of ','')}</div>
                         </button>
                       ))}
                     </div>
                   </div>
-
                 </div>
 
-                {/* Security Notice Box */}
-                <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-2">
-                  <div className="flex items-center space-x-2 text-slate-800 text-sm font-bold">
-                    <span>🛡️</span>
-                    <span>Security Notice</span>
+                {/* Security Notice */}
+                <div className={`border rounded-xl p-5 shadow-xs space-y-2 transition-colors duration-300 ${cardBg}`}>
+                  <div className={`flex items-center space-x-2 text-sm font-bold ${dk ? 'text-slate-200' : 'text-slate-800'}`}>
+                    <span>🛡️</span><span>{t.secNoticeTitle}</span>
                   </div>
-                  <p className="text-xs text-slate-600 leading-normal">
-                    Unauthorized access is prohibited and may be punishable under the Information Technology Act, 2000.
-                  </p>
+                  <p className={`text-xs leading-normal ${dk ? 'text-slate-400' : 'text-slate-600'}`}>{t.secNoticeText}</p>
                 </div>
 
               </div>
-
             </main>
 
-            {/* System Status Banner Strip */}
-            <div className="bg-white border-y border-slate-200 py-3 px-6 text-xs text-slate-600 no-print">
-              <div className="max-w-screen-2xl mx-auto flex flex-wrap justify-between items-center gap-4 text-[11px]">
-                <div className="flex items-center space-x-2">
-                  <span>👤</span>
-                  <span>Last Login: <strong>17 May 2025, 10:32 AM</strong></span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <span>System Status: <strong className="text-emerald-700">All Systems Operational</strong></span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span>🌐</span>
-                  <span>Server Region: <strong>India (Primary)</strong></span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span>🛡️</span>
-                  <span>Digital Signature: <strong>Enabled</strong></span>
-                </div>
-                <div className="flex items-center space-x-1.5">
-                  <span className="font-bold text-[#0B1E33]">NIC:</span>
-                  <span>NIC Certified - National Informatics Centre</span>
-                </div>
-                <div className="flex items-center space-x-1.5">
-                  <span>🏛️</span>
-                  <span>CAG Compliance: <strong>Audit Enabled</strong></span>
-                </div>
+            {/* System Status Strip */}
+            <div className={`border-y py-3 px-6 text-xs no-print transition-colors duration-300 ${statusBar}`}>
+              <div className={`max-w-screen-2xl mx-auto flex flex-wrap justify-between items-center gap-4 text-[11px] ${dk ? 'text-slate-400' : 'text-slate-600'}`}>
+                <div className="flex items-center space-x-2"><span>👤</span><span>{t.lastLogin} <strong className={dk?'text-slate-200':'text-slate-800'}>17 May 2025, 10:32 AM</strong></span></div>
+                <div className="flex items-center space-x-2"><span className="w-2 h-2 rounded-full bg-emerald-500"></span><span>{t.sysStatus} <strong className="text-emerald-500">{t.allOk}</strong></span></div>
+                <div className="flex items-center space-x-2"><span>🌐</span><span>{t.serverRegion} <strong className={dk?'text-slate-200':'text-slate-800'}>{t.india}</strong></span></div>
+                <div className="flex items-center space-x-2"><span>🛡️</span><span>{t.digSig} <strong className={dk?'text-slate-200':'text-slate-800'}>{t.enabled}</strong></span></div>
+                <div className="flex items-center space-x-1.5"><span className={`font-bold ${dk?'text-slate-200':'text-[#0B1E33]'}`}>{t.nicLabel}</span><span>{t.nicText}</span></div>
+                <div className="flex items-center space-x-1.5"><span>🏛️</span><span>{t.cagLabel} <strong className={dk?'text-slate-200':'text-slate-800'}>{t.auditEnabled}</strong></span></div>
               </div>
             </div>
 
-            {/* Bottom Dark Navy Footer */}
-            <footer className="bg-[#0B1E33] text-slate-300 text-xs py-4 px-6 no-print">
+            {/* Footer */}
+            <footer className={`text-slate-300 text-xs py-4 px-6 no-print transition-colors duration-300 ${footerBg}`}>
               <div className="max-w-screen-2xl mx-auto flex flex-wrap justify-between items-center gap-4 text-[11px]">
-                <div>
-                  © Government e-Marketplace (GeM) - All rights reserved.
-                </div>
+                <div>{t.footerCopy}</div>
                 <div className="flex items-center space-x-4 text-slate-400">
-                  <a href="#privacy" className="hover:text-white">Privacy Policy</a>
-                  <span>|</span>
-                  <a href="#terms" className="hover:text-white">Terms & Conditions</a>
-                  <span>|</span>
-                  <a href="#accessibility" className="hover:text-white">Accessibility</a>
-                  <span>|</span>
-                  <a href="#disclaimer" className="hover:text-white">Disclaimer</a>
-                  <span>|</span>
-                  <a href="#help" className="hover:text-white">Help</a>
+                  <a href="#privacy" className="hover:text-white">{t.privacy}</a>
+                  <span>|</span><a href="#terms" className="hover:text-white">{t.terms}</a>
+                  <span>|</span><a href="#accessibility" className="hover:text-white">{t.accessibility}</a>
+                  <span>|</span><a href="#disclaimer" className="hover:text-white">{t.disclaimer}</a>
+                  <span>|</span><a href="#help" className="hover:text-white">{t.help}</a>
                 </div>
-                <div className="text-slate-400">
-                  Version 2.1.0 • Build: 2025.05.17
-                </div>
+                <div className="text-slate-400">{t.version}</div>
               </div>
             </footer>
 
