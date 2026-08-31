@@ -919,22 +919,22 @@
 
       // Show login screen if officer is not authenticated
       if (!isLoggedIn) {
-        // Dark mode derived class helpers
+        // Dark mode derived class helpers — true black/charcoal palette, no blue
         const dk = isDarkMode;
-        const pageBg    = dk ? 'bg-[#0A0F1E] text-slate-100' : 'bg-[#F8FAFC] text-slate-900';
-        const headerBg  = dk ? 'bg-[#0D1526] border-slate-700' : 'bg-white border-slate-200';
-        const textMuted = dk ? 'text-slate-400' : 'text-slate-500';
-        const textStrong= dk ? 'text-slate-100' : 'text-[#0B1E33]';
-        const cardBg    = dk ? 'bg-[#111827] border-slate-700' : 'bg-white border-slate-200';
-        const cardHover = dk ? 'hover:border-[#8B1D2C] hover:bg-[#1a0f13]' : 'hover:border-[#8B1D2C] hover:shadow-md';
-        const inputCls  = dk ? 'bg-[#1e2d45] border-slate-600 text-slate-100 placeholder-slate-500 focus:ring-[#8B1D2C] focus:border-[#8B1D2C]' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-[#8B1D2C] focus:border-[#8B1D2C]';
-        const statBg    = dk ? 'bg-[#111827] border-slate-700' : 'bg-white border-slate-200';
-        const badgeBg   = dk ? 'bg-blue-900/40 border-blue-700 text-blue-300' : 'bg-blue-50 border-blue-200 text-blue-800';
-        const statusBar = dk ? 'bg-[#0D1526] border-slate-700' : 'bg-white border-slate-200';
-        const footerBg  = dk ? 'bg-[#060B14]' : 'bg-[#0B1E33]';
-        const navLink   = dk ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900';
-        const qCardBg   = dk ? 'bg-[#1e2d45] border-slate-600 hover:border-[#8B1D2C]/60 hover:bg-[#2a1520]' : 'bg-slate-50 border-slate-200 hover:border-[#8B1D2C]/40 hover:bg-rose-50/50';
-        const qCardText = dk ? 'text-slate-200 group-hover:text-[#F43F5E]' : 'text-slate-800 group-hover:text-[#8B1D2C]';
+        const pageBg    = dk ? 'bg-[#0c0c0c] text-slate-100' : 'bg-[#F8FAFC] text-slate-900';
+        const headerBg  = dk ? 'bg-[#141414] border-[#2a2a2a]' : 'bg-white border-slate-200';
+        const textMuted = dk ? 'text-zinc-400' : 'text-slate-500';
+        const textStrong= dk ? 'text-zinc-100' : 'text-[#0B1E33]';
+        const cardBg    = dk ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-white border-slate-200';
+        const cardHover = dk ? 'hover:border-[#8B1D2C] hover:bg-[#211010]' : 'hover:border-[#8B1D2C] hover:shadow-md';
+        const inputCls  = dk ? 'bg-[#222222] border-[#3a3a3a] text-zinc-100 placeholder-zinc-500 focus:ring-[#8B1D2C] focus:border-[#8B1D2C]' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-[#8B1D2C] focus:border-[#8B1D2C]';
+        const statBg    = dk ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-white border-slate-200';
+        const badgeBg   = dk ? 'bg-[#1f1f1f] border-[#3a3a3a] text-zinc-300' : 'bg-blue-50 border-blue-200 text-blue-800';
+        const statusBar = dk ? 'bg-[#141414] border-[#2a2a2a]' : 'bg-white border-slate-200';
+        const footerBg  = dk ? 'bg-[#000000]' : 'bg-[#0B1E33]';
+        const navLink   = dk ? 'text-zinc-300 hover:text-white' : 'text-slate-600 hover:text-slate-900';
+        const qCardBg   = dk ? 'bg-[#222222] border-[#333333] hover:border-[#8B1D2C]/70 hover:bg-[#2a1212]' : 'bg-slate-50 border-slate-200 hover:border-[#8B1D2C]/40 hover:bg-rose-50/50';
+        const qCardText = dk ? 'text-zinc-200 group-hover:text-[#F43F5E]' : 'text-slate-800 group-hover:text-[#8B1D2C]';
 
         return (
           <div className={`min-h-screen flex flex-col font-sans selection:bg-[#8B1D2C] selection:text-white transition-colors duration-300 ${pageBg}`}>
