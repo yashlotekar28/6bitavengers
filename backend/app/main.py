@@ -696,7 +696,88 @@ async def finalize_tender_evaluation(payload: FinalizeEvaluationPayload):
             b.officer_status = "REJECTED"
             b.decided_at = now_str
             b.officer_id = payload.officer_id
-            b.officer_notes = "Automatically marked as Rejected upon bid result finalization."
+
+            # --- Build dynamic, per-vendor rejection rationale from actual data ---
+            grounds = []
+
+            # 1. Director debarment (GFR 151)
+            if b.directors:
+                debarred_dirs = [d for d in b.directors if getattr(d, "is_flagged_debarred", False)]
+                if debarred_dirs:
+                    grounds.append(
+                        f"Director debarment under GFR Rule 151: {debarred_dirs[0].name} (DIN: {debarred_dirs[0].din}) "
+                        f"is on the MoF/CVC statutory blacklist — compulsory disqualification."
+                    )
+
+            # 2. Critical / HIGH compliance risk
+            if b.compliance_score:
+                if b.compliance_score.risk_level.value == "CRITICAL":
+                    grounds.append(
+                        f"Critical statutory risk (Compliance Score: {b.compliance_score.score}/100) — "
+                        f"vendor failed mandatory GoI procurement eligibility gate."
+                    )
+                elif b.compliance_score.risk_level.value in ["HIGH", "MEDIUM"]:
+                    grounds.append(
+                        f"Elevated compliance risk (Score: {b.compliance_score.score}/100, "
+                        f"Risk: {b.compliance_score.risk_level.value}) — below the minimum acceptable threshold for this tender."
+                    )
+
+            # 3. Cartel / entity conflict links
+            if b.conflict_links_count > 0:
+                grounds.append(
+                    f"Entity-graph cartel linkage: {b.conflict_links_count} shared director/premises link(s) "
+                    f"with competing bidders — violates CVC Anti-Collusion Directive."
+                )
+
+            # 4. Cross-verification mismatches (OCR vs live govt portals)
+            if b.cross_check_mismatches:
+                mismatch_fields = ", ".join(m.field_name for m in b.cross_check_mismatches[:3])
+                grounds.append(
+                    f"Document OCR cross-check mismatch(es) against GSTN/MCA21 live portal: "
+                    f"{len(b.cross_check_mismatches)} discrepancy flag(s) on [{mismatch_fields}]."
+                )
+
+            # 5. ELA digital tamper suspicion
+            if b.documents and b.documents[0].forensic_report:
+                fr = b.documents[0].forensic_report
+                if fr.overall_tamper_score > 60:
+                    grounds.append(
+                        f"High-confidence certificate forgery detected via ELA Q90 analysis — "
+                        f"Tamper Suspicion Score: {fr.overall_tamper_score}% ({fr.status.value}). "
+                        f"Software artefact: {fr.metadata_analysis.producing_software if fr.metadata_analysis else 'Unknown'}."
+                    )
+                elif fr.overall_tamper_score > 25:
+                    grounds.append(
+                        f"Moderate ELA tamper suspicion ({fr.overall_tamper_score}%, {fr.status.value}) — "
+                        f"pixel residue inconsistency in submitted certificates. Clarification notice issued but not resolved."
+                    )
+
+            # 6. Financial turnover below threshold
+            if b.financials:
+                turnover_cr = b.financials.annual_turnover_inr / 10_000_000
+                if turnover_cr < 2.0:
+                    grounds.append(
+                        f"Annual turnover ₹{turnover_cr:.2f} Cr falls below mandatory eligibility threshold of ₹2.00 Cr."
+                    )
+
+            # 7. AI engine recommendation
+            if b.ai_recommendation and b.ai_recommendation.recommended_action in ["RECOMMEND_REJECTION", "FLAG_FOR_REVIEW"]:
+                grounds.append(
+                    f"Nirikshan AI Determination: {b.ai_recommendation.recommended_action} — "
+                    f"{b.ai_recommendation.executive_summary[:120] if b.ai_recommendation.executive_summary else 'Vendor profile does not meet technical qualification criteria.'}."
+                )
+
+            # Default fallback if no specific flag applies
+            if not grounds:
+                grounds.append(
+                    "Not selected as Primary L1 awardee or Standby Contingency following merit-based technical evaluation ranking."
+                )
+
+            rejection_note = (
+                f"TECHNICAL EVALUATION REJECTION | GFR 2017 Grounds:\n"
+                + "\n".join(f"  [{i+1}] {g}" for i, g in enumerate(grounds))
+            )
+            b.officer_notes = rejection_note
 
     # Update tender record
     tender.status = "EVALUATION_COMPLETED"

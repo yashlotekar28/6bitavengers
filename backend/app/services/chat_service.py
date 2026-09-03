@@ -82,14 +82,14 @@ class OfficerChatAssistantService:
                 system_prompt = cls._build_system_prompt(tender_id, tender_bidders)
                 full_prompt = f"{system_prompt}\n\n---\nOfficer Question: {q}"
                 reply_text = None
-                # gemini-3.5-flash confirmed working; fallback to newer models
-                for model_name in ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.7-flash"]:
+                # Try valid Gemini models in order of preference
+                for model_name in ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]:
                     try:
                         response = client.models.generate_content(
                             model=model_name,
                             contents=full_prompt,
                             config=genai_types.GenerateContentConfig(
-                                max_output_tokens=700,
+                                max_output_tokens=900,
                                 temperature=0.15,
                             )
                         )
@@ -535,25 +535,47 @@ class OfficerChatAssistantService:
         rows = []
         for b in bidders[:15]:
             f = b.documents[0].forensic_report if b.documents and b.documents[0].forensic_report else None
-            msme = "MSME" if b.identifiers.udyam_registration_number else "Non-MSME"
-            tamper = f"{f.overall_tamper_score if f else 0}%({'TAMPERED' if f and f.status.value != 'CLEAN' else 'CLEAN'})"
-            flags = ("; ".join(f.metadata_analysis.flags) if f and f.metadata_analysis and f.metadata_analysis.flags else "None")[:60]
+            msme = f"MSME (Udyam: {b.identifiers.udyam_registration_number})" if b.identifiers.udyam_registration_number else "Non-MSME"
+            tamper = f"{f.overall_tamper_score if f else 0}% ({'TAMPERED' if f and f.status.value != 'CLEAN' else 'CLEAN'})"
+            flags = ("; ".join(f.metadata_analysis.flags) if f and f.metadata_analysis and f.metadata_analysis.flags else "None")[:80]
             mismatches = len(b.cross_check_mismatches)
+            mismatch_details = "; ".join(m.field_name for m in b.cross_check_mismatches[:2]) if b.cross_check_mismatches else "None"
             turnover_cr = b.financials.annual_turnover_inr / 10000000.0
+            # Director info
+            directors = b.directors or []
+            dir_str = "; ".join(
+                f"{d.name} (DIN:{d.din}, {'DEBARRED' if getattr(d,'is_flagged_debarred',False) else 'Clean'})"
+                for d in directors[:2]
+            ) if directors else "N/A"
+            # CIBIL trust
+            ts = b.longitudinal_trust_score
+            cibil_str = f"{ts.score}/900 ({ts.rating_band})" if ts else "N/A"
             rows.append(
-                f"{b.company_name} | Score:{b.compliance_score.score}/100 {b.compliance_score.risk_level.value} | "
-                f"CIBIL:{b.longitudinal_trust_score.score}/900 | Turnover:₹{turnover_cr:.1f}Cr | {msme} | "
-                f"Tamper:{tamper} | Conflicts:{b.conflict_links_count} | Mismatches:{mismatches} | "
-                f"Action:{b.ai_recommendation.recommended_action} | Status:{b.officer_status}"
+                f"---\n"
+                f"Company: {b.company_name} | ID: {b.bidder_id} | State: {b.registered_state}\n"
+                f"Score: {b.compliance_score.score}/100 ({b.compliance_score.risk_level.value} Risk) | CIBIL: {cibil_str}\n"
+                f"Turnover: ₹{turnover_cr:.2f} Cr | {msme} | Structure: {b.legal_structure}\n"
+                f"GSTIN: {b.identifiers.gstin} | PAN: {b.identifiers.pan} | CIN: {b.identifiers.cin}\n"
+                f"Tamper: {tamper} | ELA Flags: {flags}\n"
+                f"Mismatches: {mismatches} [{mismatch_details}] | Cartel Links: {b.conflict_links_count}\n"
+                f"Directors: {dir_str}\n"
+                f"AI Action: {b.ai_recommendation.recommended_action} | Officer Status: {b.officer_status}"
             )
-        vendors_csv = "\n".join(rows)
+        vendors_data = "\n".join(rows)
 
-        return f"""You are Nirikshan AI — GeM Procurement Intelligence Assistant (India).
-Help a senior officer evaluate bids for tender {tender_id}. Be direct, use markdown, cite vendor names and exact figures.
-Use Indian procurement terms (GFR 2017, MSME, GSTIN, L1/L2/L3, EMD, PBG). Keep response concise and actionable.
+        return f"""You are Nirikshan AI — India's GeM (Government e-Marketplace) Procurement Intelligence Assistant.
+A senior procurement officer is evaluating bids for tender {tender_id}. Answer directly, use markdown formatting, cite exact vendor names, IDs, and figures.
+Use Indian procurement terminology: GFR 2017, MSME, GSTIN, PAN, CIN, L1/L2/L3, EMD, PBG, CIBIL, DIN, Udyam, ELA, MCA21, EPFO.
 
-VENDOR DATA ({len(bidders)} vendors):
-{vendors_csv}
+FULL VENDOR DATABASE FOR TENDER {tender_id} ({len(bidders)} vendors):
+{vendors_data}
+
+Instructions:
+- Always cite the exact company name, score, GSTIN, or other figures from the data above.
+- If asked about rejection/disqualification, explain based on their actual risk level, cartel links, mismatches, tamper score, and director debarment.
+- If asked about MSME vendors, list only those with a Udyam registration number.
+- If asked to rank or compare vendors, sort by the relevant metric from the data.
+- Keep responses concise, structured with bullet points or tables, and always actionable.
 """
 
     @classmethod
