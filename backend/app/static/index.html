@@ -2226,10 +2226,48 @@
                                             </span>
                                           </td>
                                           <td className="p-2.5 font-mono">{rb.longitudinal_trust_score?.score || 'N/A'}</td>
-                                          <td className="p-2.5 text-rose-700 font-medium">
-                                            {rb.scenario_type === 'HARD_FAIL_DEBARRED_VENDOR' ? 'Debarred under MoF Rule 151 / Director Debarred' :
-                                             rb.scenario_type === 'DOCUMENT_MISMATCH_SUSPICIOUS' ? 'Document Forgery / Tax Discrepancy Failed Gates' :
-                                             'Non-L1 Bidder / Disqualified on Finalization'}
+                                          <td className="p-2.5 text-rose-900 font-medium max-w-md">
+                                            {rb.officer_notes && rb.officer_notes.includes('TECHNICAL EVALUATION REJECTION') ? (
+                                              <div className="whitespace-pre-line text-[11px] leading-relaxed">
+                                                {rb.officer_notes.replace('TECHNICAL EVALUATION REJECTION | GFR 2017 Grounds:\n', '')}
+                                              </div>
+                                            ) : (
+                                              <div className="text-[11px] leading-relaxed space-y-1">
+                                                {(() => {
+                                                  const reasons = [];
+                                                  const debarred = rb.directors?.find(d => d.is_flagged_debarred);
+                                                  if (debarred) {
+                                                    reasons.push(`🚫 Debarred Director under GFR 151: ${debarred.name} (DIN: ${debarred.din}) on MoF/CVC Blacklist`);
+                                                  }
+                                                  if (rb.conflict_links_count > 0) {
+                                                    reasons.push(`🕸️ Cartel Alert: ${rb.conflict_links_count} shared director/premises link(s) with competing bidders (CVC Directive)`);
+                                                  }
+                                                  const fr = rb.documents?.[0]?.forensic_report;
+                                                  if (fr && fr.overall_tamper_score > 25) {
+                                                    reasons.push(`🔬 ELA Forgery Flag: ${fr.overall_tamper_score}% pixel tamper suspicion (${fr.status}) in submitted certificate`);
+                                                  }
+                                                  if (rb.cross_check_mismatches?.length > 0) {
+                                                    const fields = rb.cross_check_mismatches.slice(0, 3).map(m => m.field_name).join(', ');
+                                                    reasons.push(`⚠️ Portal Discrepancies: ${rb.cross_check_mismatches.length} mismatch(es) against GSTN/MCA21 on [${fields}]`);
+                                                  }
+                                                  if (rb.financials?.annual_turnover_inr && (rb.financials.annual_turnover_inr / 1e7) < 2.0) {
+                                                    reasons.push(`📉 Turnover Ineligible: ₹${(rb.financials.annual_turnover_inr / 1e7).toFixed(2)} Cr below mandatory ₹2.00 Cr threshold`);
+                                                  }
+                                                  if (rb.compliance_score?.score < 75) {
+                                                    reasons.push(`⚖️ Low Statutory Compliance: ${rb.compliance_score.score}/100 (${rb.compliance_score.risk_level} Risk)`);
+                                                  }
+                                                  if (reasons.length === 0) {
+                                                    const trustScore = rb.longitudinal_trust_score?.score || 750;
+                                                    reasons.push(`Competitive Merit Ranking: Outranked by higher-trust Primary L1 & Standby L2 bidders (CIBIL: ${trustScore}/900)`);
+                                                  }
+                                                  return reasons.map((r, i) => (
+                                                    <div key={i} className="flex items-start gap-1">
+                                                      <span>{r}</span>
+                                                    </div>
+                                                  ));
+                                                })()}
+                                              </div>
+                                            )}
                                           </td>
                                         </tr>
                                       ))}
